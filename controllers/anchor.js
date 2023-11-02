@@ -53,7 +53,7 @@ const axios = require('axios');
         }
     }
 
-    TODO: stuff
+    
 
     module.exports = {
       regCustomerOnAnchor
