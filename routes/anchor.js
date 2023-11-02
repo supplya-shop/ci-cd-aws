@@ -6,6 +6,6 @@ const upload = require('../middleware/upload')
 
 const {regCustomerOnAnchor} = require('../controllers/anchor')
 
-router.post('/kyc', upload.single('file'), regCustomerOnAnchor)
-
+// Use the custom middleware for the '/kyc' route
+router.post('/kyc', upload, regCustomerOnAnchor);
 module.exports = router
