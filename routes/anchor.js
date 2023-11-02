@@ -4,7 +4,7 @@ const upload = require('../middleware/upload')
 
 
 
-const {regCustomerOnAnchor} = require('../controllers/auth')
+const {regCustomerOnAnchor} = require('../controllers/anchor')
 
 router.post('/kyc', upload.single('file'), regCustomerOnAnchor)
 
