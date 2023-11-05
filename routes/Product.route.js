@@ -28,7 +28,8 @@ router.post('/', async (req, res, next) => {
         description: req.body.description,
         quantity: req.body.quantity,
         category: req.body.category,
-        inStock: req.body.inStock
+        inStock: req.body.inStock,
+        dateCreated: Date.now()
     });
     newProduct.save()
         .then(result => {

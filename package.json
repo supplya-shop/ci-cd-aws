@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
- },
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Supplya/supplya"
@@ -21,6 +21,8 @@
   },
   "homepage": "https://github.com/Supplya/supplya#readme",
   "dependencies": {
+    "bcrypt": "^5.1.1",
+    "core-util-is": "^1.0.3",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "mongoose": "^8.0.0"

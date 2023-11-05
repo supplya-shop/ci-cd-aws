@@ -24,14 +24,18 @@ const ProductSchema = new schema({
     inStock: {
         type: Boolean,
     },
+    hasDiscount: {
+        type: Boolean,
+    },
     dateCreated: {
         type: Date,
+        default: Date.now // Set the default value to the current date
     },
     dateModified: {
         type: Date
     }
-})
+});
 
-const Product = mongoose.model('product', ProductSchema)
+const Product = mongoose.model('product', ProductSchema);
 
-module.exports = Product
+module.exports = Product;

@@ -1,13 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose')
+// const bcrypt = require('bcrypt')
 const app = express();
 const dotenv = require('dotenv').config();
 const port = process.env.PORT || 4000;
 app.use(express.json())
-
-mongoose.connect('mongodb+srv://supplya:Berth%232023@supplya.8lgr9ki.mongodb.net/').then(() => {
-    console.log("Db connected successfully...")
-})
 
 app.all('/test', (req, res) => {
     // query string
@@ -25,8 +22,17 @@ app.all('/test', (req, res) => {
 })
 
 const productRoute = require('./routes/Product.route.js');
-app.use('/products', productRoute);
+app.use('/api/products', productRoute);
 
+const userRoute = require('./routes/User.route.js');
+app.use('/api/users', userRoute)
+
+const authRoute = require('./routes/Auth.route.js')
+app.use('/api/auth', authRoute)
+
+
+
+// error handling
 app.use((req, res, next) => {
     const err = new Error('Not Found');
     err.status = 404;
@@ -44,8 +50,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-const userRoute = require('./routes/User.route.js');
-app.use('/users', userRoute);
 
 app.listen(port, () => {
     console.log(`Server running on Port ${port}`);

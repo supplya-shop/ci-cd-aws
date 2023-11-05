@@ -11,21 +11,35 @@ GET http://localhost:3000/products
 
 GET http://localhost:3000/products/id
 
-PATCH http://localhost:3000/products/65433d69b198481ac1b6ba49
+PATCH http://localhost:3000/products/6543c6798bc36c4bf65481c4
 Content-Type: application/json
-{
-    "_id": "65433d69b198481ac1b6ba49",
-  "name": "iPhone 12 Pro max",
-  "price": 3999,
-  "description": "brand new iPhone 12 Pro Max",
-  "quantity": "100",
-  "inStock": true
-}
+  {
+    "name": "Golden Penny Noodles",
+    "price": 8000,
+    "description": "5kg Golden Penny Noodles ",
+    "quantity": "0",
+    "inStock": false,
+    "__v": 0,
+    "dateCreated": "2023-11-03T15:20:23.129Z"
+  }
 
 DELETE http://localhost:3000/products/id
 
 // user routes
 POST http://localhost:3000/users
+{
+    "firstname": "David",
+    "lastname": "Osuchukwu",
+    "email": "osuchukwudavid@gmail.com",
+    "phoneNumber": "09023456643",
+    "password": "12345678",
+    "status": "verified",
+    "gender": "M",
+    "dateOfBirth": "12-09-98",
+    "address": "23 Faith Drive, Lagos",
+    "role": "user",
+    "dateCreated": "2-11-2023"
+}
 
 GET http://localhost:3000/users
 
@@ -47,7 +61,21 @@ Content-Type: application/json
     "price": 4999
 }
 
-// product route
-
+// auth routes
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+{
+    "firstname": "David",
+    "lastname": "Osuchukwu",
+    "email": "osuchukwudavid@gmail.com",
+    "phoneNumber": "09023456643",
+    "password": "12345678",
+    "status": "verified",
+    "gender": "M",
+    "dateOfBirth": "12-09-98",
+    "address": "23 Faith Drive, Lagos",
+    "role": "user",
+    "dateCreated": "2-11-2023"
+}
 
 
