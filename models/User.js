@@ -121,6 +121,14 @@ const UserSchema = new mongoose.Schema({
 
     dob:{
         type:Date
+    },
+
+    resetPasswordToken:{
+        type:Number
+    },
+
+    resetPasswordExpires:{
+        type:Date
     }
 
 })

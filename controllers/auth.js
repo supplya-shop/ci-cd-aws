@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
 const passport = require('passport')
 const axios = require('axios')
+const bcrypt = require('bcryptjs')
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 
@@ -21,7 +22,13 @@ const registerUser = async (req, res) => {
         res.status(StatusCodes.CREATED).json({user: {name: user.name, role: user.role, email:user.email,  createdAt:user.createdAt, phoneNumber:user.phoneNumber}, token})
         
     } catch (error) {
-       res.status(400).send('Email Already Exists') 
+      if (error.name === 'ValidatorError') {
+       res.status(400).json({msg:error.message}) 
+      } else if (error.name === "MongoError"){
+        res.status(400).json({msg:"Email Already Exists"}) 
+      } else {
+        res.status(500).json({msg:"Something went wrong, please try again later"})
+      }
     }
     
 }   
@@ -57,149 +64,129 @@ const login = async (req, res) => {
 
 
 
+// Forgot password to get reset code
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-
-
-//GOOGLE OAUTH 2 REGISTER AND LOGIN
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const forgotPassword = async (req, res) => {
-    try {
-        const { email } = req.body;
-    
-        if (!email) {
-          throw new UnauthenticatedError('Please provide your email');
-        }
-    
-        const user = await User.findOne({ email });
-    
-        if (!user) {
-          throw new UnauthenticatedError('Invalid Email');
-        }
-    
-        const resetToken = jwt.sign(
-          { userId: user._id },
-          process.env.JWT_SECRET,
-          { expiresIn: '1h' }
-        );
-    
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
-        await user.save();
-    
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-          auth: {
-            user: process.env.EMAIL_USERNAME,
-            pass: process.env.EMAIL_PASSWORD,
-          },
-        });
-        
-
-        const mailOptions = {
-          from: 'foresightagencies@gmail.com',
-          to: user.email,
-          subject: 'Password Reset Request',
-          html: `
-            <p>You are receiving this email because you (or someone else) has requested a password reset for your account.</p>
-            <p>Please click the following link to reset your password:</p>
-            <a href="https://localhost3000/auth/reset-password?token=${resetToken}">Reset Password</a
-            <p>If you did not request a password reset, please ignore this email.</p>
-          `,
-        };
-    
-        await transporter.sendMail(mailOptions);
-    
-        res.status(200).json({ message: 'Password reset link sent to your email' });
-      } catch (error) {
-        //res.status(error.statusCode).send(error)
-        res.status(400).json({ message: error.message });
-      }
-
+    if (!email) {
+      throw new Error("Please provide your email");
     }
 
-      const resetPassword = async (req, res) => {
-        try {
-          const { resetToken, newPassword } = req.body;
-      
-          // Find the user with the given reset token
-          const user = await User.findOne({ resetPasswordToken: resetToken });
-      
-          if (!user) {
-            throw new Error('Invalid reset token');
-          }
-      
-          // Update the user's password and clear the reset token
-          user.password = newPassword;
-          user.resetToken = null;
-          await user.save();
-      
-          res.status(200).json({ message: 'Password reset successfully' });
-        } catch (error) {
-          res.status(400).json({ message: error.message });
-        }
-      };
+    const user = await User.findOne({ email });
 
-      
-const getBanks = async (req, res) => {
-  const url = 'https://api.flutterwave.com/v3/banks/NG';
-  const headers = {
-      'Authorization': `Bearer ${process.env.SECRET_KEY}`,
-      'Content-Type': 'application/json',
-  }
+    if (!user) {
+      throw new Error("Invalid Email");
+    }
 
-  try {
-      const response = await axios.get(url, { headers })
-      const banks = response.data.data
-      let bankNames = banks.map(bank => bank.name)
-      bankNames.sort() // Sort the bank names alphabetically
-      res.status(StatusCodes.OK).json({ bankNames })
+    // Generate a random 5-digit code
+    const resetCode = Math.floor(10000 + Math.random() * 90000).toString();
+
+    // Set expiry for 30 minutes
+    const resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
+
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          resetPasswordToken: resetCode,
+          resetPasswordExpires: resetPasswordExpires,
+        },
+      }
+    );
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: "foresightagencies@gmail.com",
+      to: user.email,
+      subject: "Password Reset Request",
+      html: `
+        <p style="font-size:16px;">You are receiving this email because you (or someone else) has requested a password reset for your account.</p>
+        <p style="font-size:16px;">Your password reset code is:</p>
+        <p style="font-size:24px; color: blue;">${resetCode}</p>
+        <p style="font-size:16px;">This code will expire in 30 minutes. Please go to the following page and enter this code to reset your password:</p>
+        <a href="https:/localhost:3000/auth/reset" style="font-size:16px;">Reset Password</a>
+        <p style="font-size:16px;">If you did not request a password reset, please ignore this email.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      msg: "Password reset code sent to your email",
+    });
   } catch (error) {
-      console.error('An error occurred:', error.message)
+    console.log(error);
+    res.status(400).json({
+      msg: error.message,
+    });
   }
-}
+};
 
-      
+// Reset password action
+const resetPassword = async (req, res) => {
+  try {
+    const { resetCode, newPassword } = req.body;
+
+    if (!resetCode) {
+      throw new Error("Reset code is required");
+    }
+
+    // Find the user with the given reset code and within the expiration time
+    const user = await User.findOne({
+      resetPasswordToken: resetCode,
+      resetPasswordExpires: {
+        $gt: Date.now(),
+      },
+    });
+
+    if (!user) {
+      throw new Error("Invalid reset code or code expired");
+    }
+
+    // Hash and salt the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update the user's password and clear the reset code and expiration
+    user.password = hashedPassword;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+   const rebornUser = await  user.save((error, savedUser) => {
+      if (error) {
+        console.error("Error while saving user:", error);
+        // Handle the error, such as returning an error response
+      }
+    });
+
+    console.log(hashedPassword)
+    console.log(rebornUser)
 
 
-
+    res.status(200).json({
+      msg: "Password reset successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      msg: error.message,
+    });
+  }
+};
 
 
 module.exports = {
     login,
     registerUser,
-    getBanks,
     forgotPassword,
     resetPassword
 }
