@@ -1,27 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const product = require('../model/Product.model')
+const User = require('../models/User')
+const {StatusCodes} = require('http-status-codes')
+const {BadRequestError, UnauthenticatedError} = require('../errors')
+const product = require('../models/Product')
 
-//product routes
-
-// get all products
-router.get('/', (req, res, next) => {
-    product.find()
-        .then(products => {
-            res.status(200).json(products);
-        })
-        .catch(err => {
-            console.error(err.message);
-            res.status(500).json({
-                error: {
-                    message: 'Failed to fetch products'
-                }
-            });
-        });
-});
-
-// create product
-router.post('/', async (req, res, next) => {
+const createProduct = async (req, res) => {
     const newProduct = new product({
         name: req.body.name,
         price: req.body.price,
@@ -46,11 +30,25 @@ router.post('/', async (req, res, next) => {
                     message: 'Failed to create product'
                 }
             });
-        });
-});
+        })
+}
 
-// get product by id
-router.get('/:id', (req, res, next) => {
+const getAllProducts = async (res) => {
+    product.find()
+        .then(products => {
+            res.status(200).json(products);
+        })
+        .catch(err => {
+            console.error(err.message);
+            res.status(500).json({
+                error: {
+                    message: 'Failed to fetch products'
+                }
+            });
+        });
+}
+
+const getProductById = async (req, res) => {
     const productId = req.params.id;
     product.findById(productId)
         .then(product => {
@@ -69,14 +67,13 @@ router.get('/:id', (req, res, next) => {
                 }
             });
         });
-});
+}
 
-// update product
-router.patch('/:id', async (req, res, next) => {
+const updateProduct = async (req, res) => {
     try {
         const productId = req.params.id;
         const updates = req.body;
-        const options = { new: true }; // To return the modified document rather than the original
+        const options = { new: true };
 
         const result = await product.findByIdAndUpdate(productId, updates, options);
         if (!result) {
@@ -87,10 +84,9 @@ router.patch('/:id', async (req, res, next) => {
         console.error(error.message);
         res.status(500).json({ error: { message: 'Failed to update product' } });
     }
-});
+}
 
-// delete product
-router.delete('/:id', async (req, res, next) => {
+const deleteProduct = async (req, res) => {
     const productId = req.params.id;
     try {
         const result = await product.findByIdAndDelete(productId)
@@ -99,6 +95,7 @@ router.delete('/:id', async (req, res, next) => {
     } catch (error) {
         console.log(error.message)
     }
-});
+}
 
-module.exports = router
+
+module.exports = { createProduct, getAllProducts, getProductById, updateProduct, deleteProduct }
