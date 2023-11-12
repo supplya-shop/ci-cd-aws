@@ -1,4 +1,7 @@
-app.post('/orders', async (req, res) => {
+const express = require('express')
+const router = express.Router()
+
+router.post('/orders', async (req, res) => {
     const cart = await Cart.findOne();
     const products = cart.items;
   
@@ -6,7 +9,7 @@ app.post('/orders', async (req, res) => {
     const totalPrice = products.reduce((total, product) => total + product.price, 0);
   
     try {
-      const order = new Order({
+      const order = new order({
         items: products,
         total: totalPrice,
       });

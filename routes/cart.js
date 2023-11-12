@@ -1,5 +1,8 @@
-app.post('/cart/add', async (req, res) => {
-    const productId = req.body.productId; // Assuming productId is provided in the request body
+const express = require('express')
+const router = express.Router()
+
+router.post('/cart/add', async (req, res) => {
+    const productId = req.body.productId;
   
     try {
       const product = await product.findById(productId);
