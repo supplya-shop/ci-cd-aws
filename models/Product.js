@@ -1,41 +1,75 @@
-const mongoose = require('mongoose')
-const schema = mongoose.Schema
+const mongoose = require("mongoose");
+const schema = mongoose.Schema;
 
 const ProductSchema = new schema({
-    name: {
-        type: String,
-        required: true,
+  name: {
+    type: String,
+    required: true,
+  },
+  price: {
+    type: Number,
+    default: "0",
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  quantity: {
+    type: String,
+    required: true,
+  },
+  category: {
+    type: String,
+  },
+  image: {
+    type: String,
+    default: "",
+  },
+  images: [
+    {
+      type: String,
     },
-    price: {
-        type: Number,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-    quantity: {
-        type: String,
-        required: true,
-    },
-    category: {
-        type: String,
-    },
-    inStock: {
-        type: Boolean,
-    },
-    hasDiscount: {
-        type: Boolean,
-    },
-    dateCreated: {
-        type: Date,
-        default: Date.now // Set the default value to the current date
-    },
-    dateModified: {
-        type: Date
-    }
+  ],
+  brand: {
+    type: String,
+    default: "",
+  },
+  // category: {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     ref: 'Category',
+  //     required: true,
+  // },
+  countInStock: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 255,
+  },
+  rating: {
+    type: String,
+    default: 0,
+  },
+  numReviews: {
+    type: Number,
+    default: 0,
+  },
+  isFeatured: {
+    type: Boolean,
+    default: false,
+  },
+  hasDiscount: {
+    type: Boolean,
+  },
+  dateCreated: {
+    type: Date,
+    default: Date.now,
+  },
+  dateModified: {
+    type: Date,
+  },
 });
 
-const Product = mongoose.model('product', ProductSchema);
+const Product = mongoose.model("product", ProductSchema);
 
 module.exports = Product;
