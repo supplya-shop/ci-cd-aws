@@ -7,7 +7,7 @@ Content-Type: application/json
     "price": 4999
 }
 
-GET http://localhost:3000/products
+GET http://localhost:3000/api/v1/products
 
 GET http://localhost:3000/products/id
 
@@ -62,7 +62,7 @@ Content-Type: application/json
 }
 
 // auth routes
-POST http://localhost:3000/api/auth/register
+POST http://localhost:3000/api/auth/signup
 Content-Type: application/json
 {
     "firstname": "David",
@@ -77,5 +77,8 @@ Content-Type: application/json
     "role": "user",
     "dateCreated": "2-11-2023"
 }
+
+
+POST http://localhost:3000/api/v1/products
 
 

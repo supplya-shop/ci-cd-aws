@@ -1,68 +1,76 @@
-const User = require('../models/User')
-const {StatusCodes} = require('http-status-codes')
-const {BadRequestError, UnauthenticatedError} = require('../errors')
-const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer')
-const passport = require('passport')
-const axios = require('axios')
-const bcrypt = require('bcryptjs')
+const User = require("../models/User");
+const { StatusCodes } = require("http-status-codes");
+const { BadRequestError, UnauthenticatedError } = require("../errors");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const passport = require("passport");
+const axios = require("axios");
+const bcrypt = require("bcryptjs");
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 
 const registerUser = async (req, res) => {
-    try {
-      if (req.body.uniqueKey === 1212 ) {
-        req.body.role = "admin"
-      } else {
-        req.body.role = "user"
-      }
-        req.body.createdAt = Date.now()
-        const user = await User.create({...req.body})
-        const token = user.createJWT()
-        res.status(StatusCodes.CREATED).json({user: {name: user.name, role: user.role, email:user.email,  createdAt:user.createdAt, phoneNumber:user.phoneNumber}, token})
-        
-    } catch (error) {
-      if (error.name === 'ValidatorError') {
-       res.status(400).json({msg:error.message}) 
-      } else if (error.name === "MongoError"){
-        res.status(400).json({msg:"Email Already Exists"}) 
-      } else {
-        res.status(500).json({msg:"Something went wrong, please try again later"})
-      }
+  try {
+    if (req.body.uniqueKey === 1212) {
+      req.body.role = "admin";
+    } else {
+      req.body.role = "user";
     }
-    
-}   
-
+    req.body.createdAt = Date.now();
+    const user = await User.create({ ...req.body });
+    const token = user.createJWT();
+    res
+      .status(StatusCodes.CREATED)
+      .json({
+        user: {
+          name: user.name,
+          role: user.role,
+          email: user.email,
+          createdAt: user.createdAt,
+          phoneNumber: user.phoneNumber,
+        },
+        token,
+      });
+  } catch (error) {
+    if (error.name === "ValidatorError") {
+      res.status(400).json({ msg: error.message });
+    } else if (error.name === "MongoError") {
+      res.status(400).json({ msg: "Email Already Exists" });
+    } else {
+      res
+        .status(500)
+        .json({ msg: "Something went wrong, please try again later" });
+    }
+  }
+};
 
 const login = async (req, res) => {
   try {
     const { password, email } = req.body;
-    
+
     if (!email || !password) {
       throw new BadRequestError("Please provide your email and password");
     }
-    
+
     const user = await User.findOne({ email });
-    
+
     if (!user) {
       throw new UnauthenticatedError("Invalid email or password");
     }
-    
+
     const isPasswordValid = await user.comparePassword(password);
-    
+
     if (!isPasswordValid) {
       throw new UnauthenticatedError("Invalid email or password");
     }
-    
+
     const token = user.createJWT();
-    
-    res.status(StatusCodes.OK).json({ _id:user._id , token });
+
+    res.status(StatusCodes.OK).json({ _id: user._id, token });
   } catch (error) {
     res.status(StatusCodes.BAD_REQUEST).json({ msg: error.message });
   }
 };
-
-
 
 // Forgot password to get reset code
 const forgotPassword = async (req, res) => {
@@ -162,16 +170,15 @@ const resetPassword = async (req, res) => {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
 
-   const rebornUser = await  user.save((error, savedUser) => {
+    const rebornUser = await user.save((error, savedUser) => {
       if (error) {
         console.error("Error while saving user:", error);
         // Handle the error, such as returning an error response
       }
     });
 
-    console.log(hashedPassword)
-    console.log(rebornUser)
-
+    console.log(hashedPassword);
+    console.log(rebornUser);
 
     res.status(200).json({
       msg: "Password reset successfully",
@@ -183,10 +190,9 @@ const resetPassword = async (req, res) => {
   }
 };
 
-
 module.exports = {
-    login,
-    registerUser,
-    forgotPassword,
-    resetPassword
-}
+  login,
+  registerUser,
+  forgotPassword,
+  resetPassword,
+};
