@@ -32,6 +32,7 @@ const registerUser = async (req, res) => {
         token,
       });
   } catch (error) {
+    console.log(error)
     if (error.name === "ValidatorError") {
       res.status(400).json({ msg: error.message });
     } else if (error.name === "MongoError") {
