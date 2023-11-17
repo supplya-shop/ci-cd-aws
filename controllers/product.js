@@ -44,9 +44,9 @@ const createProduct = async (req, res, next) => {
 
 const getAllProducts = async (req, res, next) => {
   await product
-    .find()
+    .find({})
     .then((products) => {
-      res.status(200).json(products);
+      res.status(200).json({products, count:products.countDocuments()});
     })
     .catch((err) => {
       console.error(err.message);
