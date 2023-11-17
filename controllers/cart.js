@@ -1,60 +1,98 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const authenticateUser = require("../middleware/authenticateUser");
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError, UnauthenticatedError } = require("../errors");
-const cart = require("../models/Cart");
+const {
+  BadRequestError,
+  UnauthenticatedError,
+  NotFoundError,
+} = require("../errors");
+const Cart = require("../models/Cart");
 
 // get cart items
-const getCartProducts = async (req, res) => {
-  const { cartId } = req.params;
-
+const getCart = async (req, res) => {
   try {
-    const cart = await Cart.findById(cartId).populate("items");
+    const user = req.user;
+    const cart = await Cart.findOne({ user }).populate("items.product");
+
     if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
+      throw new NotFoundError("Cart not found");
     }
 
-    res.json(cart.items);
+    res.status(StatusCodes.OK).json(cart);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ msg: error.message });
   }
 };
 
-// add to cart
-const addProductToCart = async (req, res) => {
-  const { cartId, productId } = req.body;
+const addToCart = async (req, res) => {
   try {
-    const cart = await Cart.findById(cartId);
+    // Include the authenticateUser middleware here
+    await authenticateUser(req, res, async () => {
+      const user = req.user;
+      const { productId, quantity } = req.body;
+
+      const cart = await Cart.findOne({ user });
+
+      if (!cart) {
+        throw new NotFoundError("Cart not found");
+      }
+
+      const existingItem = cart.items.find(
+        (item) => item.product.toString() === productId
+      );
+
+      if (existingItem) {
+        existingItem.quantity += quantity || 1;
+      } else {
+        cart.items.push({ product: productId, quantity: quantity || 1 });
+      }
+
+      await cart.save();
+
+      res
+        .status(StatusCodes.CREATED)
+        .json({ msg: "Product added to cart successfully" });
+    });
+  } catch (error) {
+    res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ msg: error.message });
+  }
+};
+
+const removeFromCart = async (req, res) => {
+  try {
+    const user = req.user;
+    const { productId } = req.params;
+
+    const cart = await Cart.findOne({ user });
+
     if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
+      throw new NotFoundError("Cart not found");
     }
 
-    cart.items.push(productId);
+    cart.items = cart.items.filter(
+      (item) => item.product.toString() !== productId
+    );
+
     await cart.save();
 
-    res.json({ message: "Product added to the cart successfully" });
+    res
+      .status(StatusCodes.OK)
+      .json({ msg: "Product removed from cart successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ msg: error.message });
   }
 };
 
-// remove from cart
-const removeProductFromCart = async (req, res) => {
-  const { cartId, productId } = req.body;
-  try {
-    const cart = await Cart.findById(cartId);
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found" });
-    }
-
-    cart.items = cart.items.filter((item) => item.toString() !== productId);
-    await cart.save();
-
-    res.json({ message: "Product removed from the cart successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+module.exports = {
+  getCart,
+  addToCart,
+  removeFromCart,
 };
-
-module.exports = { addProductToCart, removeProductFromCart, getCartProducts };

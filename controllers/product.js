@@ -4,6 +4,7 @@ const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const product = require("../models/Product");
+const multer = require("../middleware/upload");
 
 const createProduct = async (req, res, next) => {
   const newProduct = new product({
@@ -12,7 +13,7 @@ const createProduct = async (req, res, next) => {
     description: req.body.description,
     quantity: req.body.quantity,
     category: req.body.category,
-    image: req.body.image,
+    image: req.file ? req.file.filename : "",
     images: req.body.images,
     brand: req.body.brand,
     countInStock: req.body.inStock,

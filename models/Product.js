@@ -40,11 +40,9 @@ const ProductSchema = new schema({
   //     ref: 'Category',
   //     required: true,
   // },
-  countInStock: {
-    type: Number,
-    required: true,
-    min: 0,
-    max: 255,
+  inStock: {
+    type: Boolean,
+    default: true,
   },
   rating: {
     type: String,
