@@ -46,7 +46,7 @@ const getAllProducts = async (req, res, next) => {
   await product
     .find({})
     .then((products) => {
-      res.status(200).json({products, count:products.countDocuments()});
+      res.status(200).json({products, count:products.length});
     })
     .catch((err) => {
       console.error(err.message);
