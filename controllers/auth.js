@@ -19,20 +19,18 @@ const registerUser = async (req, res) => {
     req.body.createdAt = Date.now();
     const user = await User.create({ ...req.body });
     const token = user.createJWT();
-    res
-      .status(StatusCodes.CREATED)
-      .json({
-        user: {
-          name: user.name,
-          role: user.role,
-          email: user.email,
-          createdAt: user.createdAt,
-          phoneNumber: user.phoneNumber,
-        },
-        token,
-      });
+    res.status(StatusCodes.CREATED).json({
+      user: {
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        createdAt: user.createdAt,
+        phoneNumber: user.phoneNumber,
+      },
+      token,
+    });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     if (error.name === "ValidatorError") {
       res.status(400).json({ msg: error.message });
     } else if (error.name === "MongoError") {
@@ -67,9 +65,13 @@ const login = async (req, res) => {
 
     const token = user.createJWT();
 
-    res.status(StatusCodes.OK).json({ _id: user._id, token });
+    res
+      .status(StatusCodes.OK)
+      .json({ _id: user._id, token, status: "success" });
   } catch (error) {
-    res.status(StatusCodes.BAD_REQUEST).json({ msg: error.message });
+    res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: error.message, status: "error" });
   }
 };
 
