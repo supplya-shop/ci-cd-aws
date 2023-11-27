@@ -18,13 +18,16 @@ const createOrder = async (req, res) => {
       phone,
     } = req.body;
 
-    // Calculate total price
+    // Start a transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     const orderItemIds = await Promise.all(
       orderItems.map(async (item) => {
-        const orderItem = await OrderItem.create({
+        const orderItem = await OrderItem.create([{
           quantity: item.quantity,
           product: item.product,
-        });
+        }], { session });
         return orderItem._id;
       })
     );
@@ -35,27 +38,10 @@ const createOrder = async (req, res) => {
     );
 
     // Check and update inventory
-    for (const item of orderItems) {
-      const productInInventory = await Inventory.findOne({
-        product: item.product,
-      });
+    await checkAndUpdateInventory(orderItems, session);
 
-      if (!productInInventory || productInInventory.quantity < item.quantity) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: "error",
-          msg: `Not enough inventory for product ${item.product}`,
-        });
-      }
-
-      // Update inventory
-      await Inventory.findOneAndUpdate(
-        { product: item.product },
-        { $inc: { quantity: -item.quantity } }
-      );
-    }
-
-    // If there is enough inventory, create the order
-    const order = await Order.create({
+    // Create the order
+    const order = await Order.create([{
       user,
       orderItems: orderItemIds,
       shippingAddress1,
@@ -65,35 +51,57 @@ const createOrder = async (req, res) => {
       country,
       phone,
       total,
-    });
+    }], { session });
 
-    res
-      .status(StatusCodes.CREATED)
-      .json({ status: "success", msg: "Order created successfully", order });
+    // Commit the transaction
+    await session.commitTransaction();
+
+    res.status(StatusCodes.CREATED).json({ status: "success", msg: "Order created successfully", order });
   } catch (error) {
-    res
-      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: error.message });
+    // Rollback the transaction in case of error
+    if (session.inTransaction()) await session.abortTransaction();
+
+    console.error("Error creating order: ", error); // Error logging
+    res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to create order. " + error.message });
+  } finally {
+    session.endSession();
   }
 };
 
+
+async function checkAndUpdateInventory(orderItems, session) {
+  for (const item of orderItems) {
+    const productInInventory = await Inventory.findOne({ product: item.product }).session(session);
+
+    if (!productInInventory || productInInventory.quantity < item.quantity) {
+      throw new Error(`Not enough inventory for product ${item.product}`);
+    }
+
+    await Inventory.findOneAndUpdate(
+      { product: item.product },
+      { $inc: { quantity: -item.quantity } },
+      { session }
+    );
+  }
+}
+
 const getOrders = async (req, res) => {
   try {
-    const user = req.user.id;
+    const user = req.user._id;
     const orders = await Order.find({ user }).populate("orderItems");
 
     res.status(StatusCodes.OK).json({ status: "success", orders });
   } catch (error) {
     res
-      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: error.message });
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", msg: "Failed to fetch orders: " + error.message });
   }
 };
+
 
 const getOrderById = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-
     const order = await Order.findById(orderId).populate("orderItems");
 
     if (!order) {
@@ -102,13 +110,16 @@ const getOrderById = async (req, res) => {
         .json({ status: "error", msg: "Order not found" });
     }
 
+    // Add an ownership check here if necessary
+
     res.status(StatusCodes.OK).json({ status: "success", order });
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: error.message });
+      .json({ status: "error", msg: "Failed to fetch order: " + error.message });
   }
 };
+
 
 const updateOrder = async (req, res) => {
   try {

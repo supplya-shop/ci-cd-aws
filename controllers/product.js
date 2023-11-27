@@ -3,11 +3,11 @@ const router = express.Router();
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
-const product = require("../models/Product");
+const Product = require("../models/Product");
 const multer = require("../middleware/upload");
 
 const createProduct = async (req, res, next) => {
-  const newProduct = new product({
+  const newProduct = new Product({
     name: req.body.name,
     price: req.body.price,
     description: req.body.description,
@@ -42,42 +42,33 @@ const createProduct = async (req, res, next) => {
     });
 };
 
-const getAllProducts = async (req, res, next) => {
-  await product
-    .find({})
-    .then((products) => {
-      res.status(200).json({products, count:products.length});
-    })
-    .catch((err) => {
-      console.error(err.message);
-      res.status(500).json({
-        error: {
-          message: "Failed to fetch products",
-        },
-      });
+const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find({});
+    res.status(200).json({ products, count: products.length });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({
+      error: { message: "Failed to fetch products" },
     });
+  }
 };
 
-const getProductById = async (req, res, next) => {
-  const productId = req.params.id;
-  product
-    .findById(productId)
-    .then((product) => {
-      if (!product) {
-        return res.status(404).json({
-          message: "Product not found",
-        });
-      }
-      res.status(200).json(product);
-    })
-    .catch((err) => {
-      console.error(err.message);
-      res.status(500).json({
-        error: {
-          message: "Failed to fetch product",
-        },
-      });
+
+const getProductById = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.status(200).json(product);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({
+      error: { message: "Failed to fetch product" },
     });
+  }
 };
 
 const updateProduct = async (req, res, next) => {
@@ -86,7 +77,7 @@ const updateProduct = async (req, res, next) => {
     const updates = req.body;
     const options = { new: true };
 
-    const result = await product.findByIdAndUpdate(productId, updates, options);
+    const result = await Product.findByIdAndUpdate(productId, updates, options);
     if (!result) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -99,45 +90,43 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-const uploadProductImages = async (req, res, next) => {
+const uploadProductImages = async (req, res) => {
   try {
     const productId = req.params.id;
-    const product = await product.findById(productId);
+    const productToUpdate = await product.findById(productId);
 
-    if (!product) {
-      return res.status(404).json({
-        message: "Product not found",
-      });
+    if (!productToUpdate) {
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    product.images = req.body.images;
+    // Add validation for req.body.images if necessary
 
-    const savedProduct = await product.save();
-    res.json({
+    productToUpdate.images = req.body.images;
+    const savedProduct = await productToUpdate.save();
+    res.status(200).json({
       message: "Product images uploaded successfully",
       product: savedProduct,
     });
   } catch (error) {
     console.error(error.message);
     res.status(500).json({
-      error: {
-        message: "Failed to upload product images",
-      },
+      error: { message: "Failed to upload product images" },
     });
   }
 };
 
-const deleteProduct = async (req, res, next) => {
-  const productId = req.params.id;
+
+const deleteProduct = async (req, res) => {
   try {
-    const result = await product.findByIdAndDelete(productId);
-    console.log(result);
-    res.json({ message: "Product deleted successfully" });
+    const productId = req.params.id;
+    await product.findByIdAndDelete(productId);
+    res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
-    console.log(error.message);
+    console.error(error.message);
     res.status(500).json({ error: { message: "Failed to delete product" } });
   }
 };
+
 
 module.exports = {
   createProduct,

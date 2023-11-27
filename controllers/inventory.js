@@ -6,6 +6,16 @@ const createInventory = async (req, res) => {
     const productId = req.params.productId;
     const { quantity } = req.body;
 
+    // Validate productId and quantity here
+
+    const existingInventory = await Inventory.findOne({ product: productId });
+    if (existingInventory) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        msg: "Inventory for this product already exists",
+      });
+    }
+
     const inventory = await Inventory.create({
       product: productId,
       quantity,
@@ -19,10 +29,11 @@ const createInventory = async (req, res) => {
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: error.message,
+      msg: "Failed to create inventory: " + error.message,
     });
   }
 };
+
 
 const getInventory = async (req, res) => {
   try {
@@ -44,6 +55,8 @@ const getInventoryByProduct = async (req, res) => {
   try {
     const productId = req.params.productId;
 
+    // Optionally check if the product exists here
+
     const inventory = await Inventory.findOne({ product: productId });
 
     if (!inventory) {
@@ -59,16 +72,19 @@ const getInventoryByProduct = async (req, res) => {
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: error.message,
+      msg: "Failed to fetch inventory: " + error.message,
     });
   }
 };
+
 
 const updateInventory = async (req, res) => {
   try {
     const productId = req.params.productId;
     const updates = req.body;
     const options = { new: true, upsert: true };
+
+    // Validate productId and updates here
 
     const result = await Inventory.findOneAndUpdate(
       { product: productId },
@@ -84,14 +100,17 @@ const updateInventory = async (req, res) => {
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: error.message,
+      msg: "Failed to update inventory: " + error.message,
     });
   }
 };
 
+
 const deleteInventoryByProduct = async (req, res) => {
   try {
     const productId = req.params.productId;
+
+    // Optionally check if the product exists here
 
     const deletedInventory = await Inventory.findOneAndDelete({
       product: productId,
@@ -110,10 +129,11 @@ const deleteInventoryByProduct = async (req, res) => {
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: error.message,
+      msg: "Failed to delete inventory: " + error.message,
     });
   }
 };
+
 
 module.exports = {
   createInventory,

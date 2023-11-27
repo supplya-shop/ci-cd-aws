@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: [true, 'Please provide your name'],
-        minlength: [5, 'Name too short'],
+        minlength: [2, 'Name too short'],
         maxLength: [50, 'Name too long'],
         lowercase: true
     },
@@ -15,7 +15,7 @@ const UserSchema = new mongoose.Schema({
     lastName: {
         type: String,
         required: [true, 'Please provide your name'],
-        minlength: [5, 'Name too short'],
+        minlength: [2, 'Name too short'],
         maxLength: [50, 'Name too long'],
         lowercase: true
     },

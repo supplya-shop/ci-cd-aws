@@ -20,7 +20,7 @@ const authenticateUser = async (req, res, next) => {
 
 const extractUserFields = (decoded) => {
   const userFields = [
-    "userid",
+    "_id",
     "firstName",
     "lastName",
     "country",
