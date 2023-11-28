@@ -1,47 +1,68 @@
-const Inventory = require("../models/Inventory");
+const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
+const {BadRequestError} = require('../errors')
+
+const mongoose = require('mongoose');
 
 const createInventory = async (req, res) => {
   try {
-    const productId = req.params.productId;
-    const { quantity } = req.body;
+    const products = req.body.products; // Expect an array of products
+    let hasError = false;
+    let errorProducts = [];
 
-    // Validate productId and quantity here
+    for (const product of products) {
+      const { quantity, productId } = product;
 
-    const existingInventory = await Inventory.findOne({ product: productId });
-    if (existingInventory) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
-        msg: "Inventory for this product already exists",
-      });
+      // Validate productId and quantity here
+
+      try {
+        const existingInventory = await Product.findOne({ _id: productId });
+        if (existingInventory) {
+          existingInventory.quantity += quantity;
+          await existingInventory.save();
+        } else {
+          throw new Error('Product does not exist, create product first');
+        }
+      } catch (error) {
+        hasError = true;
+        errorProducts.push({ productId, error: error.message });
+        continue; // Continue processing other products
+      }
     }
 
-    const inventory = await Inventory.create({
-      product: productId,
-      quantity,
-    });
-
-    res.status(StatusCodes.CREATED).json({
-      status: "success",
-      msg: "Inventory created successfully",
-      inventory,
-    });
+    if (hasError) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        msg: "Failed to update some products",
+        errorProducts,
+      });
+    } else {
+      return res.status(StatusCodes.OK).json({
+        status: "success",
+        msg: "All inventories updated successfully",
+      });
+    }
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: "Failed to create inventory: " + error.message,
+      msg: "Failed to process request: " + error.message,
     });
   }
 };
 
 
+
 const getInventory = async (req, res) => {
   try {
-    const inventory = await Inventory.find({});
+    const inventory = await Product.find({}, '_id name quantity'); // Select only specific fields
 
     res.status(StatusCodes.OK).json({
       status: "success",
-      inventory,
+      inventory: inventory.map(item => ({ 
+        id: item._id,
+        name: item.name,
+        quantity: item.quantity 
+      })),
     });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -51,13 +72,14 @@ const getInventory = async (req, res) => {
   }
 };
 
+
 const getInventoryByProduct = async (req, res) => {
   try {
     const productId = req.params.productId;
 
     // Optionally check if the product exists here
 
-    const inventory = await Inventory.findOne({ product: productId });
+    const inventory = await Product.findOne({ _id: productId }, '_id name quantity');
 
     if (!inventory) {
       return res
@@ -67,7 +89,11 @@ const getInventoryByProduct = async (req, res) => {
 
     res.status(StatusCodes.OK).json({
       status: "success",
-      inventory,
+      inventory: {
+        id: inventory._id,
+        name: inventory.name,
+        quantity: inventory.quantity
+      },
     });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -78,67 +104,12 @@ const getInventoryByProduct = async (req, res) => {
 };
 
 
-const updateInventory = async (req, res) => {
-  try {
-    const productId = req.params.productId;
-    const updates = req.body;
-    const options = { new: true, upsert: true };
-
-    // Validate productId and updates here
-
-    const result = await Inventory.findOneAndUpdate(
-      { product: productId },
-      updates,
-      options
-    );
-
-    res.status(StatusCodes.OK).json({
-      status: "success",
-      msg: "Inventory updated successfully",
-      inventory: result,
-    });
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      msg: "Failed to update inventory: " + error.message,
-    });
-  }
-};
 
 
-const deleteInventoryByProduct = async (req, res) => {
-  try {
-    const productId = req.params.productId;
-
-    // Optionally check if the product exists here
-
-    const deletedInventory = await Inventory.findOneAndDelete({
-      product: productId,
-    });
-
-    if (!deletedInventory) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", msg: "Inventory not found" });
-    }
-
-    res.status(StatusCodes.OK).json({
-      status: "success",
-      msg: "Inventory deleted successfully",
-    });
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      msg: "Failed to delete inventory: " + error.message,
-    });
-  }
-};
 
 
 module.exports = {
   createInventory,
   getInventory,
   getInventoryByProduct,
-  updateInventory,
-  deleteInventoryByProduct,
 };

@@ -1,4 +1,5 @@
 const Category = require("../models/Category");
+const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 
 const createCategory = async (req, res) => {

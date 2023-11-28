@@ -1,41 +1,39 @@
 const Order = require("../models/Order");
-const OrderItem = require("../models/OrderItem");
-const Inventory = require("../models/Inventory");
+const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError } = require("../errors");
-const { authenticateUser } = require("../middleware/authenticateUser");
+
+const mongoose = require('mongoose');
 
 const createOrder = async (req, res) => {
+  let session;
+
   try {
     const user = req.user._id;
     const {
-      orderItems,
+      orderItems, // This is an array of { product: ObjectId, quantity: Number }
       shippingAddress1,
       shippingAddress2,
       city,
       zip,
       country,
       phone,
+      paymentRefId
     } = req.body;
 
     // Start a transaction
-    const session = await mongoose.startSession();
+    session = await mongoose.startSession();
     session.startTransaction();
 
-    const orderItemIds = await Promise.all(
-      orderItems.map(async (item) => {
-        const orderItem = await OrderItem.create([{
-          quantity: item.quantity,
-          product: item.product,
-        }], { session });
-        return orderItem._id;
-      })
-    );
-
-    const total = orderItems.reduce(
-      (acc, item) => acc + item.quantity * item.product.price,
-      0
-    );
+    // Calculate total price
+    let totalPrice = 0;
+    for (const item of orderItems) {
+      const product = await Product.findById(item.product).session(session);
+      if (!product) {
+        throw new Error(`Product not found: ${item.product}`);
+      }
+      totalPrice += item.quantity * product.price;
+    }
 
     // Check and update inventory
     await checkAndUpdateInventory(orderItems, session);
@@ -43,14 +41,15 @@ const createOrder = async (req, res) => {
     // Create the order
     const order = await Order.create([{
       user,
-      orderItems: orderItemIds,
+      orderItems, // Directly using the nested orderItems array
       shippingAddress1,
       shippingAddress2,
       city,
       zip,
       country,
       phone,
-      total,
+      totalPrice, // Using the calculated total price
+      paymentRefId
     }], { session });
 
     // Commit the transaction
@@ -68,22 +67,22 @@ const createOrder = async (req, res) => {
   }
 };
 
-
 async function checkAndUpdateInventory(orderItems, session) {
   for (const item of orderItems) {
-    const productInInventory = await Inventory.findOne({ product: item.product }).session(session);
+    const productInInventory = await Product.findOne({ _id: item.product }).session(session);
 
     if (!productInInventory || productInInventory.quantity < item.quantity) {
       throw new Error(`Not enough inventory for product ${item.product}`);
     }
 
-    await Inventory.findOneAndUpdate(
-      { product: item.product },
+    await Product.findOneAndUpdate(
+      { _id: item.product },
       { $inc: { quantity: -item.quantity } },
       { session }
     );
   }
 }
+
 
 const getOrders = async (req, res) => {
   try {
@@ -146,25 +145,52 @@ const updateOrder = async (req, res) => {
   }
 };
 
-const deleteOrder = async (req, res) => {
+const cancelOrder = async (req, res) => {
+  let session;
+
   try {
-    const orderId = req.params.orderId;
+      const orderId = req.params.orderId;
+      session = await mongoose.startSession();
+      session.startTransaction();
 
-    const deletedOrder = await Order.findByIdAndDelete(orderId);
+      // Find the order
+      const order = await Order.findById(orderId).session(session);
+      if (!order) {
+          throw new Error("Order not found");
+      }
 
-    if (!deletedOrder) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", msg: "Order not found" });
-    }
+      // Check if the order can be cancelled
+      if (order.orderStatus === 'completed') {
+          throw new Error("Completed orders cannot be cancelled");
+      }
 
-    res
-      .status(StatusCodes.OK)
-      .json({ status: "success", msg: "Order deleted successfully" });
+      // Update the order status
+      order.orderStatus = 'cancelled';
+      await order.save({ session });
+
+      // Restore product quantities
+      for (const item of order.orderItems) {
+          await Product.updateOne(
+              { _id: item.product },
+              { $inc: { quantity: item.quantity } },
+              { session }
+          );
+      }
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      res.status(StatusCodes.OK).json({ status: "success", msg: "Order cancelled successfully", order });
   } catch (error) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: error.message });
+      // Rollback the transaction in case of error
+      if (session && session.inTransaction()) await session.abortTransaction();
+
+      console.error("Error cancelling order: ", error);
+      res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to cancel order. " + error.message });
+  } finally {
+      if (session) {
+          session.endSession();
+      }
   }
 };
 
@@ -173,5 +199,5 @@ module.exports = {
   getOrders,
   getOrderById,
   updateOrder,
-  deleteOrder,
+  cancelOrder,
 };
