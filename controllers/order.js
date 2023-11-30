@@ -3,7 +3,7 @@ const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError } = require("../errors");
 
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const createOrder = async (req, res) => {
   let session;
@@ -18,7 +18,7 @@ const createOrder = async (req, res) => {
       zip,
       country,
       phone,
-      paymentRefId
+      paymentRefId,
     } = req.body;
 
     // Start a transaction
@@ -39,29 +39,41 @@ const createOrder = async (req, res) => {
     await checkAndUpdateInventory(orderItems, session);
 
     // Create the order
-    const order = await Order.create([{
-      user,
-      orderItems, // Directly using the nested orderItems array
-      shippingAddress1,
-      shippingAddress2,
-      city,
-      zip,
-      country,
-      phone,
-      totalPrice, // Using the calculated total price
-      paymentRefId
-    }], { session });
+    const order = await Order.create(
+      [
+        {
+          user,
+          orderItems, // Directly using the nested orderItems array
+          shippingAddress1,
+          shippingAddress2,
+          city,
+          zip,
+          country,
+          phone,
+          totalPrice, // Using the calculated total price
+          paymentRefId,
+        },
+      ],
+      { session }
+    );
 
     // Commit the transaction
     await session.commitTransaction();
 
-    res.status(StatusCodes.CREATED).json({ status: "success", msg: "Order created successfully", order });
+    res
+      .status(StatusCodes.CREATED)
+      .json({ status: "success", msg: "Order created successfully", order });
   } catch (error) {
     // Rollback the transaction in case of error
     if (session.inTransaction()) await session.abortTransaction();
 
     console.error("Error creating order: ", error); // Error logging
-    res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to create order. " + error.message });
+    res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        msg: "Failed to create order. " + error.message,
+      });
   } finally {
     session.endSession();
   }
@@ -69,7 +81,9 @@ const createOrder = async (req, res) => {
 
 async function checkAndUpdateInventory(orderItems, session) {
   for (const item of orderItems) {
-    const productInInventory = await Product.findOne({ _id: item.product }).session(session);
+    const productInInventory = await Product.findOne({
+      _id: item.product,
+    }).session(session);
 
     if (!productInInventory || productInInventory.quantity < item.quantity) {
       throw new Error(`Not enough inventory for product ${item.product}`);
@@ -83,7 +97,6 @@ async function checkAndUpdateInventory(orderItems, session) {
   }
 }
 
-
 const getOrders = async (req, res) => {
   try {
     const user = req.user._id;
@@ -93,10 +106,12 @@ const getOrders = async (req, res) => {
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: "Failed to fetch orders: " + error.message });
+      .json({
+        status: "error",
+        msg: "Failed to fetch orders: " + error.message,
+      });
   }
 };
-
 
 const getOrderById = async (req, res) => {
   try {
@@ -115,10 +130,28 @@ const getOrderById = async (req, res) => {
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: "Failed to fetch order: " + error.message });
+      .json({
+        status: "error",
+        msg: "Failed to fetch order: " + error.message,
+      });
   }
 };
 
+const getOrdersByStatus = async (req, res, next) => {
+  try {
+    const { status } = req.params;
+    const orders = await Order.find({ orderStatus: status }).populate(
+      "orderItems"
+    );
+
+    res.status(StatusCodes.OK).json({ status: "success", orders });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      msg: `Failed to fetch orders with status ${req.params.status}: ${error.message}`,
+    });
+  }
+};
 
 const updateOrder = async (req, res) => {
   try {
@@ -149,48 +182,55 @@ const cancelOrder = async (req, res) => {
   let session;
 
   try {
-      const orderId = req.params.orderId;
-      session = await mongoose.startSession();
-      session.startTransaction();
+    const orderId = req.params.orderId;
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-      // Find the order
-      const order = await Order.findById(orderId).session(session);
-      if (!order) {
-          throw new Error("Order not found");
-      }
+    // Find the order
+    const order = await Order.findById(orderId).session(session);
+    if (!order) {
+      throw new Error("Order not found");
+    }
 
-      // Check if the order can be cancelled
-      if (order.orderStatus === 'completed') {
-          throw new Error("Completed orders cannot be cancelled");
-      }
+    // Check if the order can be cancelled
+    if (order.orderStatus === "completed") {
+      throw new Error("Completed orders cannot be cancelled");
+    }
 
-      // Update the order status
-      order.orderStatus = 'cancelled';
-      await order.save({ session });
+    // Update the order status
+    order.orderStatus = "cancelled";
+    await order.save({ session });
 
-      // Restore product quantities
-      for (const item of order.orderItems) {
-          await Product.updateOne(
-              { _id: item.product },
-              { $inc: { quantity: item.quantity } },
-              { session }
-          );
-      }
+    // Restore product quantities
+    for (const item of order.orderItems) {
+      await Product.updateOne(
+        { _id: item.product },
+        { $inc: { quantity: item.quantity } },
+        { session }
+      );
+    }
 
-      // Commit the transaction
-      await session.commitTransaction();
+    // Commit the transaction
+    await session.commitTransaction();
 
-      res.status(StatusCodes.OK).json({ status: "success", msg: "Order cancelled successfully", order });
+    res
+      .status(StatusCodes.OK)
+      .json({ status: "success", msg: "Order cancelled successfully", order });
   } catch (error) {
-      // Rollback the transaction in case of error
-      if (session && session.inTransaction()) await session.abortTransaction();
+    // Rollback the transaction in case of error
+    if (session && session.inTransaction()) await session.abortTransaction();
 
-      console.error("Error cancelling order: ", error);
-      res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to cancel order. " + error.message });
+    console.error("Error cancelling order: ", error);
+    res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        msg: "Failed to cancel order. " + error.message,
+      });
   } finally {
-      if (session) {
-          session.endSession();
-      }
+    if (session) {
+      session.endSession();
+    }
   }
 };
 
@@ -198,6 +238,7 @@ module.exports = {
   createOrder,
   getOrders,
   getOrderById,
+  getOrdersByStatus,
   updateOrder,
   cancelOrder,
 };

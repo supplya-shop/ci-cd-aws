@@ -3,11 +3,11 @@ const router = express.Router();
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
-const Product = require("../models/Product");
+const product = require("../models/Product");
 const multer = require("../middleware/upload");
 
 const createProduct = async (req, res, next) => {
-  const newProduct = new Product({
+  const newProduct = new product({
     name: req.body.name,
     price: req.body.price,
     description: req.body.description,
@@ -16,7 +16,7 @@ const createProduct = async (req, res, next) => {
     image: req.file ? req.file.filename : "",
     images: req.body.images,
     brand: req.body.brand,
-    countInStock: req.body.inStock,
+    inStock: req.body.inStock,
     rating: req.body.rating,
     numReviews: req.body.numReviews,
     isFeatured: req.body.isFeatured,
@@ -31,44 +31,84 @@ const createProduct = async (req, res, next) => {
         message: "Product created successfully",
         product: result,
       });
+      res
+        .status(StatusCodes.CREATED)
+        .json({ status: "success", msg: "Order created successfully", order });
+    })
+    .catch((err) => {
+      console.error(err.message);
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ status: "error", msg: err.message });
+    });
+};
+
+const getAllProducts = async (req, res, next) => {
+  await product
+    .find({})
+    .then((products) => {
+      res.status(200).json({ products, count: products.length });
     })
     .catch((err) => {
       console.error(err.message);
       res.status(500).json({
         error: {
-          message: "Failed to create product",
+          message: "Failed to fetch products",
         },
       });
     });
 };
 
-const getAllProducts = async (req, res) => {
+const getNewlyArrivedBrands = async (req, res, next) => {
   try {
-    const products = await Product.find({});
-    res.status(200).json({ products, count: products.length });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({
-      error: { message: "Failed to fetch products" },
+    const products = await product.find({}).sort({ dateCreated: -1 }).limit(10);
+
+    const brandMap = new Map();
+
+    products.forEach((product) => {
+      const brand = product.brand;
+      if (!brandMap.has(brand)) {
+        brandMap.set(brand, product.toObject());
+      }
+    });
+
+    const response = {
+      status: "success",
+      msg: "Newly arrived products fetched successfully",
+      data: Array.from(brandMap.values()),
+    };
+
+    res.status(StatusCodes.OK).json(response);
+  } catch (error) {
+    console.error(error.message);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      msg: "Failed to fetch newly arrived products",
+      error: error.message,
     });
   }
 };
 
-
-const getProductById = async (req, res) => {
-  try {
-    const productId = req.params.id;
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-    res.status(200).json(product);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({
-      error: { message: "Failed to fetch product" },
+const getProductById = async (req, res, next) => {
+  const productId = req.params.id;
+  product
+    .findById(productId)
+    .then((product) => {
+      if (!product) {
+        return res.status(404).json({
+          message: "Product not found",
+        });
+      }
+      res.status(200).json(product);
+    })
+    .catch((err) => {
+      console.error(err.message);
+      res.status(500).json({
+        error: {
+          message: "Failed to fetch product",
+        },
+      });
     });
-  }
 };
 
 const updateProduct = async (req, res, next) => {
@@ -77,7 +117,7 @@ const updateProduct = async (req, res, next) => {
     const updates = req.body;
     const options = { new: true };
 
-    const result = await Product.findByIdAndUpdate(productId, updates, options);
+    const result = await product.findByIdAndUpdate(productId, updates, options);
     if (!result) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -90,47 +130,50 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-const uploadProductImages = async (req, res) => {
+const uploadProductImages = async (req, res, next) => {
   try {
     const productId = req.params.id;
-    const productToUpdate = await product.findById(productId);
+    const product = await product.findById(productId);
 
-    if (!productToUpdate) {
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
 
-    // Add validation for req.body.images if necessary
+    product.images = req.body.images;
 
-    productToUpdate.images = req.body.images;
-    const savedProduct = await productToUpdate.save();
-    res.status(200).json({
+    const savedProduct = await product.save();
+    res.json({
       message: "Product images uploaded successfully",
       product: savedProduct,
     });
   } catch (error) {
     console.error(error.message);
     res.status(500).json({
-      error: { message: "Failed to upload product images" },
+      error: {
+        message: "Failed to upload product images",
+      },
     });
   }
 };
 
-
-const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res, next) => {
+  const productId = req.params.id;
   try {
-    const productId = req.params.id;
-    await product.findByIdAndDelete(productId);
-    res.status(200).json({ message: "Product deleted successfully" });
+    const result = await product.findByIdAndDelete(productId);
+    console.log(result);
+    res.json({ message: "Product deleted successfully" });
   } catch (error) {
-    console.error(error.message);
+    console.log(error.message);
     res.status(500).json({ error: { message: "Failed to delete product" } });
   }
 };
 
-
 module.exports = {
   createProduct,
   getAllProducts,
+  getNewlyArrivedBrands,
   getProductById,
   updateProduct,
   uploadProductImages,
