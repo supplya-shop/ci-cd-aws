@@ -43,7 +43,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-
 const login = async (req, res) => {
   try {
     const { password, email } = req.body;
@@ -66,9 +65,30 @@ const login = async (req, res) => {
 
     const token = user.createJWT();
 
-    res
-      .status(StatusCodes.OK)
-      .json({ _id: user._id, token, status: "success" });
+    res.status(StatusCodes.OK).json({
+      status: "success",
+      msg: "Login successful",
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        dob: user.dob,
+        role: user.role,
+        gender: user.gender,
+        businessName: user.businessName,
+        isSoleProprietor: user.isSoleProprietor,
+        bvn: user.bvn,
+        bank: user.bank,
+        accountNumber: user.accountNumber,
+        country: user.country,
+        state: user.state,
+        address: user.address,
+        createdAt: user.createdAt,
+      },
+      token,
+    });
   } catch (error) {
     res
       .status(StatusCodes.BAD_REQUEST)
