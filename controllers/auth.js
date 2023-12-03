@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError, UnauthenticatedError } = require("../errors");
+const { BadRequestError, UnauthenticatedError, NotFoundError } = require("../errors");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
@@ -54,13 +54,13 @@ const login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new UnauthenticatedError("Invalid email or password");
+      throw new NotFoundError('User does not exist')
     }
 
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new UnauthenticatedError("Invalid email or password");
+      throw new UnauthenticatedError("You have entered an password");
     }
 
     const token = user.createJWT();
@@ -90,6 +90,11 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
+    if(error.status === 404) {
+      res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ msg: error.message, status: "error" });
+    }
     res
       .status(StatusCodes.BAD_REQUEST)
       .json({ msg: error.message, status: "error" });
