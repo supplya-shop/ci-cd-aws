@@ -9,7 +9,7 @@ const createOrder = async (req, res) => {
   let session;
 
   try {
-    const user = req.user._id;
+    const user = req.user.userid;
     const {
       orderItems, // This is an array of { product: ObjectId, quantity: Number }
       shippingAddress1,
@@ -30,8 +30,9 @@ const createOrder = async (req, res) => {
     for (const item of orderItems) {
       const product = await Product.findById(item.product).session(session);
       if (!product) {
-        throw new Error(`Product not found: ${item.product}`);
-      }
+        return res.status(404).json({ message: `Product not found: ${item.product}` });
+    }
+    
       totalPrice += item.quantity * product.price;
     }
 
@@ -99,8 +100,15 @@ async function checkAndUpdateInventory(orderItems, session) {
 
 const getOrders = async (req, res) => {
   try {
-    const user = req.user._id;
-    const orders = await Order.find({ user }).populate("orderItems");
+    const user = req.user.userid;
+    const orders = await Order.find({ user })
+      .populate({
+        path: 'orderItems.product', // Populating product within each orderItem
+        populate: { 
+          path: 'createdBy', // Nested population for createdBy within product
+          select: 'firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role' // Specify fields you want from User
+        }
+      });
 
     res.status(StatusCodes.OK).json({ status: "success", orders });
   } catch (error) {
@@ -113,18 +121,24 @@ const getOrders = async (req, res) => {
   }
 };
 
+
 const getOrderById = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    const order = await Order.findById(orderId).populate("orderItems");
+    const order = await Order.findById(orderId)
+      .populate({
+        path: 'orderItems.product',
+        populate: { 
+          path: 'createdBy',
+          select: 'firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role'
+        }
+      });
 
     if (!order) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", msg: "Order not found" });
     }
-
-    // Add an ownership check here if necessary
 
     res.status(StatusCodes.OK).json({ status: "success", order });
   } catch (error) {
@@ -136,6 +150,7 @@ const getOrderById = async (req, res) => {
       });
   }
 };
+
 
 const getOrdersByStatus = async (req, res, next) => {
   try {

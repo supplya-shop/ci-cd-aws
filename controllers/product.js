@@ -7,12 +7,14 @@ const product = require("../models/Product");
 const multer = require("../middleware/upload");
 
 const createProduct = async (req, res, next) => {
+  const userId = req.user.userid
   const newProduct = new product({
     name: req.body.name,
     price: req.body.price,
     description: req.body.description,
     quantity: req.body.quantity,
     category: req.body.category,
+    createdBy: userId,
     image: req.file ? req.file.filename : "",
     images: req.body.images,
     brand: req.body.brand,
@@ -26,14 +28,11 @@ const createProduct = async (req, res, next) => {
   newProduct
     .save()
     .then((result) => {
-      console.log(result);
       res.status(201).json({
         message: "Product created successfully",
         product: result,
       });
-      res
-        .status(StatusCodes.CREATED)
-        .json({ status: "success", msg: "Order created successfully", order });
+      
     })
     .catch((err) => {
       console.error(err.message);
@@ -46,6 +45,11 @@ const createProduct = async (req, res, next) => {
 const getAllProducts = async (req, res, next) => {
   await product
     .find({})
+    .populate({
+      path: 'createdBy', // Referencing the 'createdBy' field from the Product schema
+      select: 'firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role' // Specify the fields you want to include from the User schema
+      
+    })
     .then((products) => {
       res.status(200).json({ products, count: products.length });
     })
@@ -58,6 +62,7 @@ const getAllProducts = async (req, res, next) => {
       });
     });
 };
+
 
 const getNewlyArrivedBrands = async (req, res, next) => {
   try {
@@ -93,6 +98,11 @@ const getProductById = async (req, res, next) => {
   const productId = req.params.id;
   product
     .findById(productId)
+    .populate({
+      path: 'createdBy', // Referencing the 'createdBy' field from the Product schema
+      select: 'firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role' // Specify the fields you want to include from the User schema
+      
+    })
     .then((product) => {
       if (!product) {
         return res.status(404).json({

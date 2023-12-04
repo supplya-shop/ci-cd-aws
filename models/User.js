@@ -54,6 +54,7 @@ const UserSchema = new mongoose.Schema({
 
     isSoleProprietor:{
         type:Boolean,
+        default:false
     },
 
     description:{
