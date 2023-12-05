@@ -10,13 +10,15 @@ const {
   deleteProduct,
 } = require("../controllers/product");
 
+const authenticateUser = require("../middleware/authenticateUser");
+
 //product routes
-router.post("/create", createProduct);
+router.post("/create", authenticateUser, createProduct);
 router.get("/", getAllProducts);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/:id", getProductById);
-router.patch("/:id", updateProduct);
-router.post("/images/upload", uploadProductImages);
-router.delete("/:id", deleteProduct);
+router.patch("/:id", authenticateUser, updateProduct);
+router.post("/images/upload", authenticateUser, uploadProductImages);
+router.delete("/:id", authenticateUser, deleteProduct);
 
 module.exports = router;
