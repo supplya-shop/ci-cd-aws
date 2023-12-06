@@ -14,7 +14,7 @@ const registerUser = async (req, res) => {
     if (req.body.uniqueKey === 1212) {
       req.body.role = "admin";
     } else {
-      req.body.role = "user";
+      req.body.role = "customer";
     }
     req.body.createdAt = Date.now();
     const user = await User.create({ ...req.body });
@@ -34,8 +34,9 @@ const registerUser = async (req, res) => {
     if (error.name === "ValidatorError") {
       res.status(400).json({ msg: error.message });
     } else if (error.name === "MongoError") {
-      res.status(400).json({ msg: "Email Already Exists" });
+      res.status(404).json({ msg: "Email Already Exists" });
     } else {
+      console.log(error)
       res
         .status(500)
         .json({ msg: "Something went wrong, please try again later" });
