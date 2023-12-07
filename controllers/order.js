@@ -10,6 +10,7 @@ const createOrder = async (req, res) => {
 
   try {
     const user = req.user.userid;
+    const email = req.user.email;
     const {
       orderItems, // This is an array of { product: ObjectId, quantity: Number }
       shippingAddress1,
@@ -18,7 +19,12 @@ const createOrder = async (req, res) => {
       zip,
       country,
       phone,
+      address,
+      orderNote,
+      vendor,
       paymentRefId,
+      paymentMethod,
+      totalPrice
     } = req.body;
 
     // Start a transaction
@@ -26,7 +32,7 @@ const createOrder = async (req, res) => {
     session.startTransaction();
 
     // Calculate total price
-    let totalPrice = 0;
+    totalPrice = 0;
     for (const item of orderItems) {
       const product = await Product.findById(item.product).session(session);
       if (!product) {
@@ -51,8 +57,13 @@ const createOrder = async (req, res) => {
           zip,
           country,
           phone,
+          email,
+          vendor,
+          address,
+          orderNote,
           totalPrice, // Using the calculated total price
           paymentRefId,
+          paymentMethod,
         },
       ],
       { session }
