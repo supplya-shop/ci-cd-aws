@@ -16,6 +16,7 @@ const orderSchema = mongoose.Schema({
         type: Number,
         default: 1,
       },
+
     },
   ],
   shippingAddress1: {
@@ -51,11 +52,7 @@ const orderSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
-  vendor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
-    required: true,
-  },
+  
   paymentRefId: {
     type: String,
   },
@@ -68,7 +65,6 @@ const orderSchema = mongoose.Schema({
   },
   orderNote: {
     type: String,
-    required: true,
   },
 
   orderStatus: {

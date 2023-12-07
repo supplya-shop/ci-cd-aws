@@ -11,8 +11,9 @@ const createOrder = async (req, res) => {
   try {
     const user = req.user.userid;
     const email = req.user.email;
+    let totalPrice;
     const {
-      orderItems, // This is an array of { product: ObjectId, quantity: Number }
+      orderItems, // Array of { product: ObjectId, quantity: Number }
       shippingAddress1,
       shippingAddress2,
       city,
@@ -21,73 +22,86 @@ const createOrder = async (req, res) => {
       phone,
       address,
       orderNote,
-      vendor,
       paymentRefId,
       paymentMethod,
-      totalPrice
     } = req.body;
 
     // Start a transaction
     session = await mongoose.startSession();
     session.startTransaction();
 
-    // Calculate total price
+    // Calculate total price and populate vendor details
     totalPrice = 0;
     for (const item of orderItems) {
-      const product = await Product.findById(item.product).session(session);
+      const product = await Product.findById(item.product)
+        .populate('createdBy') // Assuming 'createdBy' is the field for vendor
+        .session(session);
+
       if (!product) {
+        await session.abortTransaction();
         return res.status(404).json({ message: `Product not found: ${item.product}` });
-    }
+      }
     
       totalPrice += item.quantity * product.price;
+      item.vendorDetails = product.createdBy;
     }
 
     // Check and update inventory
     await checkAndUpdateInventory(orderItems, session);
 
-    // Create the order
-    const order = await Order.create(
-      [
-        {
-          user,
-          orderItems, // Directly using the nested orderItems array
-          shippingAddress1,
-          shippingAddress2,
-          city,
-          zip,
-          country,
-          phone,
-          email,
-          vendor,
-          address,
-          orderNote,
-          totalPrice, // Using the calculated total price
-          paymentRefId,
-          paymentMethod,
-        },
-      ],
-      { session }
-    );
+    
+   // Create the order
+const createdOrders = await Order.create(
+  [{
+    user,
+    orderItems,
+    shippingAddress1,
+    shippingAddress2,
+    city,
+    zip,
+    country,
+    phone,
+    email,
+    address,
+    orderNote,
+    totalPrice,
+    paymentRefId,
+    paymentMethod,
+  }],
+  { session }
+);
 
-    // Commit the transaction
-    await session.commitTransaction();
+// Commit the transaction before trying to populate
+await session.commitTransaction();
 
-    res
-      .status(StatusCodes.CREATED)
-      .json({ status: "success", msg: "Order created successfully", order });
+// Retrieve the first created order and populate necessary fields
+const order = await Order.findById(createdOrders[0]._id)
+  .populate({
+    path: 'orderItems.product',
+    model: 'Product' // Replace with your Product model name
+  })
+  .populate({
+    path: 'createdBy',
+    model: 'User' // Replace with your User model name
+  });
+// Note: No need to pass session here as the transaction is already committed
+
+console.log(order);
+
+
+
+    res.status(StatusCodes.CREATED).json({ status: "success", msg: "Order created successfully", order });
   } catch (error) {
     // Rollback the transaction in case of error
-    if (session.inTransaction()) await session.abortTransaction();
+    if (session && session.inTransaction()) await session.abortTransaction();
 
-    console.error("Error creating order: ", error); // Error logging
-    res
-      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({
-        status: "error",
-        msg: "Failed to create order. " + error.message,
-      });
+    console.error("Error creating order: ", error);
+    res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      msg: "Failed to create order. " + error.message,
+    });
   } finally {
-    session.endSession();
+    if (session) session.endSession();
   }
 };
 
@@ -108,6 +122,7 @@ async function checkAndUpdateInventory(orderItems, session) {
     );
   }
 }
+
 
 const getOrders = async (req, res) => {
   try {
