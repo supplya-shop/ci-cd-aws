@@ -31,17 +31,17 @@ class CuracelService {
 
   async createNewCustomer(customerData) {
     try {
-      //   const response = await axios.post(
-      //     `${this.baseURL}/customers`,
-      //     customerData,
-      //     {
-      //       headers: {
-      //         Authorization: `Bearer ${this.apiKey}`,
-      //         "Content-Type": "application/json",
-      //       },
-      //     }
-      //   );
-      //   return response.data;
+      const response = await axios.post(
+        `${this.baseURL}/customers`,
+        customerData,
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
     } catch (error) {
       throw error;
     }
@@ -59,7 +59,27 @@ class CuracelService {
     };
 
     try {
-      const response = await axios.request(config);
+      const response = await axios.get(config);
+      return response.data;
+    } catch (error) {
+      console.log(`error: ${error}`);
+      throw error;
+    }
+  }
+
+  async getCustomerDetails(customerRef) {
+    const config = {
+      method: "get",
+      maxBodyLength: Infinity,
+      url: `${this.baseURL}/customers/${customerRef}`,
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+    };
+
+    try {
+      const response = await axios.get(config);
       return response.data;
     } catch (error) {
       throw error;
@@ -96,6 +116,25 @@ class CuracelService {
       },
     };
 
+    try {
+      const response = await axios.request(config);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // credit notes
+  async getCreditNotes() {
+    const config = {
+      method: "get",
+      maxBodyLength: Infinity,
+      url: `${this.baseURL}/credit-notes?page=1&per_page=15&status=pending&insurer=magna culpa consequat adipisicing`,
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+    };
     try {
       const response = await axios.request(config);
       return response.data;
