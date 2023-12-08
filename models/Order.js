@@ -4,19 +4,18 @@ const Product = require('./Product')
 
 const orderSchema = mongoose.Schema({
   orderItems: [
-    { _id:false,
+    {
+      _id: false,
       product: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required:true,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+        required: true,
       },
 
-      quantity:{
-        type:Number,
-        default:1
-      } 
-
-      
+      quantity: {
+        type: Number,
+        default: 1,
+      },
     },
   ],
   shippingAddress1: {
@@ -37,32 +36,46 @@ const orderSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  email: {
+    type: String,
+    required: true,
+  },
   phone: {
     type: String,
     required: true,
   },
-  totalPrice: {
-    type: Number,
+  address: {
+    type: String,
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
-  paymentRefId:{
-    type:String
-  }, 
-
-  totalPrice:{
-    type:String,
-    required:true
+  vendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+  },
+  paymentRefId: {
+    type: String,
+  },
+  paymentMethod: {
+    type: String,
+  },
+  totalPrice: {
+    type: String,
+    required: true,
+  },
+  orderNote: {
+    type: String,
+    required: true,
   },
 
-
-  orderStatus:{
-    type:String,
-    enum:['pending', 'completed', 'cancelled'],
-    default:'pending'
-  }, 
+  orderStatus: {
+    type: String,
+    enum: ["pending", "completed", "cancelled"],
+    default: "pending",
+  },
 
   dateOrdered: {
     type: Date,
