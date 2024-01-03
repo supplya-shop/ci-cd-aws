@@ -7,7 +7,7 @@ const product = require("../models/Product");
 const multer = require("../middleware/upload");
 
 const createProduct = async (req, res, next) => {
-  const userId = req.user.userid
+  const userId = req.user.userid;
   const newProduct = new product({
     name: req.body.name,
     price: req.body.price,
@@ -32,7 +32,6 @@ const createProduct = async (req, res, next) => {
         message: "Product created successfully",
         product: result,
       });
-      
     })
     .catch((err) => {
       console.error(err.message);
@@ -46,9 +45,9 @@ const getAllProducts = async (req, res, next) => {
   await product
     .find({})
     .populate({
-      path: 'createdBy', // Referencing the 'createdBy' field from the Product schema
-      select: 'firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role' // Specify the fields you want to include from the User schema
-      
+      path: "createdBy", // Referencing the 'createdBy' field from the Product schema
+      select:
+        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
     })
     .then((products) => {
       res.status(200).json({ products, count: products.length });
@@ -58,37 +57,61 @@ const getAllProducts = async (req, res, next) => {
       res.status(500).json({
         error: {
           message: "Failed to fetch products",
+          status: "error",
         },
       });
     });
 };
 
+const getRelatedProducts = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    // if (!mongoose.Types.ObjectId.isValid(productId)) {
+    //   return res.status(400).json({ message: "Invalid product ID" });
+    // }
+    console.log(`productId: ${productId}`);
+    const currentProduct = await product.findById(productId);
+    console.log(`currentProduct: ${currentProduct}`);
+    if (!currentProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const relatedProducts = await product
+      .find({
+        category: product.category,
+        _id: { $ne: productId }, // Exclude the original product
+      })
+      .limit(10)
+      .select("name price description image");
+
+    res.status(200).json({ relatedProducts });
+  } catch (error) {
+    console.error("Error fetching related products:", error);
+    res.status(500).json({ message: "Internal Server Error", status: "error" });
+  }
+};
 
 const getNewlyArrivedBrands = async (req, res, next) => {
   try {
     const products = await product.find({}).sort({ dateCreated: -1 }).limit(10);
-
     const brandMap = new Map();
-
     products.forEach((product) => {
       const brand = product.brand;
       if (!brandMap.has(brand)) {
         brandMap.set(brand, product.toObject());
       }
     });
-
     const response = {
       status: "success",
-      msg: "Newly arrived products fetched successfully",
+      msg: "Products fetched successfully",
       data: Array.from(brandMap.values()),
     };
-
     res.status(StatusCodes.OK).json(response);
   } catch (error) {
     console.error(error.message);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: "Failed to fetch newly arrived products",
+      msg: "Failed to fetch products",
       error: error.message,
     });
   }
@@ -99,9 +122,9 @@ const getProductById = async (req, res, next) => {
   product
     .findById(productId)
     .populate({
-      path: 'createdBy', // Referencing the 'createdBy' field from the Product schema
-      select: 'firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role' // Specify the fields you want to include from the User schema
-      
+      path: "createdBy", // Referencing the 'createdBy' field from the Product schema
+      select:
+        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
     })
     .then((product) => {
       if (!product) {
@@ -185,6 +208,7 @@ module.exports = {
   getAllProducts,
   getNewlyArrivedBrands,
   getProductById,
+  getRelatedProducts,
   updateProduct,
   uploadProductImages,
   deleteProduct,
