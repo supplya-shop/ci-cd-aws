@@ -73,9 +73,7 @@ router.get("/products/list-product-types", async (req, res) => {
 
 router.get("/products/list-available-insurance-products", async (req, res) => {
   try {
-    const productTypes = await curacelService.listAvailableInsuranceProducts(
-      process.env.CURACEL_BASE_URL
-    );
+    const productTypes = await curacelService.listAvailableInsuranceProducts();
     res.status(200).json(productTypes);
   } catch (error) {
     res.status(500).json({ error: error.message });
