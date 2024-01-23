@@ -32,7 +32,7 @@ class CuracelService {
   async createNewCustomer(customerData) {
     try {
       const response = await axios.post(
-        `${this.baseURL}/customers`,
+        `${this.baseUrl}/customers`,
         customerData,
         {
           headers: {
@@ -71,7 +71,7 @@ class CuracelService {
     const config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `${this.baseURL}/customers/${customerRef}`,
+      url: `${this.baseUrl}/customers/${customerRef}`,
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.apiKey}`,
@@ -90,7 +90,7 @@ class CuracelService {
     const config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `${this.baseURL}/debit-notes?page=1&per_page=15&status=pending&insurer=magna culpa consequat adipisicing`,
+      url: `${this.baseUrl}/debit-notes?page=1&per_page=15&status=pending&insurer=magna culpa consequat adipisicing`,
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.apiKey}`,
@@ -109,7 +109,7 @@ class CuracelService {
     const config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `${this.baseURL}/debit-notes/voluptate reprehenderit sit dolor`,
+      url: `${this.baseUrl}/debit-notes/voluptate reprehenderit sit dolor`,
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.apiKey}`,
@@ -129,7 +129,7 @@ class CuracelService {
     const config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: `${this.baseURL}/credit-notes?page=1&per_page=15&status=pending&insurer=magna culpa consequat adipisicing`,
+      url: `${this.baseUrl}/credit-notes?page=1&per_page=15&status=pending&insurer=magna culpa consequat adipisicing`,
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${this.apiKey}`,

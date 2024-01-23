@@ -66,9 +66,6 @@ const getAllProducts = async (req, res, next) => {
 const getRelatedProducts = async (req, res) => {
   try {
     const productId = req.params.id;
-    // if (!mongoose.Types.ObjectId.isValid(productId)) {
-    //   return res.status(400).json({ message: "Invalid product ID" });
-    // }
     console.log(`productId: ${productId}`);
     const currentProduct = await product.findById(productId);
     console.log(`currentProduct: ${currentProduct}`);
