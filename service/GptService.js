@@ -10,15 +10,12 @@ class GptService {
       if (!userPrompt) {
         throw new Error("Prompt is required.");
       }
-
       const response = await this.openai.chat.completions.create({
         messages: [{ role: "system", content: "You are a helpful assistant." }],
         model: "gpt-3.5-turbo",
       });
 
       const generatedText = response.data.choices[0].text.trim();
-
-      // You may further process the generatedText based on your use case
 
       return generatedText;
     } catch (error) {
