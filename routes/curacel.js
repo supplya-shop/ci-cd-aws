@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { StatusCodes } = require("http-status-codes");
 const curacelApi = require("../api/curacel/customers");
-const CuracelService = require("../service/CuracelService/CuracelService");
+const CuracelService = require("../service/CuracelService");
 const curacelService = new CuracelService(process.env.CURACEL_API_KEY);
 
 // customers
@@ -73,7 +73,9 @@ router.get("/products/list-product-types", async (req, res) => {
 
 router.get("/products/list-available-insurance-products", async (req, res) => {
   try {
-    const productTypes = await curacelService.listAvailableInsuranceProducts();
+    const productTypes = await curacelService.listAvailableInsuranceProducts(
+      process.env.CURACEL_BASE_URL
+    );
     res.status(200).json(productTypes);
   } catch (error) {
     res.status(500).json({ error: error.message });

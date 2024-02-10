@@ -1,6 +1,10 @@
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError, UnauthenticatedError, NotFoundError } = require("../errors");
+const {
+  BadRequestError,
+  UnauthenticatedError,
+  NotFoundError,
+} = require("../errors");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
@@ -36,7 +40,7 @@ const registerUser = async (req, res) => {
     } else if (error.name === "MongoError") {
       res.status(404).json({ msg: "Email Already Exists" });
     } else {
-      console.log(error)
+      console.log(error);
       res
         .status(500)
         .json({ msg: "Something went wrong, please try again later" });
@@ -55,17 +59,27 @@ const login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new NotFoundError('User does not exist')
+      throw new NotFoundError("User does not exist");
     }
 
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new UnauthenticatedError("You have entered an password");
+      throw new UnauthenticatedError("You have entered an invalid password");
     }
 
     const token = user.createJWT();
-    console.log(token)
+    // const refreshToken = jwt.sign(
+    //   { userid: user._id },
+    //   "nZq4t7w!z%C*F-JaNdefrgeyfhsgyfhftyuyfu",
+    //   {
+    //     expiresIn: 86400,
+    //   }
+    // );
+
+    // Save the refreshToken to the user
+    // user.refreshToken = refreshToken;
+    // await user.save();
 
     res.status(StatusCodes.OK).json({
       status: "success",
@@ -92,10 +106,10 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    if(error.status === 404) {
+    if (error.status === 404) {
       res
-      .status(StatusCodes.NOT_FOUND)
-      .json({ msg: error.message, status: "error" });
+        .status(StatusCodes.NOT_FOUND)
+        .json({ msg: error.message, status: "error" });
     }
     res
       .status(StatusCodes.BAD_REQUEST)

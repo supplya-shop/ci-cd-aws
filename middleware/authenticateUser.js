@@ -12,9 +12,26 @@ const authenticateUser = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = extractUserFields(decoded);
+
+    // Add role-based authorization check
+    if (req.user.role !== "admin" && req.originalUrl.startsWith("/admin")) {
+      throw new ForbiddenError(
+        "You don't have permission to access this resource"
+      );
+    }
+
     next();
   } catch (error) {
-    res.status(StatusCodes.UNAUTHORIZED).send({ msg: error.message });
+    if (
+      error instanceof UnauthenticatedError ||
+      error instanceof ForbiddenError
+    ) {
+      res.status(StatusCodes.UNAUTHORIZED).send({ msg: error.message });
+    } else {
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .send({ msg: "Internal Server Error" });
+    }
   }
 };
 
@@ -30,7 +47,6 @@ const extractUserFields = (decoded) => {
     "postalCode",
     "dateOfBirth",
     "gender",
-    "bvn",
     "isSoleProprietor",
     "description",
     "businessName",
