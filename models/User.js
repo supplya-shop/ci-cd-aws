@@ -151,7 +151,6 @@ UserSchema.methods.createJWT = function () {
       postalCode: this.postalCode,
       dateOfBirth: this.dateOfBirth,
       gender: this.gender,
-      bvn: this.bvn,
       isSoleProprietor: this.isSoleProprietor,
       description: this.description,
       businessName: this.businessName,
@@ -173,7 +172,7 @@ UserSchema.methods.createJWT = function () {
 };
 
 UserSchema.methods.comparePassword = async function (loginPassword) {
-  const isMatch = await bcrypt.compare(loginPassword, this.password);
+  const isMatch = bcrypt.compare(loginPassword, this.password);
   console.log("isMatch:", isMatch);
   return isMatch;
 };
