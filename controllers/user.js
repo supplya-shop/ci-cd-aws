@@ -1,9 +1,10 @@
-const express = require("express");
-const router = express.Router();
 const User = require("../models/User");
+const validateUser = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const multer = require("../middleware/upload");
+const joi = require("joi");
+const winston = require("winston");
 const authenticateUser = require("../middleware/authenticateUser");
 
 const getAllUsers = async (req, res) => {
@@ -33,6 +34,10 @@ const getUserById = async (req, res) => {
           message: "user not found",
         });
       }
+      User.firstName =
+        User.firstName.charAt(0).toUpperCase() + User.firstName.slice(1);
+      User.lastName =
+        User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
       res.status(200).json(User);
     })
     .catch((err) => {
@@ -46,54 +51,55 @@ const getUserById = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const newuser = new User({
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    email: req.body.email,
-    phoneNumber: req.body.phoneNumber,
-    password: req.body.password,
-    status: req.body.status,
-    gender: req.body.gender,
-    dateOfBirth: req.body.dateOfBirth,
-    address: req.body.address,
-    role: req.body.role,
-    dateCreated: req.body.dateCreated,
-  });
-  newuser
-    .save()
-    .then((result) => {
-      console.log(result);
-      res.status(201).json({
-        message: "user created successfully",
-        user: result,
-      });
-    })
-    .catch((err) => {
-      console.error(err.message);
-      res.status(500).json({
-        error: {
-          message: "Failed to create user",
-        },
-      });
-    });
+  const { error, value } = validateUser(req.body);
+  if (error) {
+    return res
+      .status(400)
+      .json({ error: error.details.map((detail) => detail.message) });
+  }
+  const newUser = new User(value);
+  try {
+    await newUser.save();
+    res.status(201).json({ message: "User created successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: { message: "Failed to create user" } });
+  }
 };
 
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const updates = req.body;
-    const options = { new: true }; // To return the modified document rather than the original
+    let updates = req.body;
 
-    const result = await User.findByIdAndUpdate(userId, updates, options);
+    delete updates.password;
+
+    const options = { new: true };
+
+    const result = await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      options
+    );
     if (!result) {
-      return res.status(404).json({ message: "user not found" });
+      return res.status(404).json({ message: "User not found" });
     }
-    res
-      .status(200)
-      .json({ message: "user updated successfully", User: result });
+
+    // Check if result is a Mongoose document before calling toObject()
+    const response = result.toObject ? result.toObject() : result;
+
+    // Exclude password field from the response
+    if (response.password) {
+      delete response.password;
+    }
+
+    res.status(200).json({
+      message: "User updated successfully",
+      User: response,
+    });
   } catch (error) {
     console.error(error.message);
-    res.status(500).json({ error: { message: "Failed to update user" } });
+    res.status(500).json({ error: { message: error.message } });
   }
 };
 
