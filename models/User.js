@@ -9,7 +9,7 @@ const UserSchema = new mongoose.Schema({
     required: [true, "Please provide your name"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
-    lowercase: true,
+    // lowercase: true,
   },
 
   lastName: {
@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
     required: [true, "Please provide your name"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
-    lowercase: true,
+    // lowercase: true,
   },
 
   country: {
@@ -38,10 +38,6 @@ const UserSchema = new mongoose.Schema({
 
   postalCode: {
     type: Number,
-  },
-
-  dateOfBirth: {
-    type: String,
   },
 
   gender: {
