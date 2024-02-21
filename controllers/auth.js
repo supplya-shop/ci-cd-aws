@@ -92,7 +92,7 @@ const registerUser = async (req, res) => {
     console.error("Error registering user:", error);
 
     if (error.name === "ValidatorError") {
-      return res.status(400).json({ msg: error.message });
+      return res.status(400).json({ message: error.message });
     }
 
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -146,6 +146,7 @@ const verifyOTPAndGenerateToken = async (req, res) => {
     const token = user.createJWT();
 
     res.status(StatusCodes.OK).json({
+      message: "You have been successfully registered on Supplya.",
       user: {
         name: user.name,
         role: user.role,
