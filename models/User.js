@@ -6,7 +6,7 @@ require("dotenv");
 const UserSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    required: [true, "Please provide your name"],
+    required: [true, "Please provide your firstName"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
     // lowercase: true,
@@ -14,12 +14,14 @@ const UserSchema = new mongoose.Schema({
 
   lastName: {
     type: String,
-    required: [true, "Please provide your name"],
+    required: [true, "Please provide your lastName"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
     // lowercase: true,
   },
-
+  displayName: {
+    type: String,
+  },
   country: {
     type: String,
   },
@@ -113,6 +115,11 @@ const UserSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now(),
+  },
+
+  otp: {
+    type: Number,
+    // required: true,
   },
 
   dob: {

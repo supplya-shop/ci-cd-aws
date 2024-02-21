@@ -3,47 +3,34 @@ const router = express.Router();
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
-const product = require("../models/Product");
+const Product = require("../models/Product");
+const validateProduct = require("../middleware/validation/productDTO");
 const multer = require("../middleware/upload");
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
-  const newProduct = new product({
-    name: req.body.name,
-    price: req.body.price,
-    description: req.body.description,
-    quantity: req.body.quantity,
-    category: req.body.category,
-    createdBy: userId,
-    image: req.file ? req.file.filename : "",
-    images: req.body.images,
-    brand: req.body.brand,
-    inStock: req.body.inStock,
-    rating: req.body.rating,
-    numReviews: req.body.numReviews,
-    isFeatured: req.body.isFeatured,
-    hasDiscount: req.body.hasDiscount,
-    dateCreated: Date.now(),
-  });
-  newProduct
-    .save()
-    .then((result) => {
-      res.status(201).json({
-        message: "Product created successfully",
-        product: result,
-      });
-    })
-    .catch((err) => {
-      console.error(err.message);
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ status: "error", msg: err.message });
+  const { error, value } = validateProduct(req.body);
+  if (error) {
+    return res
+      .status(400)
+      .json({ error: error.details.map((detail) => detail.message) });
+  }
+  const newProduct = new Product(value);
+  try {
+    await newProduct.save();
+    res
+      .status(201)
+      .json({ message: "Product created successfully", status: "success" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({
+      error: { message: "Failed to create Product", status: "error" },
     });
+  }
 };
 
 const getAllProducts = async (req, res, next) => {
-  await product
-    .find({})
+  await Product.find({})
     .populate({
       path: "createdBy", // Referencing the 'createdBy' field from the Product schema
       select:
@@ -67,7 +54,7 @@ const getRelatedProducts = async (req, res) => {
   try {
     const productId = req.params.id;
     console.log(`productId: ${productId}`);
-    const currentProduct = await product.findById(productId);
+    const currentProduct = await Product.findById(productId);
     console.log(`currentProduct: ${currentProduct}`);
     if (!currentProduct) {
       return res.status(404).json({ message: "Product not found" });
@@ -75,7 +62,7 @@ const getRelatedProducts = async (req, res) => {
 
     const relatedProducts = await product
       .find({
-        category: product.category,
+        category: Product.category,
         _id: { $ne: productId }, // Exclude the original product
       })
       .limit(10)
@@ -90,7 +77,7 @@ const getRelatedProducts = async (req, res) => {
 
 const getNewlyArrivedBrands = async (req, res, next) => {
   try {
-    const products = await product.find({}).sort({ dateCreated: -1 }).limit(10);
+    const products = await Product.find({}).sort({ dateCreated: -1 }).limit(10);
     const brandMap = new Map();
     products.forEach((product) => {
       const brand = product.brand;
@@ -116,8 +103,7 @@ const getNewlyArrivedBrands = async (req, res, next) => {
 
 const getProductById = async (req, res, next) => {
   const productId = req.params.id;
-  product
-    .findById(productId)
+  Product.findById(productId)
     .populate({
       path: "createdBy", // Referencing the 'createdBy' field from the Product schema
       select:
@@ -147,7 +133,7 @@ const updateProduct = async (req, res, next) => {
     const updates = req.body;
     const options = { new: true };
 
-    const result = await product.findByIdAndUpdate(productId, updates, options);
+    const result = await Product.findByIdAndUpdate(productId, updates, options);
     if (!result) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -163,7 +149,7 @@ const updateProduct = async (req, res, next) => {
 const uploadProductImages = async (req, res, next) => {
   try {
     const productId = req.params.id;
-    const product = await product.findById(productId);
+    const product = await Product.findById(productId);
 
     if (!product) {
       return res.status(404).json({
@@ -191,7 +177,7 @@ const uploadProductImages = async (req, res, next) => {
 const deleteProduct = async (req, res, next) => {
   const productId = req.params.id;
   try {
-    const result = await product.findByIdAndDelete(productId);
+    const result = await Product.findByIdAndDelete(productId);
     console.log(result);
     res.json({ message: "Product deleted successfully" });
   } catch (error) {

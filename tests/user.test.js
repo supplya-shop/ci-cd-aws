@@ -79,7 +79,6 @@ describe("updateUser", () => {
 
     // Mocking User.findByIdAndUpdate to throw an error
     User.findByIdAndUpdate.mockRejectedValueOnce(new Error("Database error"));
-
     const req = { params: { id: userId }, body: updates };
     const res = {
       status: jest.fn().mockReturnThis(),

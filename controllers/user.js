@@ -3,7 +3,6 @@ const validateUser = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const multer = require("../middleware/upload");
-const joi = require("joi");
 const winston = require("winston");
 const authenticateUser = require("../middleware/authenticateUser");
 
@@ -60,17 +59,21 @@ const createUser = async (req, res) => {
   const newUser = new User(value);
   try {
     await newUser.save();
-    res.status(201).json({ message: "User created successfully" });
+    res
+      .status(201)
+      .json({ message: "User created successfully", status: "success" });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ error: { message: "Failed to create user" } });
+    res
+      .status(500)
+      .json({ error: { message: "Failed to create user", status: "error" } });
   }
 };
 
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    let updates = req.body;
+    let updates = validateUser(req.body);
 
     delete updates.password;
 
@@ -88,7 +91,6 @@ const updateUser = async (req, res) => {
     // Check if result is a Mongoose document before calling toObject()
     const response = result.toObject ? result.toObject() : result;
 
-    // Exclude password field from the response
     if (response.password) {
       delete response.password;
     }

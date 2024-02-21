@@ -28,5 +28,5 @@ const userDTO = Joi.object({
 });
 
 module.exports = function validateUser(data) {
-  return userDTO.validate(data, { abortEarly: false });
+  return userDTO.validate(data, { abortEarly: false, escapeHtml: false });
 };
