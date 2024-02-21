@@ -48,7 +48,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { password, email } = req.body;
 
@@ -235,9 +235,27 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Google OAuth authentication route
+const googleAuth = (req, res, next) => {
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })(req, res, next);
+};
+
+// Google OAuth callback route
+const googleAuthCallback = (req, res, next) => {
+  passport.authenticate("google", {
+    successRedirect: "/products",
+    failureRedirect: "/",
+    session: false,
+  })(req, res, next);
+};
+
 module.exports = {
   login,
   registerUser,
   forgotPassword,
   resetPassword,
+  googleAuth,
+  googleAuthCallback,
 };

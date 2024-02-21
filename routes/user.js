@@ -13,8 +13,8 @@ const authenticateUser = require("../middleware/authenticateUser");
 
 //user routes
 router.post("/create", authenticateUser, createUser);
-router.get("/", getAllUsers);
-router.get("/:id", getUserById);
+router.get("/", authenticateUser, getAllUsers);
+router.get("/:id", authenticateUser, getUserById);
 router.patch("/:id", authenticateUser, updateUser);
 // router.delete("/:id", authenticateUser, deleteUser);
 
