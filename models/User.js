@@ -21,7 +21,6 @@ const UserSchema = new mongoose.Schema({
   },
   displayName: {
     type: String,
-    required: true,
   },
   country: {
     type: String,
@@ -116,6 +115,11 @@ const UserSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now(),
+  },
+
+  otp: {
+    type: Number,
+    // required: true,
   },
 
   dob: {
