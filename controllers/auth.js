@@ -5,57 +5,25 @@ const {
   UnauthenticatedError,
   NotFoundError,
 } = require("../errors");
-const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
-const axios = require("axios");
 const bcrypt = require("bcryptjs");
+const {
+  generateOTP,
+  sendOTP,
+  sendConfirmationEmail,
+} = require("../middleware/authUtils");
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
-
-// const registerUser = async (req, res) => {
-//   try {
-//     if (req.body.uniqueKey === 1212) {
-//       req.body.role = "admin";
-//     } else {
-//       req.body.role = "customer";
-//     }
-//     req.body.createdAt = Date.now();
-//     const user = await User.create({ ...req.body });
-//     const token = user.createJWT();
-//     res.status(StatusCodes.CREATED).json({
-//       user: {
-//         name: user.name,
-//         role: user.role,
-//         email: user.email,
-//         createdAt: user.createdAt,
-//         phoneNumber: user.phoneNumber,
-//       },
-//       token,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     if (error.name === "ValidatorError") {
-//       res.status(400).json({ msg: error.message });
-//     } else if (error.name === "MongoError") {
-//       res.status(404).json({ msg: "Email Already Exists" });
-//     } else {
-//       console.log(error);
-//       res
-//         .status(500)
-//         .json({ msg: "Something went wrong, please try again later" });
-//     }
-//   }
-// };
-
 const registerUser = async (req, res) => {
   try {
     // Check if the required fields are present in the request body
     const { email, password } = req.body;
     if (!email || !password) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Please fill in the required fields." });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message:
+          "Please fill in the required fields. Missing email or password.",
+      });
     }
 
     // Check if the user already exists
@@ -101,37 +69,8 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Generate OTP
-const generateOTP = () => {
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  const expiration = new Date();
-  expiration.setTime(expiration.getTime() + 30 * 60 * 1000);
-  return { otp, expiration };
-};
-
-// Send OTP
-const sendOTP = async (email, otp) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USERNAME,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-  });
-
-  const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
-    to: email,
-    subject: "Supplya: Your OTP for Registration",
-    text: `Your OTP for registration is: ${otp}. It will expire in 30 minutes.`,
-  };
-
-  // Send email
-  await transporter.sendMail(mailOptions);
-};
-
 // Verify OTP and generate token
-const verifyOTPAndGenerateToken = async (req, res) => {
+const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
@@ -143,10 +82,11 @@ const verifyOTPAndGenerateToken = async (req, res) => {
         .json({ message: "Invalid or expired OTP. Please try again." });
     }
 
+    await sendConfirmationEmail(email);
     const token = user.createJWT();
 
     res.status(StatusCodes.OK).json({
-      message: "You have been successfully registered on Supplya.",
+      message: "Congratulations! You have successfully registered on Supplya.",
       user: {
         name: user.name,
         role: user.role,
