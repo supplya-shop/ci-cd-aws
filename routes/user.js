@@ -9,7 +9,10 @@ const {
   // deleteUser,
 } = require("../controllers/user");
 
-const authenticateUser = require("../middleware/authenticateUser");
+const {
+  authenticateUser,
+  roleMiddleware,
+} = require("../middleware/authenticateUser");
 
 //user routes
 router.post("/create", authenticateUser, createUser);

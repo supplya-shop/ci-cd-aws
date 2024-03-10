@@ -12,7 +12,7 @@ const {
   generateOTP,
   sendOTP,
   sendConfirmationEmail,
-} = require("../middleware/authUtils");
+} = require("../middleware/mailUtils");
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 const registerUser = async (req, res) => {
@@ -31,7 +31,7 @@ const registerUser = async (req, res) => {
     if (existingUser) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message:
-          "This user already exists within our records. Please use a unique email.",
+          "This email already exists within our records. Please use a unique email.",
       });
     }
 
@@ -53,7 +53,7 @@ const registerUser = async (req, res) => {
     };
     await User.create(userData);
 
-    res.status(StatusCodes.CREATED).json({
+    res.status(StatusCodes.OK).json({
       message: "OTP sent successfully. Please check your email.",
     });
   } catch (error) {
@@ -85,7 +85,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     await sendConfirmationEmail(email);
     const token = user.createJWT();
 
-    res.status(StatusCodes.OK).json({
+    res.status(StatusCodes.CREATED).json({
       message: "Congratulations! You have successfully registered on Supplya.",
       user: {
         name: user.name,
@@ -137,7 +137,7 @@ const login = async (req, res, next) => {
     // user.refreshToken = refreshToken;
     // await user.save();
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       msg: "Login successful",
       user: {
@@ -301,7 +301,7 @@ const googleAuth = (req, res, next) => {
 // Google OAuth callback route
 const googleAuthCallback = (req, res, next) => {
   passport.authenticate("google", {
-    successRedirect: "/products",
+    successRedirect: "/api/v1/products",
     failureRedirect: "/",
     session: false,
   })(req, res, next);

@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
 const { UnauthenticatedError } = require("../errors");
+const User = require("../models/User");
 
 const authenticateUser = async (req, res, next) => {
   try {
@@ -22,17 +23,25 @@ const authenticateUser = async (req, res, next) => {
 
     next();
   } catch (error) {
-    if (
-      error instanceof UnauthenticatedError ||
-      error instanceof ForbiddenError
-    ) {
-      res.status(StatusCodes.UNAUTHORIZED).send({ msg: error.message });
-    } else {
+    if (error instanceof jwt.JsonWebTokenError) {
       res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .send({ msg: "Internal Server Error" });
+        .status(StatusCodes.UNAUTHORIZED)
+        .send({ msg: "Unauthorized: Please log in" });
+    } else {
+      res.status(StatusCodes.FORBIDDEN).send({ msg: error.message });
     }
   }
+};
+
+const roleMiddleware = (roles) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
+      console.log("Unauthorized");
+      res.status(StatusCodes.UNAUTHORIZED).send("Unauthorized");
+    } else {
+      next();
+    }
+  };
 };
 
 const extractUserFields = (decoded) => {
@@ -69,4 +78,20 @@ const extractUserFields = (decoded) => {
   }, {});
 };
 
-module.exports = authenticateUser;
+const currentUser = async (req, res, next) => {
+  if (req.isAuthenticated()) {
+    try {
+      const user = await User.findById(req.user._id);
+      req.currentUser = user;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      req.currentUser = null;
+    }
+  } else {
+    // If the user is not authenticated, set currentUser to null
+    req.currentUser = null;
+  }
+  next();
+};
+
+module.exports = { authenticateUser, roleMiddleware };
