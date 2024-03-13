@@ -6,7 +6,8 @@ const {
   getAllUsers,
   getUserById,
   updateUser,
-  // deleteUser,
+  deleteUser,
+  bulkdeleteUsers,
 } = require("../controllers/user");
 
 const {
@@ -19,27 +20,12 @@ router.post("/create", authenticateUser, createUser);
 router.get("/", authenticateUser, getAllUsers);
 router.get("/:id", authenticateUser, getUserById);
 router.patch("/:id", authenticateUser, updateUser);
-// router.delete("/:id", authenticateUser, deleteUser);
-
-router.delete("/:id", async (req, res, next) => {
-  const userId = req.params.id;
-  try {
-    const userToDelete = await user.findById(userId);
-    if (!userToDelete) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const result = await user.findByIdAndDelete(userId);
-    if (!result) {
-      return res.status(500).json({ message: "Failed to delete user" });
-    }
-    res.status(200).json({
-      message: "User deleted successfully",
-      deletedUser: userToDelete,
-    });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
+router.delete(
+  "/bulkdeleteusers",
+  authenticateUser,
+  roleMiddleware("admin"),
+  bulkdeleteUsers
+);
+router.delete("/:id", authenticateUser, roleMiddleware("admin"), deleteUser);
 
 module.exports = router;

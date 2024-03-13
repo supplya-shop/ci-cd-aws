@@ -12,26 +12,29 @@ const {
   generateOTP,
   sendOTP,
   sendConfirmationEmail,
-} = require("../middleware/mailUtils");
+  resetPasswordMail,
+} = require("../middleware/mailUtil");
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 const registerUser = async (req, res) => {
   try {
-    // Check if the required fields are present in the request body
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        message:
-          "Please fill in the required fields. Missing email or password.",
+        message: "Please enter your email",
+      });
+    }
+    if (!password) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Please enter your password",
       });
     }
 
-    // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message:
-          "This email already exists within our records. Please use a unique email.",
+          "This email already exists within our records. Please use a unique email or reset your password to login if you don't remember it.",
       });
     }
 
@@ -57,8 +60,6 @@ const registerUser = async (req, res) => {
       message: "OTP sent successfully. Please check your email.",
     });
   } catch (error) {
-    console.error("Error registering user:", error);
-
     if (error.name === "ValidatorError") {
       return res.status(400).json({ message: error.message });
     }
@@ -77,9 +78,10 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     const user = await User.findOne({ email, otp });
 
     if (!user) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Invalid or expired OTP. Please try again." });
+      throw new NotFoundError("User does not exist");
+    }
+    if (!otp) {
+      throw new NotFoundError("Invalid or expired OTP");
     }
 
     await sendConfirmationEmail(email);
@@ -121,21 +123,11 @@ const login = async (req, res, next) => {
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new UnauthenticatedError("You have entered an invalid password");
+      throw new BadRequestError("You have entered an invalid password");
     }
 
     const token = user.createJWT();
-    // const refreshToken = jwt.sign(
-    //   { userid: user._id },
-    //   "nZq4t7w!z%C*F-JaNdefrgeyfhsgyfhftyuyfu",
-    //   {
-    //     expiresIn: 86400,
-    //   }
-    // );
-
-    // Save the refreshToken to the user
-    // user.refreshToken = refreshToken;
-    // await user.save();
+    const refreshToken = user.createRefreshToken();
 
     return res.status(StatusCodes.OK).json({
       status: "success",
@@ -160,6 +152,7 @@ const login = async (req, res, next) => {
         createdAt: user.createdAt,
       },
       token,
+      refreshToken,
     });
   } catch (error) {
     if (error.status === 404) {
@@ -246,11 +239,10 @@ const resetPassword = async (req, res) => {
   try {
     const { resetCode, newPassword } = req.body;
 
-    if (!resetCode) {
-      throw new Error("Reset code is required");
+    if (!resetCode || !newPassword) {
+      throw new Error("Reset code and new password are required");
     }
 
-    // Find the user with the given reset code and within the expiration time
     const user = await User.findOne({
       resetPasswordToken: resetCode,
       resetPasswordExpires: {
@@ -262,29 +254,19 @@ const resetPassword = async (req, res) => {
       throw new Error("Invalid reset code or code expired");
     }
 
-    // Hash and salt the new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    // Update the user's password and clear the reset code and expiration
-    user.password = hashedPassword;
+    user.password = newPassword;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
 
-    const rebornUser = await user.save((error, savedUser) => {
-      if (error) {
-        console.error("Error while saving user:", error);
-        // Handle the error, such as returning an error response
-      }
-    });
+    await user.save();
 
-    console.log(hashedPassword);
-    console.log(rebornUser);
+    await resetPasswordMail(user.email);
 
     res.status(200).json({
       msg: "Password reset successfully",
     });
   } catch (error) {
+    console.error("Error resetting password:", error);
     res.status(400).json({
       msg: error.message,
     });

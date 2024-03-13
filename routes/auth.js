@@ -21,8 +21,8 @@ router.get("/google/redirect", googleAuthCallback);
 router.post("/login", login);
 router.post("/register", registerUser);
 router.post("/verify-otp", verifyOTPAndGenerateToken);
-router.post("/forgotPassword", forgotPassword);
-router.post("/resetPassword", resetPassword);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 // router.get('/banks', getBanks)
 
 module.exports = router;

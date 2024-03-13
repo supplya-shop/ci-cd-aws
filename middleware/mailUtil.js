@@ -45,8 +45,31 @@ const sendConfirmationEmail = async (email) => {
   await transporter.sendMail(mailOptions);
 };
 
+const resetPasswordMail = async (email) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to: email,
+    subject: "Supplya: Password Reset",
+    html: `
+        <p style="font-size:16px;">Your password was reset successfully:</p>
+        <p style="font-size:16px;">If you did not request a password reset, please ignore this email.</p>
+      `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   generateOTP,
   sendOTP,
   sendConfirmationEmail,
+  resetPasswordMail,
 };

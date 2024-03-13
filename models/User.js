@@ -39,7 +39,7 @@ const UserSchema = new mongoose.Schema({
   },
 
   postalCode: {
-    type: Number,
+    type: String,
   },
 
   gender: {
@@ -119,7 +119,6 @@ const UserSchema = new mongoose.Schema({
 
   otp: {
     type: Number,
-    // required: true,
   },
 
   dob: {
@@ -127,18 +126,27 @@ const UserSchema = new mongoose.Schema({
   },
 
   resetPasswordToken: {
-    type: Number,
+    type: String,
   },
 
   resetPasswordExpires: {
     type: Date,
   },
+
+  blocked: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 UserSchema.pre("save", async function (next) {
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 UserSchema.methods.createJWT = function () {
@@ -166,6 +174,36 @@ UserSchema.methods.createJWT = function () {
       role: this.role,
       createdAt: this.createdAt,
       dob: this.dob,
+      blocked: this.blocked,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_LIFETIME,
+    }
+  );
+};
+
+UserSchema.methods.createRefreshToken = function () {
+  return jwt.sign(
+    {
+      userid: this._id,
+      firstName: this.firstName,
+      lastName: this.lastName,
+      country: this.country,
+      state: this.state,
+      address: this.address,
+      city: this.city,
+      postalCode: this.postalCode,
+      dateOfBirth: this.dateOfBirth,
+      gender: this.gender,
+      isSoleProprietor: this.isSoleProprietor,
+      description: this.description,
+      businessName: this.businessName,
+      googleId: this.googleId,
+      phoneNumber: this.phoneNumber,
+      uniqueKey: this.uniqueKey,
+      email: this.email,
+      blocked: this.blocked,
     },
     process.env.JWT_SECRET,
     {

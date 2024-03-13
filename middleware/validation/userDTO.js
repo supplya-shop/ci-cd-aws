@@ -14,7 +14,7 @@ const userDTO = Joi.object({
   description: Joi.string(),
   businessName: Joi.string(),
   googleId: Joi.string(),
-  phoneNumber: Joi.string().required(),
+  phoneNumber: Joi.string(),
   uniqueKey: Joi.number().default(9292),
   password: Joi.string().required().min(3),
   email: Joi.string().required().email(),

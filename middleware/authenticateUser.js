@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
-const { UnauthenticatedError } = require("../errors");
+const { UnauthenticatedError, ForbiddenError } = require("../errors");
 const User = require("../models/User");
 
 const authenticateUser = async (req, res, next) => {
@@ -13,13 +13,6 @@ const authenticateUser = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = extractUserFields(decoded);
-
-    // Add role-based authorization check
-    if (req.user.role !== "admin" && req.originalUrl.startsWith("/admin")) {
-      throw new ForbiddenError(
-        "You don't have permission to access this resource"
-      );
-    }
 
     next();
   } catch (error) {
@@ -37,9 +30,17 @@ const roleMiddleware = (roles) => {
   return (req, res, next) => {
     if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
       console.log("Unauthorized");
-      res.status(StatusCodes.UNAUTHORIZED).send("Unauthorized");
+      throw new ForbiddenError(
+        "Forbidden: You don't have permission to access this resource"
+      );
     } else {
       next();
+    }
+    // Add role-based authorization check
+    if (req.user.role !== "admin" && req.originalUrl.startsWith("/admin")) {
+      throw new ForbiddenError(
+        "Forbidden: You don't have permission to access this resource"
+      );
     }
   };
 };
@@ -88,7 +89,6 @@ const currentUser = async (req, res, next) => {
       req.currentUser = null;
     }
   } else {
-    // If the user is not authenticated, set currentUser to null
     req.currentUser = null;
   }
   next();

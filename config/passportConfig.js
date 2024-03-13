@@ -83,7 +83,7 @@ passport.use(
           return done(new Error("Profile ID not found"));
         }
 
-        const { given_name, family_name, email } = profile._json;
+        const { given_name, family_name, email, phone_number } = profile._json;
 
         if (!given_name || !family_name || !email) {
           return done(
@@ -91,7 +91,7 @@ passport.use(
           );
         }
 
-        let user = await User.findOne({ googleId: profile.id });
+        let user = await User.findOne({ email });
 
         if (!user) {
           user = await User.create({
@@ -99,9 +99,12 @@ passport.use(
             firstName: given_name,
             lastName: family_name,
             email: email,
-            phoneNumber: "0",
+            phoneNumber: phone_number || " ",
             password: process.env.GOOGLE_OAUTH_PASSWORD || "",
           });
+        } else {
+          user.googleId = profile.id;
+          user = await user.save();
         }
 
         return done(null, user);
