@@ -14,6 +14,7 @@ const {
   sendConfirmationEmail,
   resetPasswordMail,
 } = require("../middleware/mailUtil");
+const logger = require("../middleware/logging/logger");
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 const registerUser = async (req, res) => {
@@ -129,6 +130,8 @@ const login = async (req, res, next) => {
     const token = user.createJWT();
     const refreshToken = user.createRefreshToken();
 
+    logger.info(user.role + " " + user.email + " just logged in.");
+
     return res.status(StatusCodes.OK).json({
       status: "success",
       msg: "Login successful",
@@ -160,6 +163,7 @@ const login = async (req, res, next) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ msg: error.message, status: "error" });
     }
+    logger.error(error.message);
     res
       .status(StatusCodes.BAD_REQUEST)
       .json({ msg: error.message, status: "error" });

@@ -9,7 +9,9 @@ Content-Type: application/json
 
 GET http://localhost:3000/api/v1/products
 
-GET http://localhost:3000/products/id
+GET http://localhost:3000/products
+
+GET http://localhost:3000/error
 
 PATCH http://localhost:3000/products/6543c6798bc36c4bf65481c4
 Content-Type: application/json
@@ -20,7 +22,6 @@ Content-Type: application/json
     "quantity": "0",
     "inStock": false,
     "__v": 0,
-    "dateCreated": "2023-11-03T15:20:23.129Z"
   }
 
 DELETE http://localhost:3000/products/id

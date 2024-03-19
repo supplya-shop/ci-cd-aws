@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
 const { UnauthenticatedError, ForbiddenError } = require("../errors");
 const User = require("../models/User");
+const logger = require("./logging/logger");
 
 const authenticateUser = async (req, res, next) => {
   try {
@@ -16,6 +17,7 @@ const authenticateUser = async (req, res, next) => {
 
     next();
   } catch (error) {
+    logger.error(error.message);
     if (error instanceof jwt.JsonWebTokenError) {
       res
         .status(StatusCodes.UNAUTHORIZED)
