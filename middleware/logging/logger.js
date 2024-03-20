@@ -18,42 +18,42 @@ const { createLogger, transports, format, printf } = require("winston");
 //   ],
 // });
 
-const logger = createLogger({
-  transports: [
-    new transports.Console(),
-    new transports.File({
-      filename: "./logs/info.log",
-      level: "info",
-    }),
-    new transports.File({
-      filename: "./logs/error.log",
-      level: "error",
-    }),
-  ],
-  // new transports.MongoDB({
-  //   db: process.env.MONGO_URL,
-  //   collection: "logs",
-  // }),
-  format: format.combine(
-    format.json(),
-    format.timestamp(),
-    format.prettyPrint()
-  ),
-});
+// const logger = createLogger({
+//   transports: [
+//     new transports.Console(),
+//     new transports.File({
+//       filename: "./logs/info.log",
+//       level: "info",
+//     }),
+//     new transports.File({
+//       filename: "./logs/error.log",
+//       level: "error",
+//     }),
+//   ],
+//   // new transports.MongoDB({
+//   //   db: process.env.MONGO_URL,
+//   //   collection: "logs",
+//   // }),
+//   format: format.combine(
+//     format.json(),
+//     format.timestamp(),
+//     format.prettyPrint()
+//   ),
+// });
 
-const myFormat = format.printf(({ level, meta, timestamp }) => {
-  return `${timestamp} ${level}: ${meta.message}`;
-});
+// const myFormat = format.printf(({ level, meta, timestamp }) => {
+//   return `${timestamp} ${level}: ${meta.message}`;
+// });
 
-const logger2 = app.use(
-  expressWinston.errorLogger({
-    transports: [
-      new transports.File({
-        filename: "./logs/logsInternalErrors.log",
-      }),
-    ],
-    format: format.combine(format.json(), format.timestamp(), myFormat),
-  })
-);
+// const logger2 = app.use(
+//   expressWinston.errorLogger({
+//     transports: [
+//       new transports.File({
+//         filename: "./logs/logsInternalErrors.log",
+//       }),
+//     ],
+//     format: format.combine(format.json(), format.timestamp(), myFormat),
+//   })
+// );
 
-module.exports = logger;
+// module.exports = logger;
