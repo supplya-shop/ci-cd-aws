@@ -7,7 +7,7 @@ const {
   NotFoundError,
 } = require("../errors");
 const multer = require("../middleware/upload");
-const logger = require("../middleware/logging/logger");
+// const logger = require("../middleware/logging/logger");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -18,7 +18,7 @@ const getAllUsers = async (req, res) => {
 
     res.status(200).json({ users, totalCount });
   } catch (error) {
-    logger.error(error.message);
+    // logger.error(error.message);
     res.status(500).json({
       error: {
         message: "Failed to fetch users",
@@ -43,7 +43,7 @@ const getUserById = async (req, res) => {
       res.status(200).json(User);
     })
     .catch((error) => {
-      logger.error(error.message);
+      // logger.error(error.message);
       res.status(500).json({
         error: {
           message: "Failed to fetch user",
@@ -65,9 +65,9 @@ const createUser = async (req, res) => {
     res
       .status(201)
       .json({ message: "User created successfully.", status: "success" });
-    logger.info(`${newUser.email} created successfully.`);
+    // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
-    logger.error(error.message);
+    // logger.error(error.message);
     res
       .status(500)
       .json({ error: { message: "Failed to create user.", status: "error" } });
@@ -104,7 +104,7 @@ const updateUser = async (req, res) => {
       User: response,
     });
   } catch (error) {
-    logger.error(error.message);
+    // logger.error(error.message);
     res.status(500).json({ error: { message: error.message } });
   }
 };
@@ -125,7 +125,7 @@ const deleteUser = async (req, res, next) => {
       deletedUser: userToDelete,
     });
   } catch (error) {
-    logger.error(error.message);
+    // logger.error(error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
