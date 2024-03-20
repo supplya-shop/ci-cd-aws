@@ -26,6 +26,6 @@ router.delete(
   roleMiddleware("admin"),
   bulkdeleteUsers
 );
-router.delete("/:id", authenticateUser, roleMiddleware("admin"), deleteUser);
+router.delete("/:id", authenticateUser, deleteUser);
 
 module.exports = router;
