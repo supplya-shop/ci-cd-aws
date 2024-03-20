@@ -6,7 +6,7 @@ const {
   registerUser,
   verifyOTPAndGenerateToken,
   login,
-  getBanks,
+  // getBanks,
   googleAuth,
   googleAuthCallback,
   forgotPassword,
@@ -14,31 +14,15 @@ const {
 } = require("../controllers/auth");
 
 // Google Auth routes
-router.get("/google/authenticate", googleAuth);
-router.get("/google/callback", googleAuthCallback);
+router.get("/google", googleAuth);
+router.get("/google/redirect", googleAuthCallback);
 
-// router.get(
-//   "/auth/google",
-//   passport.authenticate("google", { scope: ["profile", "email"] })
-// );
-
-// router.get(
-//   "/auth/google/callback",
-//   passport.authenticate("google", {
-//     failureRedirect: "/login",
-//     session: false,
-//   }),
-//   (req, res) => {
-//     // Redirect user to the appropriate page after successful authentication
-//     res.redirect("/");
-//   }
-// );
-
+// Regular Auth routes
 router.post("/login", login);
 router.post("/register", registerUser);
 router.post("/verify-otp", verifyOTPAndGenerateToken);
-router.post("/forgotPassword", forgotPassword);
-router.post("/resetPassword", resetPassword);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 // router.get('/banks', getBanks)
 
 module.exports = router;

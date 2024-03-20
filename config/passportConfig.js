@@ -1,37 +1,3 @@
-// const passport = require("passport");
-// const GoogleStrategy = require("passport-google-oauth20").Strategy;
-// const User = require("../models/User");
-
-// passport.use(
-//   new GoogleStrategy(
-//     {
-//       clientID: process.env.GOOGLE_CLIENT_ID,
-//       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-//       callbackURL: "http://localhost:3000/api/v1/auth/google/callback",
-//     },
-//     async (accessToken, refreshToken, profile, done) => {
-//         try {
-//       const existingUser = await User.findOne({ googleId: profile.id });
-
-//       if (existingUser) {
-//         return done(null, existingUser);
-//       }
-//       console.log(`user: ${profile}`);
-//           const newUser = await User.create({
-//             googleId: profile.id,
-//             name: profile.displayName,
-//             email: profile.emails[0].value,
-//           });
-
-//       return done(null, existingUser);
-//         } catch (error) {
-//           console.error("Error in Google OAuth strategy:", error);
-//           return done(error);
-//         }
-//     }
-//   )
-// );
-
 // passport.serializeUser((user, done) => {
 //   done(null, user.id);
 // });
@@ -42,6 +8,63 @@
 //   });
 // });
 
+// const passport = require("passport");
+// const GoogleStrategy = require("passport-google-oauth20").Strategy;
+// const User = require("../models/User");
+
+// passport.use(
+//   new GoogleStrategy(
+//     {
+//       clientID: process.env.GOOGLE_CLIENT_ID,
+//       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//       callbackURL: "https://supplya.cyclic.app/api/v1/auth/google/callback",
+//       passReqToCallback: true,
+//     },
+//     async (req, accessToken, refreshToken, profile, done) => {
+//       try {
+//         if (!profile || !profile.id) {
+//           throw new Error("Profile ID not found");
+//         }
+
+//         const { given_name, family_name, phone_number, email, password } =
+//           profile._json;
+//         console.log(profile._json);
+
+//         let existingUser = await User.findOne({ email });
+
+//         if (existingUser) {
+//           return done(null, existingUser);
+//         }
+
+//         // Ensure that all required fields are present
+//         if (!given_name || !family_name || !email) {
+//           throw new Error("Required fields missing in the Google profile");
+//         }
+
+//         const newUser = await User.findOne({ googleId: profile.id });
+
+//         if (newUser) {
+//           return done(null, newUser);
+//         } else {
+//           // Create a new user with Google profile information
+//           const createdUser = await User.create({
+//             googleId: profile.id,
+//             firstName: given_name,
+//             lastName: family_name,
+//             email: email,
+//             phoneNumber: "0",
+//             password: password || process.env.GOOGLE_OAUTH_PASSWORD,
+//           });
+//           return done(null, createdUser);
+//         }
+//       } catch (error) {
+//         console.error("Error in Google OAuth strategy:", error);
+//         done(error, false);
+//       }
+//     }
+//   )
+// );
+
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/User");
@@ -51,27 +74,43 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "https://supplya.cyclic.app/api/v1/auth/google/callback",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
       passReqToCallback: true,
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
-        const existingUser = await User.findOne({ googleId: profile.id });
-
-        if (existingUser) {
-          return done(null, existingUser);
+        if (!profile || !profile.id) {
+          return done(new Error("Profile ID not found"));
         }
 
-        const newUser = await User.create({
-          googleId: profile.id,
-          name: profile.displayName,
-          email: profile.emails[0].value,
-        });
+        const { given_name, family_name, email, phone_number } = profile._json;
 
-        return done(null, newUser);
+        if (!given_name || !family_name || !email) {
+          return done(
+            new Error("Required fields missing in the Google profile")
+          );
+        }
+
+        let user = await User.findOne({ email });
+
+        if (!user) {
+          user = await User.create({
+            googleId: profile.id,
+            firstName: given_name,
+            lastName: family_name,
+            email: email,
+            phoneNumber: phone_number || " ",
+            password: process.env.GOOGLE_OAUTH_PASSWORD || "",
+          });
+        } else {
+          user.googleId = profile.id;
+          user = await user.save();
+        }
+
+        return done(null, user);
       } catch (error) {
         console.error("Error in Google OAuth strategy:", error);
-        done(error, false);
+        return done(error, false);
       }
     }
   )

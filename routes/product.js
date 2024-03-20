@@ -11,8 +11,10 @@ const {
   getRelatedProducts,
 } = require("../controllers/product");
 
-const authenticateUser = require("../middleware/authenticateUser");
-
+const {
+  authenticateUser,
+  roleMiddleware,
+} = require("../middleware/authenticateUser");
 //product routes
 router.post("/create", authenticateUser, createProduct);
 router.get("/", getAllProducts);

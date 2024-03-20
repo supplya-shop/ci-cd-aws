@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
-const { UnauthenticatedError } = require("../errors");
+const { UnauthenticatedError, ForbiddenError } = require("../errors");
+const User = require("../models/User");
+const logger = require("./logging/logger");
 
 const authenticateUser = async (req, res, next) => {
   try {
@@ -13,26 +15,36 @@ const authenticateUser = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = extractUserFields(decoded);
 
+    next();
+  } catch (error) {
+    logger.error(error.message);
+    if (error instanceof jwt.JsonWebTokenError) {
+      res
+        .status(StatusCodes.UNAUTHORIZED)
+        .send({ msg: "Unauthorized: Please log in" });
+    } else {
+      res.status(StatusCodes.FORBIDDEN).send({ msg: error.message });
+    }
+  }
+};
+
+const roleMiddleware = (roles) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
+      console.log("Unauthorized");
+      throw new ForbiddenError(
+        "Forbidden: You don't have permission to access this resource"
+      );
+    } else {
+      next();
+    }
     // Add role-based authorization check
     if (req.user.role !== "admin" && req.originalUrl.startsWith("/admin")) {
       throw new ForbiddenError(
-        "You don't have permission to access this resource"
+        "Forbidden: You don't have permission to access this resource"
       );
     }
-
-    next();
-  } catch (error) {
-    if (
-      error instanceof UnauthenticatedError ||
-      error instanceof ForbiddenError
-    ) {
-      res.status(StatusCodes.UNAUTHORIZED).send({ msg: error.message });
-    } else {
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .send({ msg: "Internal Server Error" });
-    }
-  }
+  };
 };
 
 const extractUserFields = (decoded) => {
@@ -69,4 +81,19 @@ const extractUserFields = (decoded) => {
   }, {});
 };
 
-module.exports = authenticateUser;
+const currentUser = async (req, res, next) => {
+  if (req.isAuthenticated()) {
+    try {
+      const user = await User.findById(req.user._id);
+      req.currentUser = user;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      req.currentUser = null;
+    }
+  } else {
+    req.currentUser = null;
+  }
+  next();
+};
+
+module.exports = { authenticateUser, roleMiddleware };

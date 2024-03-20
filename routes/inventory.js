@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const authenticateUser = require("../middleware/authenticateUser");
+const {
+  authenticateUser,
+  roleMiddleware,
+} = require("../middleware/authenticateUser");
 const {
   createInventory,
   getInventory,

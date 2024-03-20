@@ -1,10 +1,13 @@
 const User = require("../models/User");
 const validateUser = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError, UnauthenticatedError } = require("../errors");
+const {
+  BadRequestError,
+  UnauthenticatedError,
+  NotFoundError,
+} = require("../errors");
 const multer = require("../middleware/upload");
-const winston = require("winston");
-const authenticateUser = require("../middleware/authenticateUser");
+const logger = require("../middleware/logging/logger");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -15,7 +18,7 @@ const getAllUsers = async (req, res) => {
 
     res.status(200).json({ users, totalCount });
   } catch (error) {
-    console.error(error.message);
+    logger.error(error.message);
     res.status(500).json({
       error: {
         message: "Failed to fetch users",
@@ -39,8 +42,8 @@ const getUserById = async (req, res) => {
         User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
       res.status(200).json(User);
     })
-    .catch((err) => {
-      console.error(err.message);
+    .catch((error) => {
+      logger.error(error.message);
       res.status(500).json({
         error: {
           message: "Failed to fetch user",
@@ -61,12 +64,13 @@ const createUser = async (req, res) => {
     await newUser.save();
     res
       .status(201)
-      .json({ message: "User created successfully", status: "success" });
-  } catch (err) {
-    console.error(err.message);
+      .json({ message: "User created successfully.", status: "success" });
+    logger.info(`${newUser.email} created successfully.`);
+  } catch (error) {
+    logger.error(error.message);
     res
       .status(500)
-      .json({ error: { message: "Failed to create user", status: "error" } });
+      .json({ error: { message: "Failed to create user.", status: "error" } });
   }
 };
 
@@ -100,36 +104,62 @@ const updateUser = async (req, res) => {
       User: response,
     });
   } catch (error) {
-    console.error(error.message);
+    logger.error(error.message);
     res.status(500).json({ error: { message: error.message } });
   }
 };
 
-// const deleteUser = async (req, authenticateUser, res) => {
-//   const userId = req.params.id;
-//   try {
-//     const userToDelete = await User.findById(userId);
-//     if (!userToDelete) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-//     const result = await User.findByIdAndDelete(userId);
-//     if (!result) {
-//       return res.status(500).json({ message: "Failed to delete user" });
-//     }
-//     res.status(200).json({
-//       message: "User deleted successfully",
-//       deletedUser: userToDelete,
-//     });
-//   } catch (error) {
-//     console.error(error.message);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
+const deleteUser = async (req, res, next) => {
+  const userId = req.params.id;
+  try {
+    const userToDelete = await User.findById(userId);
+    if (!userToDelete) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const result = await User.findByIdAndDelete(userId);
+    if (!result) {
+      return res.status(500).json({ message: "Failed to delete user" });
+    }
+    res.status(200).json({
+      message: "User deleted successfully",
+      deletedUser: userToDelete,
+    });
+  } catch (error) {
+    logger.error(error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const bulkdeleteUsers = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+      res.status(400).json({
+        error: "Invalid input. Please provide an array of user IDs.",
+      });
+      throw new NotFoundError("Unable to find user");
+    }
+    const result = await User.deleteMany({ _id: { $in: ids } });
+
+    if (result.deletedCount === 0) {
+      return res
+        .status(404)
+        .json({ error: "No users found with the provided IDs." });
+    }
+    res.json({
+      message: `${result.deletedCount} user(s) deleted successfully.`,
+    });
+  } catch (error) {
+    console.error("Error in bulk delete operation:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
-  // deleteUser,
+  deleteUser,
+  bulkdeleteUsers,
 };
