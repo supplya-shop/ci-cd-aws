@@ -24,18 +24,22 @@ const UserSchema = new mongoose.Schema({
   },
   country: {
     type: String,
+    default: "",
   },
 
   state: {
     type: String,
+    default: "",
   },
 
   address: {
     type: String,
+    default: "",
   },
 
   city: {
     type: String,
+    default: "",
   },
 
   postalCode: {
@@ -61,16 +65,19 @@ const UserSchema = new mongoose.Schema({
 
   businessName: {
     type: String,
+    default: "",
   },
 
   googleId: {
     type: String,
     unique: true,
     sparse: true,
+    default: "",
   },
 
   phoneNumber: {
     type: String,
+    default: "",
   },
 
   uniqueKey: {
@@ -97,6 +104,7 @@ const UserSchema = new mongoose.Schema({
 
   accountNumber: {
     type: String,
+    default: "",
   },
 
   bank: {
@@ -122,6 +130,7 @@ const UserSchema = new mongoose.Schema({
 
   dob: {
     type: Date,
+    default: "",
   },
 
   resetPasswordToken: {
