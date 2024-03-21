@@ -13,6 +13,7 @@ const bcrypt = require("bcryptjs");
 const {
   generateOTP,
   sendOTP,
+  resendOTPEmail,
   sendConfirmationEmail,
   resetPasswordMail,
 } = require("../middleware/mailUtil");
@@ -94,7 +95,9 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     const userData = userRegistrationCache.get(email);
 
     if (!user || !otp) {
-      throw new BadRequestError();
+      throw new BadRequestError(
+        "Invalid otp or email provided. Please verify and try again."
+      );
     }
     if (!userData) {
       throw new NoContentError("Registration complete! Proceed to login.");
@@ -109,7 +112,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     });
 
     await newUser.save();
-    userRegistrationCache.delete(email);
+    // userRegistrationCache.delete(email);
 
     await sendConfirmationEmail(email);
     const token = newUser.createJWT();
@@ -152,6 +155,55 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     res.status(StatusCodes.BAD_REQUEST).json({
       status: "error",
       message: "Internal server error. Please try again later.",
+    });
+  }
+};
+
+// Re-send OTP
+const resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the email is provided
+    if (!email) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Please provide your email.",
+      });
+    }
+
+    // Check if the user exists in the cache
+    const userData = await OtpLogs.findOne({ email });
+    if (!userData) {
+      console.log(`User with email ${email} not found in logs.`);
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "User not found. Please register first.",
+      });
+    }
+
+    // Generate a new OTP
+    const newOTPData = generateOTP();
+    const newOTP = newOTPData.otp;
+
+    userData.otp = newOTP;
+    await userData.save();
+
+    // Update the user's OTP in the cache
+    userRegistrationCache.set(email, { ...userData.toObject(), otp: newOTP });
+
+    // Send the new OTP
+    await resendOTPEmail(email, newOTP);
+
+    res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "New OTP sent successfully. Please check your email.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to re-send OTP. Please try again later.",
     });
   }
 };
@@ -350,6 +402,7 @@ module.exports = {
   login,
   registerUser,
   verifyOTPAndGenerateToken,
+  resendOTP,
   forgotPassword,
   resetPassword,
   googleAuth,
