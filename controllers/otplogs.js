@@ -21,6 +21,7 @@ const getAllOtpLogs = async (req, res) => {
     // logger.error(error.message);
     res.status(500).json({
       error: {
+        status: "error",
         message: "Failed to fetch otplogs",
       },
     });
