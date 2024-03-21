@@ -57,18 +57,21 @@ const getRelatedProducts = async (req, res) => {
     const currentProduct = await Product.findById(productId);
     console.log(`currentProduct: ${currentProduct}`);
     if (!currentProduct) {
-      return res.status(404).json({ message: "Product not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Product not found" });
     }
 
-    const relatedProducts = await product
-      .find({
-        category: Product.category,
-        _id: { $ne: productId }, // Exclude the original product
-      })
+    const relatedProducts = await Product.find({
+      category: Product.category,
+      _id: { $ne: productId }, // Exclude the original product
+    })
       .limit(10)
       .select("name price description image");
 
-    res.status(200).json({ relatedProducts });
+    res
+      .status(200)
+      .json({ status: "success", relatedProducts: relatedProducts });
   } catch (error) {
     console.error("Error fetching related products:", error);
     res.status(500).json({ message: "Internal Server Error", status: "error" });
@@ -87,7 +90,7 @@ const getNewlyArrivedBrands = async (req, res, next) => {
     });
     const response = {
       status: "success",
-      msg: "Products fetched successfully",
+      message: "Products fetched successfully",
       data: Array.from(brandMap.values()),
     };
     res.status(StatusCodes.OK).json(response);
@@ -95,7 +98,7 @@ const getNewlyArrivedBrands = async (req, res, next) => {
     console.error(error.message);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      msg: "Failed to fetch products",
+      message: "Failed to fetch products",
       error: error.message,
     });
   }
@@ -112,6 +115,7 @@ const getProductById = async (req, res, next) => {
     .then((product) => {
       if (!product) {
         return res.status(404).json({
+          status: "error",
           message: "Product not found",
         });
       }
@@ -120,9 +124,8 @@ const getProductById = async (req, res, next) => {
     .catch((err) => {
       console.error(err.message);
       res.status(500).json({
-        error: {
-          message: "Failed to fetch product",
-        },
+        status: "error",
+        message: "Failed to fetch product",
       });
     });
 };
@@ -135,14 +138,21 @@ const updateProduct = async (req, res, next) => {
 
     const result = await Product.findByIdAndUpdate(productId, updates, options);
     if (!result) {
-      return res.status(404).json({ message: "Product not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Product not found" });
     }
-    res
-      .status(200)
-      .json({ message: "Product updated successfully", product: result });
+    res.status(200).json({
+      status: "success",
+      message: "Product updated successfully",
+      product: result,
+    });
   } catch (error) {
     console.error(error.message);
-    res.status(500).json({ error: { message: "Failed to update product" } });
+    res.status(500).json({
+      status: "error",
+      message: "Failed to update product",
+    });
   }
 };
 
@@ -153,6 +163,7 @@ const uploadProductImages = async (req, res, next) => {
 
     if (!product) {
       return res.status(404).json({
+        status: "error",
         message: "Product not found",
       });
     }
@@ -161,16 +172,14 @@ const uploadProductImages = async (req, res, next) => {
 
     const savedProduct = await product.save();
     res.json({
-      message: "Product images uploaded successfully",
+      status: "success",
       product: savedProduct,
     });
   } catch (error) {
     console.error(error.message);
-    res.status(500).json({
-      error: {
-        message: "Failed to upload product images",
-      },
-    });
+    res
+      .status(500)
+      .json({ status: "error", message: "Failed to upload product images" });
   }
 };
 
@@ -179,10 +188,12 @@ const deleteProduct = async (req, res, next) => {
   try {
     const result = await Product.findByIdAndDelete(productId);
     console.log(result);
-    res.json({ message: "Product deleted successfully" });
+    res.json({ status: "success", message: "Product deleted successfully" });
   } catch (error) {
     console.log(error.message);
-    res.status(500).json({ error: { message: "Failed to delete product" } });
+    res
+      .status(500)
+      .json({ status: "error", message: "Failed to delete product" });
   }
 };
 

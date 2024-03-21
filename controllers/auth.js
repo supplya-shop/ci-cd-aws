@@ -25,19 +25,20 @@ const registerUser = async (req, res) => {
   try {
     const { email, password, firstName, lastName } = req.body;
     if (!email) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Please enter your email",
-      });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ status: "error", message: "Please enter your email" });
     }
     if (!password) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Please enter your password",
-      });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ status: "error", message: "Please enter your password" });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
         message:
           "This email already exists within our records. Please use a unique email or reset your password if you don't remember it.",
       });
@@ -69,14 +70,16 @@ const registerUser = async (req, res) => {
     await OtpLogs.create(userData);
 
     res.status(StatusCodes.OK).json({
+      status: "success",
       message: "OTP sent successfully. Please check your email.",
     });
   } catch (error) {
     if (error.name === "ValidatorError") {
-      return res.status(400).json({ message: error.message });
+      return res.status(400).json({ status: "error", message: error.message });
     }
     console.log(`error: ${error}`);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
       message: "Failed to register user. Please try again later.",
     });
   }
@@ -112,6 +115,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     const token = newUser.createJWT();
 
     res.status(StatusCodes.CREATED).json({
+      status: "success",
       message: "Congratulations! You have successfully registered on Supplya.",
       user: {
         _id: newUser._id,
@@ -134,16 +138,19 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
   } catch (error) {
     if (error instanceof BadRequestError) {
       return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
         message:
           "Incorrect OTP or email provided. Please verify and try again.",
       });
     } else if (error instanceof NoContentError) {
       return res.status(StatusCodes.NO_CONTENT).json({
+        status: "error",
         message: error.message,
       });
     }
     console.error(error);
     res.status(StatusCodes.BAD_REQUEST).json({
+      status: "error",
       message: "Internal server error. Please try again later.",
     });
   }
@@ -176,7 +183,7 @@ const login = async (req, res, next) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
-      msg: "Login successful",
+      message: "Login successful",
       user: {
         _id: user._id,
         firstName: user.firstName,
@@ -203,12 +210,12 @@ const login = async (req, res, next) => {
     if (error.status === 404) {
       res
         .status(StatusCodes.NOT_FOUND)
-        .json({ msg: error.message, status: "error" });
+        .json({ message: error.message, status: "error" });
     }
     // logger.error(error.message);
     res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ msg: error.message, status: "error" });
+      .json({ message: error.message, status: "error" });
   }
 };
 
@@ -270,12 +277,14 @@ const forgotPassword = async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     res.status(200).json({
-      msg: "Password reset code sent to your email",
+      status: "success",
+      message: "Password reset code sent to your email",
     });
   } catch (error) {
     console.log(error);
     res.status(400).json({
-      msg: error.message,
+      status: "error",
+      message: error.message,
     });
   }
 };
@@ -309,12 +318,14 @@ const resetPassword = async (req, res) => {
     await resetPasswordMail(user.email);
 
     res.status(200).json({
-      msg: "Password reset successfully",
+      status: "success",
+      message: "Password reset successfully",
     });
   } catch (error) {
     console.error("Error resetting password:", error);
     res.status(400).json({
-      msg: error.message,
+      status: "error",
+      message: error.message,
     });
   }
 };

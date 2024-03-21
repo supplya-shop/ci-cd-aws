@@ -20,9 +20,8 @@ const getAllUsers = async (req, res) => {
   } catch (error) {
     // logger.error(error.message);
     res.status(500).json({
-      error: {
-        message: "Failed to fetch users",
-      },
+      status: "error",
+      message: "Failed to fetch users",
     });
   }
 };
@@ -33,6 +32,7 @@ const getUserById = async (req, res) => {
     .then((User) => {
       if (!User) {
         return res.status(404).json({
+          status: "error",
           message: "user not found",
         });
       }
@@ -40,14 +40,13 @@ const getUserById = async (req, res) => {
         User.firstName.charAt(0).toUpperCase() + User.firstName.slice(1);
       User.lastName =
         User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
-      res.status(200).json(User);
+      res.status(200).json({ status: "success", user: User });
     })
     .catch((error) => {
       // logger.error(error.message);
       res.status(500).json({
-        error: {
-          message: "Failed to fetch user",
-        },
+        status: "error",
+        message: "Failed to fetch user",
       });
     });
 };
@@ -70,7 +69,7 @@ const createUser = async (req, res) => {
     // logger.error(error.message);
     res
       .status(500)
-      .json({ error: { message: "Failed to create user.", status: "error" } });
+      .json({ message: "Failed to create user.", status: "error" });
   }
 };
 
@@ -89,7 +88,9 @@ const updateUser = async (req, res) => {
       options
     );
     if (!result) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
     }
 
     // Check if result is a Mongoose document before calling toObject()
@@ -100,12 +101,13 @@ const updateUser = async (req, res) => {
     }
 
     res.status(200).json({
+      status: "success",
       message: "User updated successfully",
-      User: response,
+      user: response,
     });
   } catch (error) {
     // logger.error(error.message);
-    res.status(500).json({ error: { message: error.message } });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -114,13 +116,18 @@ const deleteUser = async (req, res, next) => {
   try {
     const userToDelete = await User.findById(userId);
     if (!userToDelete) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
     }
     const result = await User.findByIdAndDelete(userId);
     if (!result) {
-      return res.status(500).json({ message: "Failed to delete user" });
+      return res
+        .status(500)
+        .json({ status: "error", message: "Failed to delete user" });
     }
     res.status(200).json({
+      status: "success",
       message: "User deleted successfully",
       deletedUser: userToDelete,
     });
@@ -135,23 +142,26 @@ const bulkdeleteUsers = async (req, res) => {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {
       res.status(400).json({
-        error: "Invalid input. Please provide an array of user IDs.",
+        status: "error",
+        message: "Invalid input. Please provide an array of user IDs.",
       });
       throw new NotFoundError("Unable to find user");
     }
     const result = await User.deleteMany({ _id: { $in: ids } });
 
     if (result.deletedCount === 0) {
-      return res
-        .status(404)
-        .json({ error: "No users found with the provided IDs." });
+      return res.status(404).json({
+        status: "error",
+        message: "No users found with the provided IDs.",
+      });
     }
     res.json({
+      status: "success",
       message: `${result.deletedCount} user(s) deleted successfully.`,
     });
   } catch (error) {
     console.error("Error in bulk delete operation:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ status: "error", message: "Internal server error" });
   }
 };
 
