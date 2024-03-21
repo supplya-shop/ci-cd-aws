@@ -5,6 +5,7 @@ const passport = require("passport");
 const {
   registerUser,
   verifyOTPAndGenerateToken,
+  resendOTP,
   login,
   // getBanks,
   googleAuth,
@@ -21,6 +22,7 @@ router.get("/google/redirect", googleAuthCallback);
 router.post("/login", login);
 router.post("/register", registerUser);
 router.post("/verify-otp", verifyOTPAndGenerateToken);
+router.post("/resend-otp", resendOTP);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 // router.get('/banks', getBanks)

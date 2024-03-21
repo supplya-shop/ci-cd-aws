@@ -9,18 +9,26 @@ const createCategory = async (req, res) => {
     // Check for existing category
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ status: "error", msg: "Category already exists" });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ status: "error", message: "Category already exists" });
     }
 
     const newCategory = new Category({ name, description });
     const savedCategory = await newCategory.save();
 
-    res.status(StatusCodes.CREATED).json({ status: "success", category: savedCategory });
+    res
+      .status(StatusCodes.CREATED)
+      .json({ status: "success", category: savedCategory });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to create category: " + error.message });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        message: "Failed to create category: " + error.message,
+      });
   }
 };
-
 
 const getAllCategories = async (req, res) => {
   try {
@@ -29,7 +37,7 @@ const getAllCategories = async (req, res) => {
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: error.message });
+      .json({ status: "error", message: error.message });
   }
 };
 
@@ -41,14 +49,14 @@ const getCategoryById = async (req, res) => {
     if (!category) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", msg: "Category not found" });
+        .json({ status: "error", message: "Category not found" });
     }
 
     res.status(StatusCodes.OK).json({ status: "success", category });
   } catch (error) {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", msg: error.message });
+      .json({ status: "error", message: error.message });
   }
 };
 
@@ -60,17 +68,29 @@ const updateCategory = async (req, res) => {
     // Check if category exists
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) {
-      return res.status(StatusCodes.NOT_FOUND).json({ status: "error", msg: "Category not found" });
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "Category not found" });
     }
 
-    const updatedCategory = await Category.findByIdAndUpdate(categoryId, updates, { new: true });
+    const updatedCategory = await Category.findByIdAndUpdate(
+      categoryId,
+      updates,
+      { new: true }
+    );
 
-    res.status(StatusCodes.OK).json({ status: "success", category: updatedCategory });
+    res
+      .status(StatusCodes.OK)
+      .json({ status: "success", category: updatedCategory });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to update category: " + error.message });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        message: "Failed to update category: " + error.message,
+      });
   }
 };
-
 
 const deleteCategory = async (req, res) => {
   try {
@@ -81,22 +101,31 @@ const deleteCategory = async (req, res) => {
     if (dependentProducts.length > 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
-        msg: "Cannot delete category as there are products associated with it",
+        message:
+          "Cannot delete category as there are products associated with it",
       });
     }
 
     const deletedCategory = await Category.findByIdAndDelete(categoryId);
 
     if (!deletedCategory) {
-      return res.status(StatusCodes.NOT_FOUND).json({ status: "error", msg: "Category not found" });
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "Category not found" });
     }
 
-    res.status(StatusCodes.OK).json({ status: "success", msg: "Category deleted successfully" });
+    res
+      .status(StatusCodes.OK)
+      .json({ status: "success", message: "Category deleted successfully" });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ status: "error", msg: "Failed to delete category: " + error.message });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        message: "Failed to delete category: " + error.message,
+      });
   }
 };
-
 
 module.exports = {
   createCategory,
