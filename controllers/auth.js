@@ -86,23 +86,30 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Verify OTP and generate token
 const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await OtpLogs.findOne({ email, otp });
-    const userData = userRegistrationCache.get(email);
+    // Check if both email and otp are provided
+    if (!email || !otp) {
+      throw new BadRequestError("Please provide both email and OTP.");
+    }
 
-    if (!user || !otp) {
+    // Check if the user exists in the OTP logs
+    const user = await OtpLogs.findOne({ email, otp });
+    if (!user) {
       throw new BadRequestError(
-        "Invalid otp or email provided. Please verify and try again."
+        "Invalid OTP or email provided. Please verify and try again."
       );
     }
+
+    // Check if user data exists in the cache
+    const userData = userRegistrationCache.get(email);
     if (!userData) {
       throw new NoContentError("Registration complete! Proceed to login.");
     }
 
+    // Create a new user instance
     const newUser = new User({
       firstName: userData.firstName,
       lastName: userData.lastName,
@@ -111,12 +118,19 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       otp: otp,
     });
 
+    // Save the new user
     await newUser.save();
-    // userRegistrationCache.delete(email);
 
+    // Send confirmation email
     await sendConfirmationEmail(email);
+
+    // Delete user details from OtpLogs after successful registration
+    await OtpLogs.findOneAndDelete({ email, otp });
+
+    // Create JWT token
     const token = newUser.createJWT();
 
+    // Respond with success message and user data
     res.status(StatusCodes.CREATED).json({
       status: "success",
       message: "Congratulations! You have successfully registered on Supplya.",
@@ -132,34 +146,26 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
         country: newUser.country,
         city: newUser.city,
         state: newUser.state,
-        state: newUser.state,
         address: newUser.address,
         createdAt: newUser.createdAt,
       },
       token,
     });
   } catch (error) {
-    if (error instanceof BadRequestError) {
+    if (error instanceof BadRequestError || error instanceof NoContentError) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
-        message:
-          "Incorrect OTP or email provided. Please verify and try again.",
-      });
-    } else if (error instanceof NoContentError) {
-      return res.status(StatusCodes.NO_CONTENT).json({
         status: "error",
         message: error.message,
       });
     }
     console.error(error);
-    res.status(StatusCodes.BAD_REQUEST).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Internal server error. Please try again later.",
     });
   }
 };
 
-// Re-send OTP
 const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -173,9 +179,9 @@ const resendOTP = async (req, res) => {
     }
 
     // Check if the user exists in the cache
-    const userData = await OtpLogs.findOne({ email });
+    const userData = userRegistrationCache.get(email);
     if (!userData) {
-      console.log(`User with email ${email} not found in logs.`);
+      console.log(`User with email ${email} not found in cache.`);
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "User not found. Please register first.",
@@ -184,13 +190,14 @@ const resendOTP = async (req, res) => {
 
     // Generate a new OTP
     const newOTPData = generateOTP();
+    console.log("new otp: ", newOTPData);
     const newOTP = newOTPData.otp;
 
-    userData.otp = newOTP;
-    await userData.save();
-
     // Update the user's OTP in the cache
-    userRegistrationCache.set(email, { ...userData.toObject(), otp: newOTP });
+    userRegistrationCache.set(email, { ...userData, otp: newOTP });
+
+    // Update the user's OTP in the OtpLogs collection
+    await OtpLogs.updateOne({ email }, { otp: newOTP });
 
     // Send the new OTP
     await resendOTPEmail(email, newOTP);
