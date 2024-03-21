@@ -1,9 +1,11 @@
 const User = require("../models/User");
+const OtpLogs = require("../models/OtpLogs");
 const { StatusCodes } = require("http-status-codes");
 const {
   BadRequestError,
   UnauthenticatedError,
   NotFoundError,
+  NoContentError,
 } = require("../errors");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
@@ -16,10 +18,12 @@ const {
 } = require("../middleware/mailUtil");
 // const logger = require("../middleware/logging/logger");
 
+const userRegistrationCache = new Map();
+
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 const registerUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, firstName, lastName } = req.body;
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Please enter your email",
@@ -35,7 +39,7 @@ const registerUser = async (req, res) => {
     if (existingUser) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message:
-          "This email already exists within our records. Please use a unique email or reset your password to login if you don't remember it.",
+          "This email already exists within our records. Please use a unique email or reset your password if you don't remember it.",
       });
     }
 
@@ -46,16 +50,23 @@ const registerUser = async (req, res) => {
     }
 
     const otpData = generateOTP();
+    console.log("otp: ", otpData.otp);
     const otp = otpData.otp;
+    userRegistrationCache.set(email, {
+      firstName,
+      lastName,
+      password,
+      otp,
+    });
 
     await sendOTP(email, otp);
 
     const userData = {
       ...req.body,
-      createdAt: Date.now(),
+      createdAt: Date().now,
       otp: otp,
     };
-    await User.create(userData);
+    await OtpLogs.create(userData);
 
     res.status(StatusCodes.OK).json({
       message: "OTP sent successfully. Please check your email.",
@@ -64,7 +75,7 @@ const registerUser = async (req, res) => {
     if (error.name === "ValidatorError") {
       return res.status(400).json({ message: error.message });
     }
-
+    console.log(`error: ${error}`);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: "Failed to register user. Please try again later.",
     });
@@ -76,34 +87,65 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email, otp });
+    const user = await OtpLogs.findOne({ email, otp });
+    const userData = userRegistrationCache.get(email);
 
-    if (!user) {
-      throw new NotFoundError("User does not exist");
+    if (!user || !otp) {
+      throw new BadRequestError();
     }
-    if (!otp) {
-      throw new NotFoundError("Invalid or expired OTP");
+    if (!userData) {
+      throw new NoContentError("Registration complete! Proceed to login.");
     }
+
+    const newUser = new User({
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email,
+      password: userData.password,
+      otp: otp,
+    });
+
+    await newUser.save();
+    userRegistrationCache.delete(email);
 
     await sendConfirmationEmail(email);
-    const token = user.createJWT();
+    const token = newUser.createJWT();
 
     res.status(StatusCodes.CREATED).json({
       message: "Congratulations! You have successfully registered on Supplya.",
       user: {
-        name: user.name,
-        role: user.role,
-        email: user.email,
-        createdAt: user.createdAt,
-        phoneNumber: user.phoneNumber,
+        _id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        dob: newUser.dob,
+        role: newUser.role,
+        gender: newUser.gender,
+        country: newUser.country,
+        city: newUser.city,
+        state: newUser.state,
+        state: newUser.state,
+        address: newUser.address,
+        createdAt: newUser.createdAt,
       },
       token,
     });
   } catch (error) {
-    console.error("Error verifying OTP:", error);
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ message: "Failed to verify OTP. Please try again later." });
+    if (error instanceof BadRequestError) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message:
+          "Incorrect OTP or email provided. Please verify and try again.",
+      });
+    } else if (error instanceof NoContentError) {
+      return res.status(StatusCodes.NO_CONTENT).json({
+        message: error.message,
+      });
+    }
+    console.error(error);
+    res.status(StatusCodes.BAD_REQUEST).json({
+      message: "Internal server error. Please try again later.",
+    });
   }
 };
 

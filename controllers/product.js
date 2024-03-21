@@ -105,7 +105,7 @@ const getProductById = async (req, res, next) => {
   const productId = req.params.id;
   Product.findById(productId)
     .populate({
-      path: "createdBy", // Referencing the 'createdBy' field from the Product schema
+      path: "createdBy",
       select:
         "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
     })

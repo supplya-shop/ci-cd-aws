@@ -1,6 +1,4 @@
 const mongoose = require("mongoose");
-const Product = require('./Product')
-
 
 const orderSchema = mongoose.Schema({
   orderItems: [
@@ -16,7 +14,6 @@ const orderSchema = mongoose.Schema({
         type: Number,
         default: 1,
       },
-
     },
   ],
   shippingAddress1: {
@@ -52,7 +49,7 @@ const orderSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
-  
+
   paymentRefId: {
     type: String,
   },
