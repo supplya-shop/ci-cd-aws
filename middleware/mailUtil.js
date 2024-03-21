@@ -43,8 +43,8 @@ const sendOTP = async (email, otp) => {
         <tr>
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
-                    <img style="text-align: left; width: 100px; margin-left: 100px;"
-                        src="https://storage.cloud.google.com/supplyaassets/logos/Supplya%20Logo%20on%20GBG.png" alt="logo" />
+                    <img style="text-align: left; width: 90px; margin-left: 100px;"
+                        src="/supplya/assets/Supplya Logo on GBG.png" alt="logo" />
                 </div>
                 <table align="center" bgcolor="#F4F6F8" width="70%" style="border-radius: 15px; padding:0;">
                     <tr>
@@ -193,7 +193,7 @@ const sendOTP = async (email, otp) => {
                 background-color: #0199a4;
                 color: white;
                 border-radius: 6px;
-                padding: 8px 25px;
+                padding: 10px 25px;
                 width: fit-content;
                 margin: 0 auto;
                 cursor: pointer;
@@ -250,8 +250,8 @@ const resendOTPEmail = async (email, otp) => {
         <tr>
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
-                    <img style="text-align: left; width: 100px; margin-left: 100px;"
-                        src="https://storage.cloud.google.com/supplyaassets/logos/Supplya%20Logo%20on%20GBG.png" alt="logo" />
+                    <img style="text-align: left; width: 90px; margin-left: 100px;"
+                        src="/supplya/assets/Supplya Logo on GBG.png" alt="logo" />
                 </div>
                 <table align="center" bgcolor="#F4F6F8" width="70%" style="border-radius: 15px; padding:0;">
                     <tr>
@@ -400,7 +400,7 @@ const resendOTPEmail = async (email, otp) => {
                 background-color: #0199a4;
                 color: white;
                 border-radius: 6px;
-                padding: 8px 25px;
+                padding: 10px 25px;
                 width: fit-content;
                 margin: 0 auto;
                 cursor: pointer;
@@ -478,8 +478,8 @@ const sendConfirmationEmail = async (email) => {
             "
           >
             <img
-              style="text-align: left; width: 100px; margin-left: 100px"
-              src="https://storage.googleapis.com/supplyaassets/logos/Supplya%20Logo%20on%20GBG.png"
+              style="text-align: left; width: 90px; margin-left: 100px"
+              src="/supplya/assets/Supplya Logo on GBG.png"
               alt="logo"
             />
           </div>
@@ -547,7 +547,7 @@ const sendConfirmationEmail = async (email) => {
                                 background-color: #0199a4;
                                 color: white;
                                 border-radius: 6px;
-                                padding: 8px 25px;
+                                padding: 10px 25px;
                                 width: fit-content;
                                 margin: 0 auto;
                                 cursor: pointer;
