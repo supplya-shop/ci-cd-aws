@@ -15,6 +15,7 @@ const createProduct = async (req, res, next) => {
       .status(400)
       .json({ error: error.details.map((detail) => detail.message) });
   }
+  value.createdBy = userId;
   const newProduct = new Product(value);
   try {
     await newProduct.save();
@@ -30,24 +31,46 @@ const createProduct = async (req, res, next) => {
 };
 
 const getAllProducts = async (req, res, next) => {
-  await Product.find({})
-    .populate({
-      path: "createdBy", // Referencing the 'createdBy' field from the Product schema
-      select:
-        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
-    })
-    .then((products) => {
-      res.status(200).json({ products, count: products.length });
-    })
-    .catch((err) => {
-      console.error(err.message);
-      res.status(500).json({
-        error: {
-          message: "Failed to fetch products",
-          status: "error",
-        },
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const totalProducts = await Product.countDocuments();
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    const products = await Product.find({})
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
+      .limit(limit)
+      .skip(startIndex);
+
+    if (products.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "No products found",
       });
+    }
+
+    res.status(StatusCodes.OK).json({
+      status: "success",
+      products: products,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts,
     });
+  } catch (error) {
+    console.error(error.message);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to fetch products",
+    });
+  }
 };
 
 const getRelatedProducts = async (req, res) => {
@@ -63,18 +86,87 @@ const getRelatedProducts = async (req, res) => {
     }
 
     const relatedProducts = await Product.find({
-      category: Product.category,
-      _id: { $ne: productId }, // Exclude the original product
+      category: currentProduct.category,
+      _id: { $ne: productId },
     })
       .limit(10)
       .select("name price description image");
 
-    res
-      .status(200)
-      .json({ status: "success", relatedProducts: relatedProducts });
+    res.status(200).json({ status: "success", products: relatedProducts });
   } catch (error) {
     console.error("Error fetching related products:", error);
     res.status(500).json({ message: "Internal Server Error", status: "error" });
+  }
+};
+
+const getProductsByBrand = async (req, res) => {
+  try {
+    let brand = req.params.brand;
+    brand = brand.toLowerCase();
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const totalProducts = await Product.countDocuments({
+      brand: { $regex: new RegExp(brand, "i") },
+    });
+    const totalPages = Math.ceil(totalProducts / limit);
+    const products = await Product.find({
+      brand: { $regex: new RegExp(brand, "i") },
+    })
+      .limit(limit)
+      .skip(startIndex);
+    if (products.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "No products found for the given brand",
+      });
+    }
+    res.status(StatusCodes.OK).json({
+      status: "success",
+      products: products,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts,
+    });
+  } catch (error) {
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: error.message });
+  }
+};
+
+const getDiscountedProducts = async (req, res) => {
+  try {
+    const discountedProducts = await Product.find({ hasDiscount: true });
+    if (discountedProducts.length === 0) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "No products found with discount" });
+    }
+    res.json({ status: "success", products: discountedProducts });
+  } catch (error) {
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: error.message });
+  }
+};
+
+const getFlashsaleProducts = async (req, res) => {
+  try {
+    const flashsaleProducts = await Product.find({ flashsale: true });
+    if (flashsaleProducts.length === 0) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "No flashsale products found" });
+    }
+    res.json({ status: "success", products: flashsaleProducts });
+  } catch (error) {
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: error.message });
   }
 };
 
@@ -139,17 +231,17 @@ const updateProduct = async (req, res, next) => {
     const result = await Product.findByIdAndUpdate(productId, updates, options);
     if (!result) {
       return res
-        .status(404)
+        .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "Product not found" });
     }
-    res.status(200).json({
+    res.status(StatusCodes.OK).json({
       status: "success",
       message: "Product updated successfully",
       product: result,
     });
   } catch (error) {
     console.error(error.message);
-    res.status(500).json({
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to update product",
     });
@@ -162,7 +254,7 @@ const uploadProductImages = async (req, res, next) => {
     const product = await Product.findById(productId);
 
     if (!product) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "Product not found",
       });
@@ -171,8 +263,9 @@ const uploadProductImages = async (req, res, next) => {
     product.images = req.body.images;
 
     const savedProduct = await product.save();
-    res.json({
+    res.status(StatusCodes.CREATED).json({
       status: "success",
+      message: "image uploaded successfully",
       product: savedProduct,
     });
   } catch (error) {
@@ -200,9 +293,12 @@ const deleteProduct = async (req, res, next) => {
 module.exports = {
   createProduct,
   getAllProducts,
+  getProductsByBrand,
   getNewlyArrivedBrands,
   getProductById,
   getRelatedProducts,
+  getFlashsaleProducts,
+  getDiscountedProducts,
   updateProduct,
   uploadProductImages,
   deleteProduct,

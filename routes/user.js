@@ -11,7 +11,7 @@ const {
 
 const {
   authenticateUser,
-  roleMiddleware,
+  rolesAllowed,
 } = require("../middleware/authenticateUser");
 
 //user routes
@@ -22,7 +22,7 @@ router.patch("/:id", authenticateUser, updateUser);
 router.delete(
   "/bulkdeleteusers",
   authenticateUser,
-  roleMiddleware("admin"),
+  rolesAllowed("admin"),
   bulkdeleteUsers
 );
 router.delete("/:id", authenticateUser, deleteUser);

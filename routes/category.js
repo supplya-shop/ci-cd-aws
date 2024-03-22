@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   authenticateUser,
-  roleMiddleware,
+  rolesAllowed,
 } = require("../middleware/authenticateUser");
 const {
   createCategory,

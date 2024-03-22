@@ -62,6 +62,15 @@ const ProductSchema = new schema({
   },
   hasDiscount: {
     type: Boolean,
+    default: false,
+  },
+  flashsale: {
+    type: Boolean,
+    default: false,
+  },
+  saleCount: {
+    type: Number,
+    default: 0,
   },
   dateCreated: {
     type: Date,
@@ -72,6 +81,7 @@ const ProductSchema = new schema({
   },
   moq: {
     type: Number,
+    default: 1,
   },
 });
 

@@ -5,7 +5,7 @@ const { getAllOtpLogs, bulkdeleteOtpLogs } = require("../controllers/otplogs");
 
 const {
   authenticateUser,
-  roleMiddleware,
+  rolesAllowed,
 } = require("../middleware/authenticateUser");
 
 //user routes

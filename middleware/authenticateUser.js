@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
 const { UnauthenticatedError, ForbiddenError } = require("../errors");
 const User = require("../models/User");
-const logger = require("./logging/logger");
+// const logger = require("./logging/logger");
 
 const authenticateUser = async (req, res, next) => {
   try {
@@ -17,7 +17,8 @@ const authenticateUser = async (req, res, next) => {
 
     next();
   } catch (error) {
-    logger.error(error.message);
+    // logger.error(error.message);
+    console.log("Unauthorized");
     if (error instanceof jwt.JsonWebTokenError) {
       res
         .status(StatusCodes.UNAUTHORIZED)
@@ -28,7 +29,7 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
-const roleMiddleware = (roles) => {
+const rolesAllowed = (roles) => {
   return (req, res, next) => {
     if (!req.user || !req.user.role || !roles.includes(req.user.role)) {
       console.log("Unauthorized");
@@ -96,4 +97,4 @@ const currentUser = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticateUser, roleMiddleware };
+module.exports = { authenticateUser, rolesAllowed };
