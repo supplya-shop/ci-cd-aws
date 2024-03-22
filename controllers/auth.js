@@ -89,27 +89,19 @@ const registerUser = async (req, res) => {
 const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
-
-    // Check if both email and otp are provided
     if (!email || !otp) {
-      throw new BadRequestError("Please provide both email and OTP.");
+      throw new NotFoundError("Please provide both email and OTP.");
     }
-
-    // Check if the user exists in the OTP logs
     const user = await OtpLogs.findOne({ email, otp });
     if (!user) {
-      throw new BadRequestError(
+      throw new NotFoundError(
         "Invalid OTP or email provided. Please verify and try again."
       );
     }
-
-    // Check if user data exists in the cache
     const userData = userRegistrationCache.get(email);
     if (!userData) {
       throw new NoContentError("Registration complete! Proceed to login.");
     }
-
-    // Create a new user instance
     const newUser = new User({
       firstName: userData.firstName,
       lastName: userData.lastName,
@@ -117,17 +109,10 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       password: userData.password,
       otp: otp,
     });
-
-    // Save the new user
     await newUser.save();
-
-    // Send confirmation email
     await sendConfirmationEmail(email);
-
-    // Delete user details from OtpLogs after successful registration
     await OtpLogs.findOneAndDelete({ email, otp });
 
-    // Create JWT token
     const token = newUser.createJWT();
 
     // Respond with success message and user data
@@ -152,8 +137,8 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       token,
     });
   } catch (error) {
-    if (error instanceof BadRequestError || error instanceof NoContentError) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+    if (error instanceof NotFoundError || error instanceof NoContentError) {
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: error.message,
       });
@@ -188,12 +173,10 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    // Generate a new OTP
     const newOTPData = generateOTP();
     console.log("new otp: ", newOTPData);
     const newOTP = newOTPData.otp;
 
-    // Update the user's OTP in the cache
     userRegistrationCache.set(email, { ...userData, otp: newOTP });
 
     // Update the user's OTP in the OtpLogs collection
