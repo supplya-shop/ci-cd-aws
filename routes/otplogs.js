@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const OtpLogs = require("../models/OtpLogs");
-const { getAllOtpLogs } = require("../controllers/otplogs");
+const { getAllOtpLogs, bulkdeleteOtpLogs } = require("../controllers/otplogs");
 
 const {
   authenticateUser,
@@ -10,5 +10,6 @@ const {
 
 //user routes
 router.get("/", getAllOtpLogs);
+router.delete("/bulkdeleteOtpLogs", bulkdeleteOtpLogs);
 
 module.exports = router;

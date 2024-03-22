@@ -86,82 +86,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-// // Verify OTP and generate token
-// const verifyOTPAndGenerateToken = async (req, res, next) => {
-//   try {
-//     const { email, otp } = req.body;
-
-//     const user = await OtpLogs.findOne({ email, otp });
-//     console.log("user: ", user);
-//     const userData = userRegistrationCache.get(email);
-//     console.log("userData: ", userData);
-
-//     if (!user || !otp) {
-//       throw new BadRequestError(
-//         "Invalid otp or email provided. Please verify and try again."
-//       );
-//     }
-//     if (!userData) {
-//       throw new NoContentError("Registration complete! Proceed to login.");
-//     }
-
-//     const newUser = new User({
-//       firstName: userData.firstName,
-//       lastName: userData.lastName,
-//       email,
-//       password: userData.password,
-//       otp: otp,
-//     });
-
-//     await newUser.save();
-//     // userRegistrationCache.delete(email);
-
-//     await sendConfirmationEmail(email);
-//     const token = newUser.createJWT();
-
-//     res.status(StatusCodes.CREATED).json({
-//       status: "success",
-//       message: "Congratulations! You have successfully registered on Supplya.",
-//       user: {
-//         _id: newUser._id,
-//         firstName: newUser.firstName,
-//         lastName: newUser.lastName,
-//         email: newUser.email,
-//         phoneNumber: newUser.phoneNumber,
-//         dob: newUser.dob,
-//         role: newUser.role,
-//         gender: newUser.gender,
-//         country: newUser.country,
-//         city: newUser.city,
-//         state: newUser.state,
-//         state: newUser.state,
-//         address: newUser.address,
-//         createdAt: newUser.createdAt,
-//       },
-//       token,
-//     });
-//   } catch (error) {
-//     if (error instanceof BadRequestError) {
-//       return res.status(StatusCodes.BAD_REQUEST).json({
-//         status: "error",
-//         message:
-//           "Incorrect OTP or email provided. Please verify and try again.",
-//       });
-//     } else if (error instanceof NoContentError) {
-//       return res.status(StatusCodes.NO_CONTENT).json({
-//         status: "error",
-//         message: error.message,
-//       });
-//     }
-//     console.error(error);
-//     res.status(StatusCodes.BAD_REQUEST).json({
-//       status: "error",
-//       message: "Internal server error. Please try again later.",
-//     });
-//   }
-// };
-
-// Verify OTP and generate token
 const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
@@ -200,6 +124,9 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     // Send confirmation email
     await sendConfirmationEmail(email);
 
+    // Delete user details from OtpLogs after successful registration
+    await OtpLogs.findOneAndDelete({ email, otp });
+
     // Create JWT token
     const token = newUser.createJWT();
 
@@ -218,7 +145,6 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
         gender: newUser.gender,
         country: newUser.country,
         city: newUser.city,
-        state: newUser.state,
         state: newUser.state,
         address: newUser.address,
         createdAt: newUser.createdAt,
@@ -264,6 +190,7 @@ const resendOTP = async (req, res) => {
 
     // Generate a new OTP
     const newOTPData = generateOTP();
+    console.log("new otp: ", newOTPData);
     const newOTP = newOTPData.otp;
 
     // Update the user's OTP in the cache
