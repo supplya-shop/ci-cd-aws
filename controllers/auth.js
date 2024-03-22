@@ -92,13 +92,13 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     if (!email) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
-        message: "Wrong email provided. Please verify and retry.",
+        message: "Please enter your email.",
       });
     }
     if (!otp) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
-        message: "Wrong otp provided. Please verify and retry.",
+        message: "Please enter otp.",
       });
     }
     const user = await OtpLogs.findOne({ email, otp });
