@@ -86,15 +86,13 @@ const getRelatedProducts = async (req, res) => {
     }
 
     const relatedProducts = await Product.find({
-      category: Product.category,
-      _id: { $ne: productId }, // Exclude the original product
+      category: currentProduct.category,
+      _id: { $ne: productId },
     })
       .limit(10)
       .select("name price description image");
 
-    res
-      .status(200)
-      .json({ status: "success", relatedProducts: relatedProducts });
+    res.status(200).json({ status: "success", products: relatedProducts });
   } catch (error) {
     console.error("Error fetching related products:", error);
     res.status(500).json({ message: "Internal Server Error", status: "error" });
