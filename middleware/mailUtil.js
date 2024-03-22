@@ -595,9 +595,6 @@ const sendConfirmationEmail = async (email) => {
       <tr>
         <td align="center">
           <footer>
-            <p style="font-size: 15px; color: #131417; margin-bottom: 21px">
-              https://supplya-frontend.vercel.app/
-            </p>
             <p style="color: #131417; margin-top: 30px; font-size: 14px">
               Copyright © 2024 Supplya
             </p>

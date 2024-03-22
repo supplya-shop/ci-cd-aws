@@ -89,14 +89,24 @@ const registerUser = async (req, res) => {
 const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) {
-      throw new NotFoundError("Please provide both email and OTP.");
+    if (!email) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "Wrong email provided. Please verify and retry.",
+      });
+    }
+    if (!otp) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "Wrong otp provided. Please verify and retry.",
+      });
     }
     const user = await OtpLogs.findOne({ email, otp });
     if (!user) {
-      throw new NotFoundError(
-        "Invalid OTP or email provided. Please verify and try again."
-      );
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "Wrong otp. Please verify and retry.",
+      });
     }
     const userData = userRegistrationCache.get(email);
     if (!userData) {
@@ -137,12 +147,6 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       token,
     });
   } catch (error) {
-    if (error instanceof NotFoundError || error instanceof NoContentError) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
-        message: error.message,
-      });
-    }
     console.error(error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
