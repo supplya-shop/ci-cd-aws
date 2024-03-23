@@ -90,31 +90,27 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     if (!email) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message: "Please enter your email.",
       });
     }
     if (!otp) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message: "Please enter OTP.",
       });
     }
     const user = await OtpLogs.findOne({ email, otp });
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json().toString({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "Wrong OTP. Please verify and retry.",
       });
     }
     const userData = userRegistrationCache.get(email);
     if (!userData) {
-      // throw new NoContentError("Registration complete! Proceed to login.");
-      return res.json({
-        status: "error",
-        message: "Registration complete. Proceed to Login.",
-      });
+      throw new NoContentError("Registration complete! Proceed to login.");
     }
     const newUser = new User({
       firstName: userData.firstName,
