@@ -98,19 +98,23 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     if (!otp) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
-        message: "Please enter otp.",
+        message: "Please enter OTP.",
       });
     }
     const user = await OtpLogs.findOne({ email, otp });
     if (!user) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.NOT_FOUND).json().toString({
         status: "error",
-        message: "Wrong otp. Please verify and retry.",
+        message: "Wrong OTP. Please verify and retry.",
       });
     }
     const userData = userRegistrationCache.get(email);
     if (!userData) {
-      throw new NoContentError("Registration complete! Proceed to login.");
+      // throw new NoContentError("Registration complete! Proceed to login.");
+      return res.json({
+        status: "error",
+        message: "Registration complete. Proceed to Login.",
+      });
     }
     const newUser = new User({
       firstName: userData.firstName,
@@ -126,7 +130,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     const token = newUser.createJWT();
 
     // Respond with success message and user data
-    res.status(StatusCodes.CREATED).json({
+    return res.status(StatusCodes.CREATED).json({
       status: "success",
       message: "Congratulations! You have successfully registered on Supplya.",
       user: {
@@ -148,7 +152,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Internal server error. Please try again later.",
     });

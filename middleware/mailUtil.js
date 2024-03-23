@@ -251,7 +251,7 @@ const resendOTPEmail = async (email, otp) => {
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
                     <img style="text-align: left; width: 90px; margin-left: 100px;"
-                        src="/supplya/assets/Supplya Logo on GBG.png" alt="logo" />
+                        src="supplya/assets/Supplya Logo on GBG.png" alt="logo" />
                 </div>
                 <table align="center" bgcolor="#F4F6F8" width="70%" style="border-radius: 15px; padding:0;">
                     <tr>
