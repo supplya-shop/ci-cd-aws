@@ -110,7 +110,10 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     }
     const userData = userRegistrationCache.get(email);
     if (!userData) {
-      throw new NoContentError("Registration complete! Proceed to login.");
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "An error occurred.",
+      });
     }
     const newUser = new User({
       firstName: userData.firstName,
@@ -125,7 +128,6 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
 
     const token = newUser.createJWT();
 
-    // Respond with success message and user data
     return res.status(StatusCodes.CREATED).json({
       status: "success",
       message: "Congratulations! You have successfully registered on Supplya.",
@@ -159,7 +161,6 @@ const resendOTP = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check if the email is provided
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
@@ -167,7 +168,6 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    // Check if the user exists in the cache
     const userData = userRegistrationCache.get(email);
     if (!userData) {
       console.log(`User with email ${email} not found in cache.`);
@@ -183,10 +183,8 @@ const resendOTP = async (req, res) => {
 
     userRegistrationCache.set(email, { ...userData, otp: newOTP });
 
-    // Update the user's OTP in the OtpLogs collection
     await OtpLogs.updateOne({ email }, { otp: newOTP });
 
-    // Send the new OTP
     await resendOTPEmail(email, newOTP);
 
     res.status(StatusCodes.OK).json({
@@ -265,7 +263,6 @@ const login = async (req, res, next) => {
   }
 };
 
-// Forgot password to get reset code
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;

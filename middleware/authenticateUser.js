@@ -97,4 +97,4 @@ const currentUser = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticateUser, rolesAllowed };
+module.exports = { authenticateUser, rolesAllowed, currentUser };

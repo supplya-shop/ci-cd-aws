@@ -250,23 +250,9 @@ const updateProduct = async (req, res, next) => {
 
 const uploadProductImages = async (req, res, next) => {
   try {
-    const productId = req.params.id;
-    const product = await Product.findById(productId);
-
-    if (!product) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
-        message: "Product not found",
-      });
-    }
-
-    product.images = req.body.images;
-
-    const savedProduct = await product.save();
-    res.status(StatusCodes.CREATED).json({
-      status: "success",
-      message: "image uploaded successfully",
-      product: savedProduct,
+    res.json({
+      success: "success",
+      image_url: `${process.env.IMAGE_BASE_URL}/${req.file.filename}`,
     });
   } catch (error) {
     console.error(error.message);

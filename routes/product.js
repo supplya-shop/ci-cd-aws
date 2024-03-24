@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
 const {
   createProduct,
   getAllProducts,
@@ -18,6 +20,22 @@ const {
   authenticateUser,
   rolesAllowed,
 } = require("../middleware/authenticateUser");
+
+// image storage engine
+const storage = multer.diskStorage({
+  destination: "./assets/images",
+  filename: (req, file, cb) => {
+    return cb(
+      null,
+      `${file.fieldname}_${Date.now()}_${path.extname(file.originalname)}`
+    );
+  },
+});
+
+const upload = multer({
+  storage: storage,
+});
+
 //product routes
 router.post(
   "/create",
@@ -32,13 +50,19 @@ router.get("/deals", getDiscountedProducts);
 router.get("/flashsale", getFlashsaleProducts);
 router.get("/:id", getProductById);
 router.get("/:id/get-related", getRelatedProducts);
+router.post(
+  "/images/upload",
+  upload.single("product"),
+  authenticateUser,
+  uploadProductImages
+);
+router.get("/images");
 router.patch(
   "/:id",
   authenticateUser,
   rolesAllowed("vendor, admin"),
   updateProduct
 );
-router.post("/images/upload", authenticateUser, uploadProductImages);
 router.delete(
   "/:id",
   authenticateUser,
