@@ -56,7 +56,11 @@ const createUser = async (req, res) => {
   if (error) {
     return res
       .status(400)
-      .json({ error: error.details.map((detail) => detail.message) });
+      .json({
+        error: "error",
+        message:
+          "Validation error. Please confirm that all required fields are entered and try again.",
+      });
   }
   const newUser = new User(value);
   try {
