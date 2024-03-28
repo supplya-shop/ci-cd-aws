@@ -16,10 +16,12 @@ const getAllUsers = async (req, res) => {
       User.countDocuments(),
     ]);
 
-    res.status(200).json({ users, totalCount });
+    return res
+      .status(StatusCodes.OK)
+      .json({ users: users, totalCount: totalCount });
   } catch (error) {
     // logger.error(error.message);
-    res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to fetch users",
     });
@@ -31,7 +33,7 @@ const getUserById = async (req, res) => {
   await User.findById(userId)
     .then((User) => {
       if (!User) {
-        return res.status(404).json({
+        return res.status(StatusCodes.NOT_FOUND).json({
           status: "error",
           message: "user not found",
         });
@@ -40,11 +42,11 @@ const getUserById = async (req, res) => {
         User.firstName.charAt(0).toUpperCase() + User.firstName.slice(1);
       User.lastName =
         User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
-      res.status(200).json({ status: "success", user: User });
+      return res.status(StatusCodes.OK).json({ status: "success", user: User });
     })
     .catch((error) => {
       // logger.error(error.message);
-      res.status(500).json({
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         status: "error",
         message: "Failed to fetch user",
       });
@@ -54,25 +56,23 @@ const getUserById = async (req, res) => {
 const createUser = async (req, res) => {
   const { error, value } = validateUser(req.body);
   if (error) {
-    return res
-      .status(400)
-      .json({
-        error: "error",
-        message:
-          "Validation error. Please confirm that all required fields are entered and try again.",
-      });
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "error",
+      message:
+        "Validation error. Please confirm that all required fields are entered and try again.",
+    });
   }
   const newUser = new User(value);
   try {
     await newUser.save();
-    res
-      .status(201)
+    return res
+      .status(StatusCodes.CREATED)
       .json({ message: "User created successfully.", status: "success" });
     // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
     // logger.error(error.message);
-    res
-      .status(500)
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ message: "Failed to create user.", status: "error" });
   }
 };
@@ -93,7 +93,7 @@ const updateUser = async (req, res) => {
     );
     if (!result) {
       return res
-        .status(404)
+        .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "User not found" });
     }
 
@@ -104,40 +104,44 @@ const updateUser = async (req, res) => {
       delete response.password;
     }
 
-    res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "User updated successfully",
       user: response,
     });
   } catch (error) {
     // logger.error(error.message);
-    res.status(500).json({ status: "error", message: error.message });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: error.message });
   }
 };
 
 const deleteUser = async (req, res, next) => {
   const userId = req.params.id;
   try {
-    const userToDelete = await User.findById(userId);
-    if (!userToDelete) {
+    const user = await User.findById(userId);
+    if (!user) {
       return res
-        .status(404)
+        .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "User not found" });
     }
     const result = await User.findByIdAndDelete(userId);
     if (!result) {
       return res
-        .status(500)
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
         .json({ status: "error", message: "Failed to delete user" });
     }
-    res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "User deleted successfully",
-      deletedUser: userToDelete,
+      data: user,
     });
   } catch (error) {
     // logger.error(error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: "Internal Server Error" });
   }
 };
 
@@ -145,7 +149,7 @@ const bulkdeleteUsers = async (req, res) => {
   try {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {
-      res.status(400).json({
+      res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "Invalid input. Please provide an array of user IDs.",
       });
@@ -154,18 +158,20 @@ const bulkdeleteUsers = async (req, res) => {
     const result = await User.deleteMany({ _id: { $in: ids } });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "No users found with the provided IDs.",
       });
     }
-    res.json({
+    return res.json({
       status: "success",
       message: `${result.deletedCount} user(s) deleted successfully.`,
     });
   } catch (error) {
     console.error("Error in bulk delete operation:", error);
-    res.status(500).json({ status: "error", message: "Internal server error" });
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: "Internal server error" });
   }
 };
 

@@ -11,21 +11,23 @@ const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
   const { error, value } = validateProduct(req.body);
   if (error) {
-    return res
-      .status(400)
-      .json({ error: error.details.map((detail) => detail.message) });
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "error",
+      message: error.details.map((detail) => detail.message),
+    });
   }
   value.createdBy = userId;
   const newProduct = new Product(value);
   try {
     await newProduct.save();
-    res
-      .status(201)
+    return res
+      .status(StatusCodes.CREATED)
       .json({ message: "Product created successfully", status: "success" });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({
-      error: { message: "Failed to create Product", status: "error" },
+  } catch (error) {
+    console.error(error.message);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to create Product",
+      status: "error",
     });
   }
 };
@@ -57,16 +59,16 @@ const getAllProducts = async (req, res, next) => {
       });
     }
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
-      products: products,
+      data: products,
       currentPage: page,
       totalPages: totalPages,
       totalProducts: totalProducts,
     });
   } catch (error) {
     console.error(error.message);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to fetch products",
     });
@@ -81,7 +83,7 @@ const getRelatedProducts = async (req, res) => {
     console.log(`currentProduct: ${currentProduct}`);
     if (!currentProduct) {
       return res
-        .status(404)
+        .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "Product not found" });
     }
 
@@ -92,10 +94,14 @@ const getRelatedProducts = async (req, res) => {
       .limit(10)
       .select("name price description image");
 
-    res.status(200).json({ status: "success", products: relatedProducts });
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: "success", data: relatedProducts });
   } catch (error) {
     console.error("Error fetching related products:", error);
-    res.status(500).json({ message: "Internal Server Error", status: "error" });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "Internal Server Error", status: "error" });
   }
 };
 
@@ -124,7 +130,7 @@ const getProductsByBrand = async (req, res) => {
         message: "No products found for the given brand",
       });
     }
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       products: products,
       currentPage: page,
@@ -132,7 +138,7 @@ const getProductsByBrand = async (req, res) => {
       totalProducts: totalProducts,
     });
   } catch (error) {
-    res
+    return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: error.message });
   }
@@ -146,9 +152,9 @@ const getDiscountedProducts = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "No products found with discount" });
     }
-    res.json({ status: "success", products: discountedProducts });
+    return res.json({ status: "success", data: discountedProducts });
   } catch (error) {
-    res
+    return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: error.message });
   }
@@ -162,9 +168,9 @@ const getFlashsaleProducts = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "No flashsale products found" });
     }
-    res.json({ status: "success", products: flashsaleProducts });
+    return res.json({ status: "success", data: flashsaleProducts });
   } catch (error) {
-    res
+    return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: error.message });
   }
@@ -172,26 +178,27 @@ const getFlashsaleProducts = async (req, res) => {
 
 const getNewlyArrivedBrands = async (req, res, next) => {
   try {
-    const products = await Product.find({}).sort({ dateCreated: -1 }).limit(10);
+    const response = await Product.find({}).sort({ dateCreated: -1 }).limit(10);
     const brandMap = new Map();
-    products.forEach((product) => {
+    response.forEach((product) => {
       const brand = product.brand;
       if (!brandMap.has(brand)) {
         brandMap.set(brand, product.toObject());
       }
     });
-    const response = {
+    const products = {
       status: "success",
       message: "Products fetched successfully",
       data: Array.from(brandMap.values()),
     };
-    res.status(StatusCodes.OK).json(response);
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: "success", data: products });
   } catch (error) {
     console.error(error.message);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      message: "Failed to fetch products",
-      error: error.message,
+      message: error.message,
     });
   }
 };
@@ -206,16 +213,18 @@ const getProductById = async (req, res, next) => {
     })
     .then((product) => {
       if (!product) {
-        return res.status(404).json({
+        return res.status(StatusCodes.NOT_FOUND).json({
           status: "error",
           message: "Product not found",
         });
       }
-      res.status(200).json(product);
+      return res
+        .status(StatusCodes.OK)
+        .json({ status: "success", data: product });
     })
-    .catch((err) => {
-      console.error(err.message);
-      res.status(500).json({
+    .catch((error) => {
+      console.error(error.message);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         status: "error",
         message: "Failed to fetch product",
       });
@@ -234,14 +243,14 @@ const updateProduct = async (req, res, next) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "Product not found" });
     }
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Product updated successfully",
-      product: result,
+      data: result,
     });
   } catch (error) {
     console.error(error.message);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to update product",
     });
@@ -250,14 +259,14 @@ const updateProduct = async (req, res, next) => {
 
 const uploadProductImages = async (req, res, next) => {
   try {
-    res.json({
+    return res.status(StatusCodes.OK).json({
       success: "success",
       image_url: `${process.env.IMAGE_BASE_URL}/${req.file.filename}`,
     });
   } catch (error) {
     console.error(error.message);
-    res
-      .status(500)
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: "Failed to upload product images" });
   }
 };
@@ -265,13 +274,21 @@ const uploadProductImages = async (req, res, next) => {
 const deleteProduct = async (req, res, next) => {
   const productId = req.params.id;
   try {
-    const result = await Product.findByIdAndDelete(productId);
+    const product = await Product.findByIdAndDelete(productId);
+    if (!product) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: `Product with id ${productId} not found.`,
+      });
+    }
     console.log(result);
-    res.json({ status: "success", message: "Product deleted successfully" });
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: "success", message: "Product deleted successfully" });
   } catch (error) {
     console.log(error.message);
-    res
-      .status(500)
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: "Failed to delete product" });
   }
 };

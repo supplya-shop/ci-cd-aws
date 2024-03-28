@@ -39,12 +39,10 @@ const createOrder = async (req, res) => {
 
       if (!product) {
         await session.abortTransaction();
-        return res
-          .status(404)
-          .json({
-            status: "error",
-            message: `Product not found: ${item.product}`,
-          });
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+          status: "error",
+          message: `Product not found: ${item.product}`,
+        });
       }
 
       totalPrice += item.quantity * product.price;
@@ -94,22 +92,22 @@ const createOrder = async (req, res) => {
 
     console.log(order);
 
-    res
-      .status(StatusCodes.CREATED)
-      .json({
-        status: "success",
-        message: "Order created successfully",
-        order,
-      });
+    return res.status(StatusCodes.CREATED).json({
+      status: "success",
+      message: "Order created successfully",
+      data: order,
+    });
   } catch (error) {
     // Rollback the transaction in case of error
     if (session && session.inTransaction()) await session.abortTransaction();
 
     console.error("Error creating order: ", error);
-    res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      message: "Failed to create order. " + error.message,
-    });
+    return res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        message: "Failed to create order. " + error.message,
+      });
   } finally {
     if (session) session.endSession();
   }
@@ -145,7 +143,7 @@ const getOrders = async (req, res) => {
       },
     });
 
-    res.status(StatusCodes.OK).json({ status: "success", orders });
+    return res.status(StatusCodes.OK).json({ status: "success", data: orders });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
@@ -172,9 +170,9 @@ const getOrderById = async (req, res) => {
         .json({ status: "error", message: "Order not found" });
     }
 
-    res.status(StatusCodes.OK).json({ status: "success", order });
+    return res.status(StatusCodes.OK).json({ status: "success", data: order });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to fetch order: " + error.message,
     });
@@ -188,9 +186,9 @@ const getOrdersByStatus = async (req, res, next) => {
       "orderItems"
     );
 
-    res.status(StatusCodes.OK).json({ status: "success", orders });
+    return res.status(StatusCodes.OK).json({ status: "success", data: orders });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: `Failed to fetch orders with status ${req.params.status}: ${error.message}`,
     });
@@ -214,9 +212,11 @@ const updateOrder = async (req, res) => {
         .json({ status: "error", message: "Order not found" });
     }
 
-    res.status(StatusCodes.OK).json({ status: "success", order: updatedOrder });
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: "success", data: updatedOrder });
   } catch (error) {
-    res
+    return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: error.message });
   }
@@ -257,22 +257,22 @@ const cancelOrder = async (req, res) => {
     // Commit the transaction
     await session.commitTransaction();
 
-    res
-      .status(StatusCodes.OK)
-      .json({
-        status: "success",
-        message: "Order cancelled successfully",
-        order,
-      });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Order cancelled successfully",
+      data: order,
+    });
   } catch (error) {
     // Rollback the transaction in case of error
     if (session && session.inTransaction()) await session.abortTransaction();
 
     console.error("Error cancelling order: ", error);
-    res.status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      message: "Failed to cancel order. " + error.message,
-    });
+    return res
+      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({
+        status: "error",
+        message: "Failed to cancel order. " + error.message,
+      });
   } finally {
     if (session) {
       session.endSession();
