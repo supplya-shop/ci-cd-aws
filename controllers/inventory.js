@@ -34,7 +34,7 @@ const createInventory = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message: "Failed to update some products",
-        errorProducts,
+        data: errorProducts,
       });
     } else {
       return res.status(StatusCodes.OK).json({
@@ -43,7 +43,7 @@ const createInventory = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to process request: " + error.message,
     });
@@ -53,17 +53,23 @@ const createInventory = async (req, res) => {
 const getInventory = async (req, res) => {
   try {
     const inventory = await Product.find({}, "_id name quantity"); // Select only specific fields
+    if (!inventory) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "No Inventory information available",
+      });
+    }
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
-      inventory: inventory.map((item) => ({
+      data: inventory.map((item) => ({
         id: item._id,
         name: item.name,
         quantity: item.quantity,
       })),
     });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: error.message,
     });
@@ -87,16 +93,16 @@ const getInventoryByProduct = async (req, res) => {
         .json({ status: "error", message: "Inventory not found" });
     }
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
-      inventory: {
+      data: {
         id: inventory._id,
         name: inventory.name,
         quantity: inventory.quantity,
       },
     });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to fetch inventory: " + error.message,
     });

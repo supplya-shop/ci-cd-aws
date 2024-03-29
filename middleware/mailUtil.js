@@ -9,7 +9,9 @@ const generateOTP = () => {
 
 const sendOTP = async (email, otp) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USERNAME,
       pass: process.env.EMAIL_PASSWORD,
@@ -19,7 +21,7 @@ const sendOTP = async (email, otp) => {
   const otpString = otp.toString().padStart(6, "0").replace(/\s/g, "0");
 
   const mailOptions = {
-    from: "Supplya",
+    from: process.env.EMAIL_USERNAME,
     to: email,
     subject: "Supplya Registration OTP",
     html: `<!DOCTYPE html
@@ -44,7 +46,7 @@ const sendOTP = async (email, otp) => {
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
                     <img style="text-align: left; width: 90px; margin-left: 100px;"
-                        src="/supplya/assets/Supplya Logo on GBG.png" alt="logo" />
+                        src="Supplya Logo on GBG.png" alt="logo" />
                 </div>
                 <table align="center" bgcolor="#F4F6F8" width="70%" style="border-radius: 15px; padding:0;">
                     <tr>
@@ -199,7 +201,7 @@ const sendOTP = async (email, otp) => {
                 cursor: pointer;
                 margin-top: 20px;
               "
-              href="https://supplya-frontend.vercel.app/auth/sign-in"
+              href="https://supplya-web.vercel.app/auth/sign-in"
               >Verify Account</a
             >
                     <p style="color: #131417; margin-top: 20px; font-size: 14px;">Copyright © 2024 Supplya</p>
@@ -216,7 +218,9 @@ const sendOTP = async (email, otp) => {
 
 const resendOTPEmail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USERNAME,
       pass: process.env.EMAIL_PASSWORD,
@@ -226,7 +230,7 @@ const resendOTPEmail = async (email, otp) => {
   const otpString = otp.toString().padStart(6, "0").replace(/\s/g, "0");
 
   const mailOptions = {
-    from: "Supplya",
+    from: process.env.EMAIL_USERNAME,
     to: email,
     subject: "Supplya Registration OTP",
     html: `<!DOCTYPE html
@@ -251,7 +255,7 @@ const resendOTPEmail = async (email, otp) => {
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
                     <img style="text-align: left; width: 90px; margin-left: 100px;"
-                        src="supplya/assets/Supplya Logo on GBG.png" alt="logo" />
+                        src="./supplya/assets/Supplya Logo on GBG.png" alt="logo" />
                 </div>
                 <table align="center" bgcolor="#F4F6F8" width="70%" style="border-radius: 15px; padding:0;">
                     <tr>
@@ -406,7 +410,7 @@ const resendOTPEmail = async (email, otp) => {
                 cursor: pointer;
                 margin-top: 20px;
               "
-              href="https://supplya-frontend.vercel.app/auth/sign-in"
+              href="https://supplya-web.vercel.app/auth/sign-in"
               >Verify Account</a
             >
                     <p style="color: #131417; margin-top: 20px; font-size: 14px;">Copyright © 2024 Supplya</p>
@@ -423,7 +427,9 @@ const resendOTPEmail = async (email, otp) => {
 
 const sendConfirmationEmail = async (email) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail",
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USERNAME,
       pass: process.env.EMAIL_PASSWORD,

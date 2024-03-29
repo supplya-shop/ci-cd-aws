@@ -70,7 +70,7 @@ const registerUser = async (req, res) => {
     };
     await OtpLogs.create(userData);
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "OTP sent successfully. Please check your email.",
     });
@@ -79,7 +79,7 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ status: "error", message: error.message });
     }
     console.log(`error: ${error}`);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to register user. Please try again later.",
     });
@@ -131,7 +131,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     return res.status(StatusCodes.CREATED).json({
       status: "success",
       message: "Congratulations! You have successfully registered on Supplya.",
-      user: {
+      data: {
         _id: newUser._id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
@@ -228,7 +228,7 @@ const login = async (req, res, next) => {
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Login successful",
-      user: {
+      data: {
         _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -252,12 +252,12 @@ const login = async (req, res, next) => {
     });
   } catch (error) {
     if (error.status === 404) {
-      res
+      return res
         .status(StatusCodes.NOT_FOUND)
         .json({ message: error.message, status: "error" });
     }
     // logger.error(error.message);
-    res
+    return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ message: error.message, status: "error" });
   }
@@ -294,7 +294,7 @@ const forgotPassword = async (req, res) => {
     );
 
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
+      host: "smtp.zoho.com",
       port: 465,
       secure: true,
       auth: {
@@ -304,7 +304,7 @@ const forgotPassword = async (req, res) => {
     });
 
     const mailOptions = {
-      from: "foresightagencies@gmail.com",
+      from: "hi@supplya.shop",
       to: user.email,
       subject: "Password Reset Request",
       html: `
@@ -319,13 +319,13 @@ const forgotPassword = async (req, res) => {
 
     await transporter.sendMail(mailOptions);
 
-    res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Password reset code sent to your email",
     });
   } catch (error) {
     console.log(error);
-    res.status(400).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: error.message,
     });
@@ -360,13 +360,13 @@ const resetPassword = async (req, res) => {
 
     await resetPasswordMail(user.email);
 
-    res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Password reset successfully",
     });
   } catch (error) {
     console.error("Error resetting password:", error);
-    res.status(400).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: error.message,
     });

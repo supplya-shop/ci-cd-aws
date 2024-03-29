@@ -16,14 +16,14 @@ const getAllOtpLogs = async (req, res) => {
       OtpLogs.countDocuments(),
     ]);
 
-    res.status(200).json({ otplogs, totalCount });
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: "success", data: otplogs, totalCount });
   } catch (error) {
     // logger.error(error.message);
-    res.status(500).json({
-      error: {
-        status: "error",
-        message: "Failed to fetch otplogs",
-      },
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to fetch otplogs",
     });
   }
 };
@@ -32,7 +32,7 @@ const bulkdeleteOtpLogs = async (req, res) => {
   try {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {
-      res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message: "Invalid input. Please provide an array of otplogs IDs.",
       });
@@ -41,18 +41,20 @@ const bulkdeleteOtpLogs = async (req, res) => {
     const result = await OtpLogs.deleteMany({ _id: { $in: ids } });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "No otplogs found with the provided IDs.",
       });
     }
-    res.json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: `${result.deletedCount} otplog(s) deleted successfully.`,
     });
   } catch (error) {
     console.error("Error in bulk delete operation:", error);
-    res.status(500).json({ status: "error", message: "Internal server error" });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: "Internal server error" });
   }
 };
 
