@@ -18,7 +18,7 @@ const getAllUsers = async (req, res) => {
 
     return res
       .status(StatusCodes.OK)
-      .json({ users: users, totalCount: totalCount });
+      .json({ data: users, totalCount: totalCount });
   } catch (error) {
     // logger.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -42,7 +42,7 @@ const getUserById = async (req, res) => {
         User.firstName.charAt(0).toUpperCase() + User.firstName.slice(1);
       User.lastName =
         User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
-      return res.status(StatusCodes.OK).json({ status: "success", user: User });
+      return res.status(StatusCodes.OK).json({ status: "success", data: User });
     })
     .catch((error) => {
       // logger.error(error.message);
@@ -107,7 +107,7 @@ const updateUser = async (req, res) => {
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "User updated successfully",
-      user: response,
+      data: response,
     });
   } catch (error) {
     // logger.error(error.message);
@@ -149,7 +149,7 @@ const bulkdeleteUsers = async (req, res) => {
   try {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {
-      res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "Invalid input. Please provide an array of user IDs.",
       });
@@ -163,13 +163,13 @@ const bulkdeleteUsers = async (req, res) => {
         message: "No users found with the provided IDs.",
       });
     }
-    return res.json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: `${result.deletedCount} user(s) deleted successfully.`,
     });
   } catch (error) {
     console.error("Error in bulk delete operation:", error);
-    res
+    return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: "Internal server error" });
   }
