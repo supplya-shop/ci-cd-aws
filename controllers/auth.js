@@ -294,7 +294,7 @@ const forgotPassword = async (req, res) => {
     );
 
     const transporter = nodemailer.createTransport({
-      host: "smtp.zoho.com",
+      host: process.env.EMAIL_HOST,
       port: 465,
       secure: true,
       auth: {
@@ -304,7 +304,7 @@ const forgotPassword = async (req, res) => {
     });
 
     const mailOptions = {
-      from: "hi@supplya.shop",
+      from: process.env.EMAIL_USERNAME,
       to: user.email,
       subject: "Password Reset Request",
       html: `
