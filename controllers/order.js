@@ -143,7 +143,11 @@ const getOrders = async (req, res) => {
       },
     });
 
-    return res.status(StatusCodes.OK).json({ status: "success", data: orders });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Orders fetched successfully",
+      data: orders,
+    });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
@@ -170,7 +174,11 @@ const getOrderById = async (req, res) => {
         .json({ status: "error", message: "Order not found" });
     }
 
-    return res.status(StatusCodes.OK).json({ status: "success", data: order });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Order fetched successfully",
+      data: order,
+    });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
@@ -186,7 +194,11 @@ const getOrdersByStatus = async (req, res, next) => {
       "orderItems"
     );
 
-    return res.status(StatusCodes.OK).json({ status: "success", data: orders });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Orders fetched successfully",
+      data: orders,
+    });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
@@ -212,9 +224,11 @@ const updateOrder = async (req, res) => {
         .json({ status: "error", message: "Order not found" });
     }
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: "success", data: updatedOrder });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Order updated successfully",
+      data: updatedOrder,
+    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)

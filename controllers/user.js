@@ -16,9 +16,12 @@ const getAllUsers = async (req, res) => {
       User.countDocuments(),
     ]);
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ data: users, totalCount: totalCount });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Users fetched successfully",
+      data: users,
+      totalCount: totalCount,
+    });
   } catch (error) {
     // logger.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -42,7 +45,11 @@ const getUserById = async (req, res) => {
         User.firstName.charAt(0).toUpperCase() + User.firstName.slice(1);
       User.lastName =
         User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
-      return res.status(StatusCodes.OK).json({ status: "success", data: User });
+      return res.status(StatusCodes.OK).json({
+        status: "success",
+        message: "User fetched successfully",
+        data: User,
+      });
     })
     .catch((error) => {
       // logger.error(error.message);

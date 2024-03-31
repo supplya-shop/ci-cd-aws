@@ -61,6 +61,7 @@ const getAllProducts = async (req, res, next) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
+      message: "Products fetched successfully",
       data: products,
       currentPage: page,
       totalPages: totalPages,
@@ -94,9 +95,11 @@ const getRelatedProducts = async (req, res) => {
       .limit(10)
       .select("name price description image");
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: "success", data: relatedProducts });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Products fetched successfully",
+      data: relatedProducts,
+    });
   } catch (error) {
     console.error("Error fetching related products:", error);
     return res
@@ -122,6 +125,11 @@ const getProductsByBrand = async (req, res) => {
     const products = await Product.find({
       brand: { $regex: new RegExp(brand, "i") },
     })
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .limit(limit)
       .skip(startIndex);
     if (products.length === 0) {
@@ -132,7 +140,8 @@ const getProductsByBrand = async (req, res) => {
     }
     return res.status(StatusCodes.OK).json({
       status: "success",
-      products: products,
+      message: "Products fetched successfully",
+      data: products,
       currentPage: page,
       totalPages: totalPages,
       totalProducts: totalProducts,
@@ -152,7 +161,11 @@ const getDiscountedProducts = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "No products found with discount" });
     }
-    return res.json({ status: "success", data: discountedProducts });
+    return res.json({
+      status: "success",
+      message: "Products fetched successfully",
+      data: discountedProducts,
+    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -168,7 +181,11 @@ const getFlashsaleProducts = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "No flashsale products found" });
     }
-    return res.json({ status: "success", data: flashsaleProducts });
+    return res.json({
+      status: "success",
+      message: "Products fetched successfully",
+      data: flashsaleProducts,
+    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -186,11 +203,8 @@ const getNewlyArrivedBrands = async (req, res, next) => {
         brandMap.set(brand, product.toObject());
       }
     });
-    const products = {
-      status: "success",
-      message: "Products fetched successfully",
-      data: Array.from(brandMap.values()),
-    };
+    const products = Array.from(brandMap.values());
+
     return res
       .status(StatusCodes.OK)
       .json({ status: "success", data: products });
@@ -218,9 +232,11 @@ const getProductById = async (req, res, next) => {
           message: "Product not found",
         });
       }
-      return res
-        .status(StatusCodes.OK)
-        .json({ status: "success", data: product });
+      return res.status(StatusCodes.OK).json({
+        status: "success",
+        message: "Product fetched successfully",
+        data: product,
+      });
     })
     .catch((error) => {
       console.error(error.message);

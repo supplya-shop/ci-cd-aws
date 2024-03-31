@@ -17,9 +17,11 @@ const createCategory = async (req, res) => {
     const category = new Category({ name, description });
     await category.save();
 
-    return res
-      .status(StatusCodes.CREATED)
-      .json({ status: "success", data: category });
+    return res.status(StatusCodes.CREATED).json({
+      status: "success",
+      message: "Category created successfully",
+      data: category,
+    });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
@@ -31,9 +33,11 @@ const createCategory = async (req, res) => {
 const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find();
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: "success", data: categories });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Categories fetched successfully",
+      data: categories,
+    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -52,9 +56,11 @@ const getCategoryById = async (req, res) => {
         .json({ status: "error", message: "Category not found" });
     }
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: "success", data: category });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Category fetched successfully",
+      data: category,
+    });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -81,9 +87,11 @@ const updateCategory = async (req, res) => {
       { new: true }
     );
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: "success", data: updatedCategory });
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Category fetched successfully",
+      data: updatedCategory,
+    });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",

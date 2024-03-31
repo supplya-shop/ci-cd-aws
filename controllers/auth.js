@@ -52,7 +52,7 @@ const registerUser = async (req, res) => {
     }
 
     const otpData = generateOTP();
-    console.log("otp: ", otpData.otp);
+    // console.log("otp: ", otpData.otp);
     const otp = otpData.otp;
     userRegistrationCache.set(email, {
       firstName,
@@ -178,7 +178,7 @@ const resendOTP = async (req, res) => {
     }
 
     const newOTPData = generateOTP();
-    console.log("new otp: ", newOTPData);
+    // console.log("new otp: ", newOTPData);
     const newOTP = newOTPData.otp;
 
     userRegistrationCache.set(email, { ...userData, otp: newOTP });
@@ -187,13 +187,13 @@ const resendOTP = async (req, res) => {
 
     await resendOTPEmail(email, newOTP);
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "New OTP sent successfully. Please check your email.",
     });
   } catch (error) {
     console.error(error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to re-send OTP. Please try again later.",
     });
@@ -292,30 +292,6 @@ const forgotPassword = async (req, res) => {
         },
       }
     );
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USERNAME,
-      to: user.email,
-      subject: "Password Reset Request",
-      html: `
-        <p style="font-size:16px;">You are receiving this email because you (or someone else) has requested a password reset for your account.</p>
-        <p style="font-size:16px;">Your password reset code is:</p>
-        <p style="font-size:24px; color: blue;">${resetCode}</p>
-        <p style="font-size:16px;">This code will expire in 30 minutes. Please go to the following page and enter this code to reset your password:</p>
-        <a href="https:/localhost:3000/auth/reset" style="font-size:16px;">Reset Password</a>
-        <p style="font-size:16px;">If you did not request a password reset, please ignore this email.</p>
-      `,
-    };
 
     await transporter.sendMail(mailOptions);
 

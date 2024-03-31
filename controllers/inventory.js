@@ -62,6 +62,7 @@ const getInventory = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
+      message: "Inventory fetched successfully",
       data: inventory.map((item) => ({
         id: item._id,
         name: item.name,
@@ -95,6 +96,7 @@ const getInventoryByProduct = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
+      message: "Inventory fetched successfully",
       data: {
         id: inventory._id,
         name: inventory.name,
