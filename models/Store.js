@@ -6,7 +6,10 @@ const StoreSchema = new Schema({
     type: String,
     required: true,
   },
-  owner: {
+  description: {
+    type: String,
+  },
+  vendor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
@@ -16,9 +19,12 @@ const StoreSchema = new Schema({
       type: Number,
       default: 0,
     },
-    withdraw: {
+    balance: {
       type: Number,
       default: 0,
+    },
+    withdraw: {
+      type: Number,
     },
   },
   products: [
