@@ -7,6 +7,7 @@ const {
   verifyOTPAndGenerateToken,
   resendOTP,
   login,
+  // vendorLogin,
   // getBanks,
   googleAuth,
   googleAuthCallback,
@@ -20,6 +21,7 @@ router.get("/google/redirect", googleAuthCallback);
 
 // Regular Auth routes
 router.post("/login", login);
+// router.post("/vendor/login", vendorLogin);
 router.post("/register", registerUser);
 router.post("/verify-otp", verifyOTPAndGenerateToken);
 router.post("/resend-otp", resendOTP);

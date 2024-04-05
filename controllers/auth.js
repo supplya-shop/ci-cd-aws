@@ -1,15 +1,9 @@
 const User = require("../models/User");
 const OtpLogs = require("../models/OtpLogs");
 const { StatusCodes } = require("http-status-codes");
-const {
-  BadRequestError,
-  UnauthenticatedError,
-  NotFoundError,
-  NoContentError,
-} = require("../errors");
+const { BadRequestError, NotFoundError } = require("../errors");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
-const bcrypt = require("bcryptjs");
 const {
   generateOTP,
   sendOTP,
@@ -24,7 +18,15 @@ const userRegistrationCache = new Map();
 // EMAIL AND PASSWORD REGISTER AND LOGIN
 const registerUser = async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+      shopName,
+      phoneNumber,
+    } = req.body;
     if (!email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
@@ -51,23 +53,51 @@ const registerUser = async (req, res) => {
       req.body.role = "customer";
     }
 
+    let shopUrl = "";
+
+    let userData = {
+      email,
+      password,
+      firstName,
+      lastName,
+      role: role || "customer",
+    };
+
+    if (role === "vendor") {
+      if (!shopName || !phoneNumber) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: "error",
+          message:
+            "Please provide shopName and phoneNumber for vendor registration",
+        });
+      }
+      shopUrl = `https://supplya.shop/store/${shopName}`;
+      userData = {
+        ...userData,
+        shopName,
+        shopUrl,
+        phoneNumber,
+      };
+    }
+
     const otpData = generateOTP();
-    // console.log("otp: ", otpData.otp);
     const otp = otpData.otp;
     userRegistrationCache.set(email, {
       firstName,
       lastName,
       password,
       otp,
+      role,
+      shopName,
+      shopUrl,
+      phoneNumber,
     });
 
     await sendOTP(email, otp);
 
-    const userData = {
-      ...req.body,
-      createdAt: Date().now,
-      otp: otp,
-    };
+    userData.createdAt = Date.now();
+    userData.otp = otp;
+
     await OtpLogs.create(userData);
 
     return res.status(StatusCodes.OK).json({
@@ -78,7 +108,7 @@ const registerUser = async (req, res) => {
     if (error.name === "ValidatorError") {
       return res.status(400).json({ status: "error", message: error.message });
     }
-    console.log(`error: ${error}`);
+    console.error(`error: ${error}`);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to register user. Please try again later.",
@@ -121,6 +151,10 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       email,
       password: userData.password,
       otp: otp,
+      role: userData.role,
+      shopName: userData.shopName,
+      shopUrl: userData.shopUrl,
+      phoneNumber: userData.phoneNumber,
     });
     await newUser.save();
     await sendConfirmationEmail(email);
@@ -137,6 +171,8 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
         lastName: newUser.lastName,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
+        shopName: newUser.shopName,
+        shopUrl: newUser.shopUrl,
         dob: newUser.dob,
         role: newUser.role,
         gender: newUser.gender,
@@ -202,13 +238,22 @@ const resendOTP = async (req, res) => {
 
 const login = async (req, res, next) => {
   try {
-    const { password, email } = req.body;
+    const { password, email, shopName } = req.body;
 
-    if (!email || !password) {
-      throw new BadRequestError("Please provide your email and password");
+    if ((!email || !password) && !shopName) {
+      throw new BadRequestError(
+        "Please provide your email and password or shopName and password"
+      );
     }
 
-    const user = await User.findOne({ email });
+    let user;
+
+    // Check if the login attempt is using shopName
+    if (shopName) {
+      user = await User.findOne({ shopName });
+    } else {
+      user = await User.findOne({ email });
+    }
 
     if (!user) {
       throw new NotFoundError("User does not exist");
@@ -292,6 +337,30 @@ const forgotPassword = async (req, res) => {
         },
       }
     );
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USERNAME,
+      to: user.email,
+      subject: "Password Reset Request",
+      html: `
+        <p style="font-size:16px;">You are receiving this email because you (or someone else) has requested a password reset for your account.</p>
+        <p style="font-size:16px;">Your password reset code is:</p>
+        <p style="font-size:24px; color: blue;">${resetCode}</p>
+        <p style="font-size:16px;">This code will expire in 30 minutes. Please go to the following page and enter this code to reset your password:</p>
+        <a href="https:/localhost:3000/auth/reset" style="font-size:16px;">Reset Password</a>
+        <p style="font-size:16px;">If you did not request a password reset, please ignore this email.</p>
+      `,
+    };
 
     await transporter.sendMail(mailOptions);
 
