@@ -21,6 +21,7 @@ const UserSchema = new mongoose.Schema({
   },
   displayName: {
     type: String,
+    lowercase: true,
   },
   country: {
     type: String,
@@ -44,6 +45,7 @@ const UserSchema = new mongoose.Schema({
 
   postalCode: {
     type: String,
+    default: "",
   },
 
   gender: {
@@ -63,16 +65,18 @@ const UserSchema = new mongoose.Schema({
     type: String,
   },
 
-  businessName: {
+  shopName: {
     type: String,
     default: "",
+  },
+  shopUrl: {
+    type: String,
   },
 
   googleId: {
     type: String,
     unique: true,
     sparse: true,
-    // default: "",
   },
 
   phoneNumber: {
@@ -109,6 +113,7 @@ const UserSchema = new mongoose.Schema({
 
   bank: {
     type: String,
+    default: "",
   },
 
   role: {

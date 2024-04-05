@@ -6,7 +6,14 @@ const StoreSchema = new Schema({
     type: String,
     required: true,
   },
-  owner: {
+  description: {
+    type: String,
+  },
+  url: {
+    type: String,
+    required: true,
+  },
+  vendor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
@@ -16,9 +23,12 @@ const StoreSchema = new Schema({
       type: Number,
       default: 0,
     },
-    withdraw: {
+    balance: {
       type: Number,
       default: 0,
+    },
+    withdraw: {
+      type: Number,
     },
   },
   products: [
@@ -27,6 +37,34 @@ const StoreSchema = new Schema({
       ref: "Product",
     },
   ],
+  country: {
+    type: String,
+    default: "",
+  },
+
+  state: {
+    type: String,
+    default: "",
+  },
+
+  address: {
+    type: String,
+    default: "",
+  },
+  streetAddress: {
+    type: String,
+    default: "",
+  },
+
+  city: {
+    type: String,
+    default: "",
+  },
+
+  postalCode: {
+    type: String,
+    default: "",
+  },
 });
 
 const Store = mongoose.model("Store", StoreSchema);

@@ -1,14 +1,53 @@
 const Store = require("../models/Store");
 const { StatusCodes } = require("http-status-codes");
+const User = require("../models/User");
+
+const createVendor = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      shopName,
+      shopUrl,
+      street,
+      street2,
+      city,
+      country,
+      state,
+      phoneNumber,
+    } = req.body;
+    const existingVendor = await User.find({ email, shopUrl });
+    if (existingVendor) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Vendor already exists",
+      });
+    }
+  } catch (error) {}
+};
 
 const createStore = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { userId, name } = req.body;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "User not found" });
+    }
+    if (user.role !== "vendor") {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        status: "error",
+        message: "User is not authorized to create a store",
+      });
+    }
     const newStore = new Store({
       name,
       wallet: { balance: 0 },
       products: [],
-      owner: req.user._id,
+      vendor: req.user._id,
     });
     const store = await newStore.save();
     return res
