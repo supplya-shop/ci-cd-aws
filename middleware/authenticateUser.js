@@ -53,19 +53,11 @@ const extractUserFields = (decoded) => {
     "userid",
     "firstName",
     "lastName",
-    "country",
-    "state",
-    "address",
-    "city",
-    "postalCode",
     "blocked",
-    "businessName",
     "phoneNumber",
-    "uniqueKey",
     "email",
     "role",
     "createdAt",
-    "dob",
   ];
 
   return userFields.reduce((user, field) => {

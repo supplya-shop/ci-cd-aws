@@ -21,7 +21,10 @@ const sendOTP = async (email, otp) => {
   const otpString = otp.toString().padStart(6, "0").replace(/\s/g, "0");
 
   const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
     to: email,
     subject: "Supplya Registration OTP",
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">

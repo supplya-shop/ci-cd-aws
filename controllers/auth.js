@@ -53,7 +53,7 @@ const registerUser = async (req, res) => {
       req.body.role = "customer";
     }
 
-    let shopUrl = "";
+    let shopUrl;
 
     let userData = {
       email,
@@ -214,7 +214,6 @@ const resendOTP = async (req, res) => {
     }
 
     const newOTPData = generateOTP();
-    // console.log("new otp: ", newOTPData);
     const newOTP = newOTPData.otp;
 
     userRegistrationCache.set(email, { ...userData, otp: newOTP });
@@ -228,7 +227,7 @@ const resendOTP = async (req, res) => {
       message: "New OTP sent successfully. Please check your email.",
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to re-send OTP. Please try again later.",
