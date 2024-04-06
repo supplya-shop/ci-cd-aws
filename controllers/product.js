@@ -20,9 +20,39 @@ const createProduct = async (req, res, next) => {
   const newProduct = new Product(value);
   try {
     await newProduct.save();
-    return res
-      .status(StatusCodes.CREATED)
-      .json({ message: "Product created successfully", status: "success" });
+    return res.status(StatusCodes.CREATED).json({
+      status: "success",
+      message: "Product created successfully",
+      data: newProduct,
+    });
+  } catch (error) {
+    console.error(error.message);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to create Product",
+      status: "error",
+    });
+  }
+};
+
+const submitProduct = async (req, res, next) => {
+  const userId = req.user.userid;
+  const { error, value } = validateProduct(req.body);
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "error",
+      message: error.details.map((detail) => detail.message),
+    });
+  }
+  value.createdBy = userId;
+  value.approved = false;
+
+  const newProduct = new Product(value);
+  try {
+    await newProduct.save();
+    return res.status(StatusCodes.CREATED).json({
+      message: "Product successfully submitted for approval",
+      status: "success",
+    });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -311,6 +341,7 @@ const deleteProduct = async (req, res, next) => {
 
 module.exports = {
   createProduct,
+  submitProduct,
   getAllProducts,
   getProductsByBrand,
   getNewlyArrivedBrands,

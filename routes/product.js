@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const {
   createProduct,
+  submitProduct,
   getAllProducts,
   getProductById,
   getProductsByBrand,
@@ -42,6 +43,12 @@ router.post(
   authenticateUser,
   rolesAllowed("vendor, admin"),
   createProduct
+);
+router.post(
+  "/submit",
+  authenticateUser,
+  rolesAllowed("vendor, admin"),
+  submitProduct
 );
 router.get("/", getAllProducts);
 router.get("/brands/:brand", getProductsByBrand);
