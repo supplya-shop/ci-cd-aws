@@ -72,6 +72,10 @@ const ProductSchema = new schema({
     type: Number,
     default: 0,
   },
+  approved: {
+    type: Boolean,
+    default: false,
+  },
   dateCreated: {
     type: Date,
     default: Date.now,

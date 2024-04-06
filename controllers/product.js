@@ -6,6 +6,7 @@ const { BadRequestError, UnauthenticatedError } = require("../errors");
 const Product = require("../models/Product");
 const validateProduct = require("../middleware/validation/productDTO");
 const multer = require("../middleware/upload");
+const mongoose = require("mongoose");
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
@@ -79,6 +80,10 @@ const getAllProducts = async (req, res, next) => {
         select:
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
       })
+      .populate("category", "name")
+      .select(
+        "name price description quantity category image images brand createdBy inStock rating numReviews isFeatured hasDiscount flashsale saleCount dateCreated moq approved"
+      )
       .limit(limit)
       .skip(startIndex);
 
@@ -138,12 +143,40 @@ const getRelatedProducts = async (req, res) => {
   }
 };
 
+const getProductsByVendor = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.user._id)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Invalid user ID",
+      });
+    }
+    const vendorId = req.user._id;
+    const products = await Product.find({ createdBy: vendorId.toString() });
+    if (!products || products.length === 0) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "No products could be found" });
+    }
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Products fetched successfully",
+      data: products,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: "Internal server error" });
+  }
+};
+
 const getProductsByBrand = async (req, res) => {
   try {
     let brand = req.params.brand;
     brand = brand.toLowerCase();
-    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
-    const limit = parseInt(req.query.limit) || 10; // Default to 10 items per page if not provided
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
@@ -197,6 +230,7 @@ const getDiscountedProducts = async (req, res) => {
       data: discountedProducts,
     });
   } catch (error) {
+    console.log(error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: error.message });
@@ -255,6 +289,10 @@ const getProductById = async (req, res, next) => {
       select:
         "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
     })
+    .populate("category", "name")
+    .select(
+      "name price description quantity category image images brand createdBy inStock rating numReviews isFeatured hasDiscount flashsale saleCount dateCreated moq approved"
+    )
     .then((product) => {
       if (!product) {
         return res.status(StatusCodes.NOT_FOUND).json({
@@ -317,6 +355,35 @@ const uploadProductImages = async (req, res, next) => {
   }
 };
 
+const approveProduct = async (req, res, next) => {
+  const { productId } = req.params;
+
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Product not found",
+        status: "error",
+      });
+    }
+
+    product.approved = true;
+    await product.save();
+
+    return res.status(StatusCodes.OK).json({
+      message: "Product successfully approved",
+      status: "success",
+      data: product,
+    });
+  } catch (error) {
+    console.error(error.message);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to approve product",
+      status: "error",
+    });
+  }
+};
+
 const deleteProduct = async (req, res, next) => {
   const productId = req.params.id;
   try {
@@ -342,7 +409,9 @@ const deleteProduct = async (req, res, next) => {
 module.exports = {
   createProduct,
   submitProduct,
+  approveProduct,
   getAllProducts,
+  getProductsByVendor,
   getProductsByBrand,
   getNewlyArrivedBrands,
   getProductById,

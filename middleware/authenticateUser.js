@@ -13,18 +13,20 @@ const authenticateUser = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded JWT:", decoded);
     req.user = extractUserFields(decoded);
 
     next();
   } catch (error) {
     // logger.error(error.message);
+    console.log("Authentication Error:", error);
     console.log("Unauthorized");
     if (error instanceof jwt.JsonWebTokenError) {
-      res
+      return res
         .status(StatusCodes.UNAUTHORIZED)
         .send({ msg: "Unauthorized: Please log in" });
     } else {
-      res.status(StatusCodes.FORBIDDEN).send({ msg: error.message });
+      return res.status(StatusCodes.FORBIDDEN).send({ msg: error.message });
     }
   }
 };
