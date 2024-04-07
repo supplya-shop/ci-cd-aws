@@ -52,19 +52,20 @@ router.post(
   rolesAllowed("vendor, admin"),
   submitProduct
 );
-router.put(
+router.patch(
   "/approve/:id",
   authenticateUser,
   rolesAllowed("admin"),
   approveProduct
 );
-router.get("/", getAllProducts);
-router.get("/:id", getProductById);
-router.get("/vendor", authenticateUser, getProductsByVendor);
-router.get("/brands/:brand", getProductsByBrand);
-router.get("/newly-arrived-brands", getNewlyArrivedBrands);
+
 router.get("/deals", getDiscountedProducts);
+router.get("/newly-arrived-brands", getNewlyArrivedBrands);
+router.get("/", getAllProducts);
+router.get("/vendor", authenticateUser, getProductsByVendor);
 router.get("/flashsale", getFlashsaleProducts);
+router.get("/:id", getProductById);
+router.get("/brands/:brand", getProductsByBrand);
 router.get("/:id/get-related", getRelatedProducts);
 router.post(
   "/images/upload",

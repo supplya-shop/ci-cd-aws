@@ -13,20 +13,21 @@ const authenticateUser = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded JWT:", decoded);
+    // console.log("Decoded JWT:", decoded);
     req.user = extractUserFields(decoded);
 
     next();
   } catch (error) {
-    // logger.error(error.message);
-    console.log("Authentication Error:", error);
+    // console.log("Authentication Error:", error);
     console.log("Unauthorized");
     if (error instanceof jwt.JsonWebTokenError) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
-        .send({ msg: "Unauthorized: Please log in" });
+        .send({ status: "error", message: "Unauthorized: Please log in" });
     } else {
-      return res.status(StatusCodes.FORBIDDEN).send({ msg: error.message });
+      return res
+        .status(StatusCodes.FORBIDDEN)
+        .send({ status: "error", message: error.message });
     }
   }
 };
@@ -40,12 +41,6 @@ const rolesAllowed = (roles) => {
       );
     } else {
       next();
-    }
-    // Add role-based authorization check
-    if (req.user.role !== "admin" && req.originalUrl.startsWith("/admin")) {
-      throw new ForbiddenError(
-        "Forbidden: You don't have permission to access this resource"
-      );
     }
   };
 };
