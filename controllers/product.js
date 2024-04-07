@@ -18,6 +18,7 @@ const createProduct = async (req, res, next) => {
     });
   }
   value.createdBy = userId;
+  value.approved = true;
   const newProduct = new Product(value);
   try {
     await newProduct.save();
@@ -145,14 +146,8 @@ const getRelatedProducts = async (req, res) => {
 
 const getProductsByVendor = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.user._id)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
-        message: "Invalid user ID",
-      });
-    }
-    const vendorId = req.user._id;
-    const products = await Product.find({ createdBy: vendorId.toString() });
+    const vendorId = req.user.userid;
+    const products = await Product.find({ createdBy: vendorId });
     if (!products || products.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -219,7 +214,7 @@ const getProductsByBrand = async (req, res) => {
 const getDiscountedProducts = async (req, res) => {
   try {
     const discountedProducts = await Product.find({ hasDiscount: true });
-    if (discountedProducts.length === 0) {
+    if (!discountedProducts || discountedProducts.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "No products found with discount" });
@@ -356,9 +351,8 @@ const uploadProductImages = async (req, res, next) => {
 };
 
 const approveProduct = async (req, res, next) => {
-  const { productId } = req.params;
-
   try {
+    const productId = req.params.id;
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).json({
