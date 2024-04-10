@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("./User");
 
-const WithdrawalSchema = new mongoose.Schema({
+const withdrawalSchema = new mongoose.Schema({
   name: {
     type: String,
   },
@@ -41,4 +41,4 @@ const WithdrawalSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Withdrawal", WithdrawalSchema);
+module.exports = mongoose.model("Withdrawal", withdrawalSchema);

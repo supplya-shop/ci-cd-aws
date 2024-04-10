@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const OtpLogs = new mongoose.Schema({
+const otpLogs = new mongoose.Schema({
   firstName: {
     type: String,
   },
@@ -22,4 +22,4 @@ const OtpLogs = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("OtpLogs", OtpLogs);
+module.exports = mongoose.model("OtpLogs", otpLogs);

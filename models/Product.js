@@ -1,9 +1,7 @@
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
-const Category = require("./Category");
-const User = require("./User");
 
-const ProductSchema = new schema({
+const productSchema = new schema({
   name: {
     type: String,
     required: true,
@@ -89,6 +87,4 @@ const ProductSchema = new schema({
   },
 });
 
-const Product = mongoose.model("Product", ProductSchema);
-
-module.exports = Product;
+module.exports = mongoose.model("Product", productSchema);

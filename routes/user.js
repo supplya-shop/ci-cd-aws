@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createUser,
   getAllUsers,
+  getAdminUsers,
   getUserById,
   updateUser,
   deleteUser,
@@ -15,10 +16,11 @@ const {
 } = require("../middleware/authenticateUser");
 
 //user routes
+router.patch("/:id", authenticateUser, updateUser);
 router.post("/create", authenticateUser, createUser);
 router.get("/", authenticateUser, getAllUsers);
+router.get("/admin", authenticateUser, getAdminUsers);
 router.get("/:id", authenticateUser, getUserById);
-router.patch("/:id", authenticateUser, updateUser);
 router.delete(
   "/bulkdeleteusers",
   authenticateUser,

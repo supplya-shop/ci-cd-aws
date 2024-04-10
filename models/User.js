@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv");
 
-const UserSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
     required: [true, "Please provide your firstName"],
@@ -152,7 +152,7 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
-UserSchema.pre("save", async function (next) {
+userSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -162,7 +162,7 @@ UserSchema.pre("save", async function (next) {
   }
 });
 
-UserSchema.methods.createJWT = function () {
+userSchema.methods.createJWT = function () {
   return jwt.sign(
     {
       userid: this._id,
@@ -196,7 +196,7 @@ UserSchema.methods.createJWT = function () {
   );
 };
 
-UserSchema.methods.createRefreshToken = function () {
+userSchema.methods.createRefreshToken = function () {
   return jwt.sign(
     {
       userid: this._id,
@@ -225,10 +225,10 @@ UserSchema.methods.createRefreshToken = function () {
   );
 };
 
-UserSchema.methods.comparePassword = async function (loginPassword) {
+userSchema.methods.comparePassword = async function (loginPassword) {
   const isMatch = bcrypt.compare(loginPassword, this.password);
   console.log("isMatch:", isMatch);
   return isMatch;
 };
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model("User", userSchema);

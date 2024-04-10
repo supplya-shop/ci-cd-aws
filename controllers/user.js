@@ -31,6 +31,17 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const getAdminUsers = async (req, res, next) => {
+  try {
+    const adminUsers = await User.find({ role: "admin" }).select("_id");
+    const adminIds = adminUsers.map((user) => user._id);
+    return res.status(200).json({ adminIds });
+  } catch (error) {
+    console.error("Error fetching admin users:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 const getUserById = async (req, res) => {
   const userId = req.params.id;
   await User.findById(userId)
@@ -87,10 +98,8 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    let updates = validateUser(req.body);
-
+    let updates = req.body;
     delete updates.password;
-
     const options = { new: true };
 
     const result = await User.findByIdAndUpdate(
@@ -98,18 +107,16 @@ const updateUser = async (req, res) => {
       { $set: updates },
       options
     );
+
     if (!result) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "User not found" });
     }
 
-    // Check if result is a Mongoose document before calling toObject()
-    const response = result.toObject ? result.toObject() : result;
+    const response = result.toObject();
 
-    if (response.password) {
-      delete response.password;
-    }
+    delete response.password;
 
     return res.status(StatusCodes.OK).json({
       status: "success",
@@ -117,10 +124,10 @@ const updateUser = async (req, res) => {
       data: response,
     });
   } catch (error) {
-    // logger.error(error.message);
+    console.error("Error updating user:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: error.message });
+      .json({ status: "error", message: "Failed to update user" });
   }
 };
 
@@ -184,6 +191,7 @@ const bulkdeleteUsers = async (req, res) => {
 
 module.exports = {
   getAllUsers,
+  getAdminUsers,
   getUserById,
   createUser,
   updateUser,
