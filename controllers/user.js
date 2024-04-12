@@ -33,12 +33,21 @@ const getAllUsers = async (req, res) => {
 
 const getAdminUsers = async (req, res, next) => {
   try {
-    const adminUsers = await User.find({ role: "admin" }).select("_id");
+    const adminUsers = await User.find({ role: "admin" }).select("_id email");
     const adminIds = adminUsers.map((user) => user._id);
-    return res.status(200).json({ adminIds });
+    console.log("Admin users:", adminUsers);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Admin users fetched successfully",
+      data: adminIds,
+      adminUsers: adminUsers,
+    });
   } catch (error) {
     console.error("Error fetching admin users:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ status: "error", message: "Internal server error" });
   }
 };
 
