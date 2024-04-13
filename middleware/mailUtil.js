@@ -390,7 +390,10 @@ const resendOTPEmail = async (email, otp) => {
   const otpString = otp.toString().padStart(6, "0").replace(/\s/g, "0");
 
   const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
     to: email,
     subject: "Supplya Registration OTP",
     html: `<!DOCTYPE html
@@ -600,7 +603,10 @@ const sendConfirmationEmail = async (email) => {
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
     to: email,
     subject: "Supplya Registration Complete",
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -782,6 +788,9 @@ const sendConfirmationEmail = async (email) => {
 const resetPasswordMail = async (email) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USERNAME,
       pass: process.env.EMAIL_PASSWORD,
@@ -789,13 +798,197 @@ const resetPasswordMail = async (email) => {
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
     to: email,
-    subject: "Supplya: Password Reset",
+    subject: "Password Reset",
     html: `
         <p style="font-size:16px;">Your password was reset successfully:</p>
         <p style="font-size:16px;">If you did not request a password reset, please ignore this email.</p>
       `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+const approveProductMail = async (vendorName, productName) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+
+  const mailOptions = {
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
+    to: process.env.EMAIL_USERNAME,
+    subject: "Product Pending Approval",
+    html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Registration successful</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <style>
+    a:hover {
+      background-color: #02555b;
+    }
+  </style>
+
+  <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
+    <table
+      style="padding: 10px 20px"
+      role="presentation"
+      border="0"
+      cellpadding="0"
+      cellspacing="0"
+      width="100%"
+      bgcolor="#FFFFFF"
+    >
+      <tr>
+        <td>
+          <div
+            align="center"
+            style="
+              margin-top: 30px;
+              margin-bottom: 30px;
+              display: flex;
+              margin: 0 auto;
+              background-color: #0199a4;
+              width: 70%;
+            "
+          >
+            <img
+              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              alt="Supplya-Logo-on-GBG"
+              style="text-align: left; width: 90px; margin-left: 70px"
+            />
+          </div>
+          <table
+            align="center"
+            bgcolor="#F4F6F8"
+            width="70%"
+            style="border-radius: 15px; padding: 0"
+          >
+            <tr>
+              <td>
+                <table
+                  align="center"
+                  style="padding-left: 32px; padding-right: 32px"
+                  border="0"
+                  cellspacing="0"
+                  cellpadding="0"
+                  width="80%"
+                >
+                  <tr>
+                    <td style="padding: 0; margin-top: 20px; text-align: left">
+                      <table
+                        align="center"
+                        border="0"
+                        cellpadding="0"
+                        cellspacing="0"
+                        width="100%"
+                        style="border-collapse: collapse"
+                      >
+                        <tr>
+                          <td style="color: #153643">
+                            <p
+                              style="
+                                font-size: 14px;
+                                font-weight: 600;
+                                margin-top: 40px;
+                                text-align: left;
+                                font-size: 18px;
+                                color: #131417;
+                              "
+                            >
+                              New Product Pending Approval
+                            </p>
+                            <p
+                              style="
+                                font-size: 14px;
+                                text-align: left;
+                                color: #131417;
+                                margin-bottom: 30px;
+                                line-height: 20px;
+                              "
+                            >
+                              Vendor <em>${vendorName}</em> has added a new product (${productName}) awaiting your approval.
+                              Follow the link below to approve the product.
+                            </p>
+
+                            <a
+                              style="
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                text-decoration: none;
+                                background-color: #0199a4;
+                                color: white;
+                                border-radius: 6px;
+                                padding: 10px 25px;
+                                width: fit-content;
+                                margin: 0 auto;
+                                cursor: pointer;
+                              "
+                              href="https://supplya-web.vercel.app/auth/sign-in"
+                              >Approve Product</a
+                            >
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td style="font-size: 14px; line-height: 16px">
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Supplya.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td align="center">
+          <footer>
+            <p style="color: #131417; margin-top: 30px; font-size: 14px">
+              Copyright © 2024 Supplya
+            </p>
+          </footer>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`,
   };
 
   await transporter.sendMail(mailOptions);
@@ -807,4 +1000,5 @@ module.exports = {
   resendOTPEmail,
   sendConfirmationEmail,
   resetPasswordMail,
+  approveProductMail,
 };

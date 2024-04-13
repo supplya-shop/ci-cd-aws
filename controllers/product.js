@@ -1,12 +1,13 @@
 const express = require("express");
-const router = express.Router();
-const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const Product = require("../models/Product");
+const User = require("../models/User");
 const validateProduct = require("../middleware/validation/productDTO");
 const multer = require("../middleware/upload");
-const mongoose = require("mongoose");
+const userController = require("../controllers/user");
+const notificationService = require("../middleware/notification");
+const { approveProductMail } = require("../middleware/mailUtil");
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
@@ -45,12 +46,32 @@ const submitProduct = async (req, res, next) => {
       message: error.details.map((detail) => detail.message),
     });
   }
-  value.createdBy = userId;
-  value.approved = false;
 
+  value.createdBy = userId;
+  console.log("Created by: ", value.createdBy);
+
+  value.approved = false;
   const newProduct = new Product(value);
   try {
+    const vendor = await User.findById(userId).select(
+      "firstName lastName email"
+    );
+
+    if (!vendor) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Vendor not found",
+        status: "error",
+      });
+    }
     await newProduct.save();
+    // const adminId = await userController.getAdminUsers();
+    // const message = `Vendor ${vendor.name} has submitted a new product: ${newProduct.name}`;
+    // await notificationService.createNotification(adminId, message);
+    await approveProductMail(
+      `${vendor.firstName} ${vendor.lastName}`,
+      req.body.name
+    );
+    console.log(`${vendor.firstName} ${vendor.lastName}`);
     return res.status(StatusCodes.CREATED).json({
       message: "Product successfully submitted for approval",
       status: "success",
