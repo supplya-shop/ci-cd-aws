@@ -10,6 +10,7 @@ const {
   resendOTPEmail,
   sendConfirmationEmail,
   resetPasswordMail,
+  newUserSignUpMail,
 } = require("../middleware/mailUtil");
 // const logger = require("../middleware/logging/logger");
 
@@ -158,6 +159,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
     });
     await newUser.save();
     await sendConfirmationEmail(email);
+    await newUserSignUpMail(email);
     await OtpLogs.findOneAndDelete({ email, otp });
 
     const token = newUser.createJWT();
