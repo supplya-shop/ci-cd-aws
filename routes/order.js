@@ -9,11 +9,13 @@ const {
   getOrders,
   getOrderById,
   getOrdersByStatus,
+  getOrdersByUser,
   updateOrder,
   cancelOrder,
 } = require("../controllers/order");
 
 // order routes
+router.get("/user", authenticateUser, getOrdersByUser);
 router.post("/create", authenticateUser, createOrder);
 router.get("/", authenticateUser, getOrders);
 router.get("/:orderId", authenticateUser, getOrderById);
