@@ -48,8 +48,6 @@ const submitProduct = async (req, res, next) => {
   }
 
   value.createdBy = userId;
-  console.log("Created by: ", value.createdBy);
-
   value.approved = false;
   const newProduct = new Product(value);
   try {
@@ -71,7 +69,6 @@ const submitProduct = async (req, res, next) => {
       `${vendor.firstName} ${vendor.lastName}`,
       req.body.name
     );
-    console.log(`${vendor.firstName} ${vendor.lastName}`);
     return res.status(StatusCodes.CREATED).json({
       message: "Product successfully submitted for approval",
       status: "success",
@@ -136,9 +133,7 @@ const getAllProducts = async (req, res, next) => {
 const getRelatedProducts = async (req, res) => {
   try {
     const productId = req.params.id;
-    console.log(`productId: ${productId}`);
     const currentProduct = await Product.findById(productId);
-    console.log(`currentProduct: ${currentProduct}`);
     if (!currentProduct) {
       return res
         .status(StatusCodes.NOT_FOUND)

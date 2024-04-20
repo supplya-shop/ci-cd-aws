@@ -135,9 +135,9 @@ const getOrders = async (req, res) => {
   try {
     const user = req.user.userid;
     const orders = await Order.find({ user }).populate({
-      path: "orderItems.product", // Populating product within each orderItem
+      path: "orderItems.product",
       populate: {
-        path: "createdBy", // Nested population for createdBy within product
+        path: "createdBy",
         select:
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify fields you want from User
       },
@@ -203,6 +203,36 @@ const getOrdersByStatus = async (req, res, next) => {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: `Failed to fetch orders with status ${req.params.status}: ${error.message}`,
+    });
+  }
+};
+
+const getOrdersByUser = async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const orders = await Order.find({ user: userId }).populate({
+      path: "orderItems.product",
+      populate: {
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      },
+    });
+    if (!orders) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "No orders found" });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Orders fetched successfully",
+      data: orders,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to fetch orders: " + error.message,
     });
   }
 };
@@ -299,6 +329,7 @@ module.exports = {
   getOrders,
   getOrderById,
   getOrdersByStatus,
+  getOrdersByUser,
   updateOrder,
   cancelOrder,
 };
