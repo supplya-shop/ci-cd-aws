@@ -251,7 +251,7 @@ const getDiscountedProducts = async (req, res) => {
 const getFlashsaleProducts = async (req, res) => {
   try {
     const flashsaleProducts = await Product.find({ flashsale: true });
-    if (flashsaleProducts.length === 0) {
+    if (!flashsaleProducts || flashsaleProducts.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "No flashsale products found" });

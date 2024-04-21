@@ -189,20 +189,51 @@ const getOrderById = async (req, res) => {
 
 const getOrdersByStatus = async (req, res, next) => {
   try {
-    const { status } = req.params;
-    const orders = await Order.find({ orderStatus: status }).populate(
-      "orderItems"
-    );
+    let orderStatus = req.params;
+    const validStatuses = [
+      "received",
+      "processing",
+      "dispatched",
+      "delivered",
+      "cancelled",
+    ];
+
+    const status = orderStatus && orderStatus.orderStatus;
+
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: `Invalid status: ${status}. Please provide one of: ${validStatuses.join(
+          ", "
+        )}`,
+      });
+    }
+
+    const orders = await Order.find({
+      orderStatus: status.toLowerCase(),
+    }).populate("orderItems");
+    const totalOrders = await Order.countDocuments({
+      orderStatus: status,
+    });
+
+    if (!orders || orders.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: "error",
+        message: `No orders found with status '${status}'`,
+        data: [],
+      });
+    }
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Orders fetched successfully",
       data: orders,
+      totalOrders: totalOrders,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      message: `Failed to fetch orders with status ${req.params.status}: ${error.message}`,
+      message: `Failed to fetch orders with status ${req.params.orderStatus}: ${error.message}`,
     });
   }
 };
