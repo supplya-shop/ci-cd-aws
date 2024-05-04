@@ -1,3 +1,4 @@
+const { required } = require("joi");
 const mongoose = require("mongoose");
 const schema = mongoose.Schema;
 
@@ -6,9 +7,14 @@ const productSchema = new schema({
     type: String,
     required: true,
   },
-  price: {
+  unit_price: {
     type: Number,
-    default: "0",
+    default: 0,
+    required: true,
+  },
+  discounted_price: {
+    type: Number,
+    default: 0,
     required: true,
   },
   description: {
@@ -42,9 +48,11 @@ const productSchema = new schema({
     ref: "User",
     required: true,
   },
-  inStock: {
-    type: Boolean,
-    default: true,
+  status: {
+    type: String,
+    enum: ["instock", "outofstock"],
+    default: "instock",
+    required: true,
   },
   rating: {
     type: String,
@@ -81,9 +89,14 @@ const productSchema = new schema({
   dateModified: {
     type: Date,
   },
+  sku: {
+    type: String,
+    required: true,
+  },
   moq: {
     type: Number,
     default: 1,
+    required: true,
   },
 });
 

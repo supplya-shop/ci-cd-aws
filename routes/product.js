@@ -17,6 +17,7 @@ const {
   uploadProductImages,
   deleteProduct,
   getRelatedProducts,
+  searchProducts,
 } = require("../controllers/product");
 
 const {
@@ -63,6 +64,7 @@ router.get("/deals", getDiscountedProducts);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/", getAllProducts);
 router.get("/vendor", authenticateUser, getProductsByVendor);
+router.get("/search", searchProducts);
 router.get("/flashsale", getFlashsaleProducts);
 router.get("/:id", getProductById);
 router.get("/brands/:brand", getProductsByBrand);
