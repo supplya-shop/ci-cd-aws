@@ -16,7 +16,12 @@ const {
 } = require("../middleware/authenticateUser");
 
 //user routes
-router.patch("/:id", authenticateUser, updateUser);
+router.patch(
+  "/:id",
+  authenticateUser,
+  rolesAllowed("customer", "admin"),
+  updateUser
+);
 router.post("/create", authenticateUser, createUser);
 router.get("/", authenticateUser, getAllUsers);
 router.get("/admin", authenticateUser, getAdminUsers);

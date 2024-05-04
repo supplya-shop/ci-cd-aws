@@ -34,7 +34,7 @@ const createOrder = async (req, res) => {
     totalPrice = 0;
     for (const item of orderItems) {
       const product = await Product.findById(item.product)
-        .populate("createdBy") // Assuming 'createdBy' is the field for vendor
+        .populate("createdBy")
         .session(session);
 
       if (!product) {
@@ -42,6 +42,13 @@ const createOrder = async (req, res) => {
         return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
           status: "error",
           message: `Product not found: ${item.product}`,
+        });
+      }
+      if (item.quantity < product.moq) {
+        await session.abortTransaction();
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: "error",
+          message: `Order quantity for product '${product.name}' does not meet the minimum order quantity (MOQ) of ${product.moq}`,
         });
       }
 
@@ -82,13 +89,12 @@ const createOrder = async (req, res) => {
     const order = await Order.findById(createdOrders[0]._id)
       .populate({
         path: "orderItems.product",
-        model: "Product", // Replace with your Product model name
+        model: "Product",
       })
       .populate({
         path: "createdBy",
-        model: "User", // Replace with your User model name
+        model: "User",
       });
-    // Note: No need to pass session here as the transaction is already committed
 
     console.log(order);
 
@@ -143,10 +149,12 @@ const getOrders = async (req, res) => {
       },
     });
 
+    const totalOrders = await Order.countDocuments({ user });
+
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Orders fetched successfully",
-      data: orders,
+      data: { orders, totalOrders }, // Include totalOrders in the response
     });
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({

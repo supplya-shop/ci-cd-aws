@@ -2,6 +2,7 @@ const express = require("express");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const User = require("../models/User");
 const validateProduct = require("../middleware/validation/productDTO");
 const multer = require("../middleware/upload");
@@ -101,7 +102,7 @@ const getAllProducts = async (req, res, next) => {
       })
       .populate("category", "name")
       .select(
-        "name price description quantity category image images brand createdBy inStock rating numReviews isFeatured hasDiscount flashsale saleCount dateCreated moq approved"
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
       )
       .limit(limit)
       .skip(startIndex);
@@ -145,7 +146,7 @@ const getRelatedProducts = async (req, res) => {
       _id: { $ne: productId },
     })
       .limit(10)
-      .select("name price description image");
+      .select("name unit_price discounted_price description image status");
 
     return res.status(StatusCodes.OK).json({
       status: "success",
@@ -229,7 +230,9 @@ const getProductsByBrand = async (req, res) => {
 
 const getDiscountedProducts = async (req, res) => {
   try {
-    const discountedProducts = await Product.find({ hasDiscount: true });
+    const discountedProducts = await Product.find({
+      discounted_price: { $gt: 0 },
+    });
     if (!discountedProducts || discountedProducts.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -302,7 +305,7 @@ const getProductById = async (req, res, next) => {
     })
     .populate("category", "name")
     .select(
-      "name price description quantity category image images brand createdBy inStock rating numReviews isFeatured hasDiscount flashsale saleCount dateCreated moq approved"
+      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
     )
     .then((product) => {
       if (!product) {
@@ -416,6 +419,42 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+const searchProducts = async (req, res) => {
+  try {
+    const searchQuery = req.query.q;
+    const shopName = req.query.shopName;
+
+    const baseQuery = {
+      $or: [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { shopName: { $regex: searchQuery, $options: "i" } },
+      ],
+    };
+
+    if (shopName) {
+      const vendor = await User.findOne({
+        shopName: { $regex: shopName, $options: "i" },
+      });
+      if (vendor) {
+        baseQuery.createdBy = vendor.userid;
+      }
+    }
+
+    const products = await Product.find(baseQuery);
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Products fetched successfully",
+      data: products,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to search products: " + error.message,
+    });
+  }
+};
+
 module.exports = {
   createProduct,
   submitProduct,
@@ -431,4 +470,5 @@ module.exports = {
   updateProduct,
   uploadProductImages,
   deleteProduct,
+  searchProducts,
 };

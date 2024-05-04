@@ -419,17 +419,15 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// Google OAuth authentication route
 const googleAuth = (req, res, next) => {
   passport.authenticate("google", {
     scope: ["profile", "email"],
   })(req, res, next);
 };
 
-// Google OAuth callback route
 const googleAuthCallback = (req, res, next) => {
   passport.authenticate("google", {
-    successRedirect: "/api/v1/products",
+    successRedirect: "/api/v1/users",
     failureRedirect: "/",
     session: false,
   })(req, res, next);

@@ -1,13 +1,3 @@
-// passport.serializeUser((user, done) => {
-//   done(null, user.id);
-// });
-
-// passport.deserializeUser((id, done) => {
-//   User.findById(id).then((user) => {
-//     done(null, user);
-//   });
-// });
-
 // const passport = require("passport");
 // const GoogleStrategy = require("passport-google-oauth20").Strategy;
 // const User = require("../models/User");
@@ -84,6 +74,8 @@ passport.use(
         }
 
         const { given_name, family_name, email, phone_number } = profile._json;
+
+        console.log("Profile: ", profile._json);
 
         if (!given_name || !family_name || !email) {
           return done(
