@@ -9,18 +9,12 @@ const productDTO = Joi.object({
   category: Joi.string().required(),
   image: Joi.string().default(""),
   images: Joi.array().items(Joi.string()),
-  brand: Joi.string().default(""),
   status: Joi.string().default("instock").required(),
   createdBy: Joi.string(),
-  flashsale: Joi.boolean().default(false),
-  saleCount: Joi.number().default(0),
   sku: Joi.string().required(),
   moq: Joi.number().required(),
-  rating: Joi.number().default(0),
-  numReviews: Joi.number().default(0),
-  isFeatured: Joi.boolean().default(false),
   dateCreated: Joi.date().default(Date.now),
-  dateModified: Joi.date().allow(null).optional(),
+  dateModified: Joi.date(),
 });
 
 module.exports = function validateProduct(data) {

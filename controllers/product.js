@@ -421,37 +421,49 @@ const deleteProduct = async (req, res, next) => {
 
 const searchProducts = async (req, res) => {
   try {
-    const searchQuery = req.query.q;
-    const shopName = req.query.shopName;
+    const { keyword } = req.query;
 
-    const baseQuery = {
-      $or: [
-        { name: { $regex: searchQuery, $options: "i" } },
-        { shopName: { $regex: searchQuery, $options: "i" } },
-      ],
-    };
-
-    if (shopName) {
-      const vendor = await User.findOne({
-        shopName: { $regex: shopName, $options: "i" },
+    if (!keyword || keyword.trim() === "") {
+      return res.status(400).json({
+        status: "error",
+        message: "Please provide a valid search keyword",
       });
-      if (vendor) {
-        baseQuery.createdBy = vendor.userid;
-      }
     }
 
-    const products = await Product.find(baseQuery);
+    // Search for products by name
+    const productsByName = await Product.find({
+      name: { $regex: keyword, $options: "i" },
+    });
 
-    return res.status(StatusCodes.OK).json({
+    // Search for products by vendor shopName
+    const usersByShopName = await User.find({
+      shopName: { $regex: keyword, $options: "i" },
+    });
+    const vendorIds = usersByShopName.map((user) => user._id);
+    const productsByVendor = await Product.find({
+      createdBy: { $in: vendorIds },
+    });
+
+    // Combine the results
+    const products = [...productsByName, ...productsByVendor];
+
+    if (products.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No products found matching the search keyword",
+      });
+    }
+
+    return res.json({
       status: "success",
-      message: "Products fetched successfully",
+      message: "Products found successfully",
       data: products,
     });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      message: "Failed to search products: " + error.message,
-    });
+    console.error("Failed to search products:", error);
+    return res
+      .status(500)
+      .json({ status: "error", message: "Failed to search products" });
   }
 };
 
