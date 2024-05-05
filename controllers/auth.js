@@ -9,6 +9,7 @@ const {
   sendOTP,
   resendOTPEmail,
   sendConfirmationEmail,
+  forgotPasswordMail,
   resetPasswordMail,
   newUserSignUpMail,
 } = require("../middleware/mailUtil");
@@ -329,56 +330,26 @@ const forgotPassword = async (req, res) => {
     // Set expiry for 30 minutes
     const resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
 
-    await User.updateOne(
-      { _id: user._id },
-      {
-        $set: {
-          resetPasswordToken: resetCode,
-          resetPasswordExpires: resetPasswordExpires,
-        },
-      }
-    );
+    user.resetPasswordToken = resetCode;
+    user.resetPasswordExpires = resetPasswordExpires;
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    await user.save();
 
-    const mailOptions = {
-      from: process.env.EMAIL_USERNAME,
-      to: user.email,
-      subject: "Password Reset Request",
-      html: `
-        <p style="font-size:16px;">You are receiving this email because you (or someone else) has requested a password reset for your account.</p>
-        <p style="font-size:16px;">Your password reset code is:</p>
-        <p style="font-size:24px; color: blue;">${resetCode}</p>
-        <p style="font-size:16px;">This code will expire in 30 minutes. Please go to the following page and enter this code to reset your password:</p>
-        <a href="https:/localhost:3000/auth/reset" style="font-size:16px;">Reset Password</a>
-        <p style="font-size:16px;">If you did not request a password reset, please ignore this email.</p>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    await forgotPasswordMail(email, resetCode);
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Password reset code sent to your email",
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error sending password reset code:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      message: error.message,
+      message: "Failed to send password reset code. " + error.message,
     });
   }
 };
 
-// Reset password action
 const resetPassword = async (req, res) => {
   try {
     const { resetCode, newPassword } = req.body;

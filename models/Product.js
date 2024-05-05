@@ -41,7 +41,6 @@ const productSchema = new schema({
   ],
   brand: {
     type: String,
-    default: "",
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -50,23 +49,14 @@ const productSchema = new schema({
   },
   status: {
     type: String,
-    enum: ["instock", "outofstock"],
-    default: "instock",
+    enum: ["inStock", "outOfStock"],
+    default: "inStock",
     required: true,
   },
   rating: {
     type: String,
-    default: 0,
-  },
-  numReviews: {
-    type: Number,
-    default: 0,
   },
   isFeatured: {
-    type: Boolean,
-    default: false,
-  },
-  hasDiscount: {
     type: Boolean,
     default: false,
   },
