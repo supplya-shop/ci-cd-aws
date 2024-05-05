@@ -40,17 +40,17 @@ const createProduct = async (req, res, next) => {
 
 const submitProduct = async (req, res, next) => {
   const userId = req.user.userid;
-  const { error, value } = validateProduct(req.body);
-  if (error) {
+  const product = req.body;
+  if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       error: "error",
-      message: error.details.map((detail) => detail.message),
+      message: "Please fill all required fields",
     });
   }
 
-  value.createdBy = userId;
-  value.approved = false;
-  const newProduct = new Product(value);
+  product.createdBy = userId;
+  product.approved = false;
+  const newProduct = new Product(product);
   try {
     const vendor = await User.findById(userId).select(
       "firstName lastName email"
