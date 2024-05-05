@@ -10,12 +10,14 @@ const {
   getOrderById,
   getOrdersByStatus,
   getOrdersByUser,
+  getLatestOrder,
   updateOrder,
   cancelOrder,
 } = require("../controllers/order");
 
 // order routes
 router.get("/user", authenticateUser, getOrdersByUser);
+router.get("/latest", authenticateUser, getLatestOrder);
 router.post("/create", authenticateUser, createOrder);
 router.get("/", authenticateUser, getOrders);
 router.get("/:orderId", authenticateUser, getOrderById);

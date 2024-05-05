@@ -164,6 +164,11 @@ const getRelatedProducts = async (req, res) => {
 const getProductsByVendor = async (req, res) => {
   try {
     const vendorId = req.user.userid;
+    await Product.updateMany(
+      { createdBy: vendorId },
+      { $unset: { price: "" } }
+    );
+
     const products = await Product.find({ createdBy: vendorId });
     if (!products || products.length === 0) {
       return res

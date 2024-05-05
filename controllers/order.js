@@ -246,6 +246,31 @@ const getOrdersByStatus = async (req, res, next) => {
   }
 };
 
+const getLatestOrder = async (req, res) => {
+  try {
+    const order = await Order.findOne().sort({ dateOrdered: -1 });
+
+    if (!order) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "No orders found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Latest order fetched successfully",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error fetching latest order: ", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to fetch latest order",
+    });
+  }
+};
+
 const getOrdersByUser = async (req, res) => {
   try {
     const userId = req.user.userid;
@@ -369,6 +394,7 @@ module.exports = {
   getOrderById,
   getOrdersByStatus,
   getOrdersByUser,
+  getLatestOrder,
   updateOrder,
   cancelOrder,
 };
