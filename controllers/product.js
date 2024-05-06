@@ -12,16 +12,16 @@ const { approveProductMail } = require("../middleware/mailUtil");
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
-  const { error, value } = validateProduct(req.body);
-  if (error) {
+  const product = req.body;
+  if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       error: "error",
-      message: error.details.map((detail) => detail.message),
+      message: "Enter all required fields",
     });
   }
-  value.createdBy = userId;
-  value.approved = true;
-  const newProduct = new Product(value);
+  product.createdBy = userId;
+  product.approved = true;
+  const newProduct = new Product(product);
   try {
     await newProduct.save();
     return res.status(StatusCodes.CREATED).json({
