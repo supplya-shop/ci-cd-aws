@@ -16,7 +16,7 @@ const createProduct = async (req, res, next) => {
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       error: "error",
-      message: "Enter all required fields",
+      message: "Please enter all required fields",
     });
   }
   product.createdBy = userId;
@@ -32,7 +32,7 @@ const createProduct = async (req, res, next) => {
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "Failed to create Product",
+      message: "Failed to create Product: " + error.message,
       status: "error",
     });
   }
@@ -104,6 +104,7 @@ const getAllProducts = async (req, res, next) => {
       .select(
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
       )
+      .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
 
