@@ -382,7 +382,7 @@ const resetPassword = async (req, res) => {
       message: "Password reset successfully",
     });
   } catch (error) {
-    console.error("Error resetting password:", error);
+    console.error("Error resetting password: ", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: error.message,
@@ -398,7 +398,7 @@ const googleAuth = (req, res, next) => {
 
 const googleAuthCallback = (req, res, next) => {
   passport.authenticate("google", {
-    successRedirect: "/api/v1/users",
+    successRedirect: "/api/v1/products",
     failureRedirect: "/",
     session: false,
   })(req, res, next);
