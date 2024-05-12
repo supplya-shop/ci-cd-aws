@@ -14,7 +14,7 @@ const {
   getDiscountedProducts,
   getFlashsaleProducts,
   updateProduct,
-  uploadProductImages,
+  uploadProductImage,
   deleteProduct,
   getRelatedProducts,
   searchProducts,
@@ -73,7 +73,7 @@ router.post(
   "/images/upload",
   upload.single("product"),
   authenticateUser,
-  uploadProductImages
+  uploadProductImage
 );
 router.get("/images");
 router.patch(
