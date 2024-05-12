@@ -1,13 +1,9 @@
-const express = require("express");
 const { StatusCodes } = require("http-status-codes");
-const { BadRequestError, UnauthenticatedError } = require("../errors");
 const Product = require("../models/Product");
-const Category = require("../models/Category");
 const User = require("../models/User");
-const validateProduct = require("../middleware/validation/productDTO");
-const multer = require("../middleware/upload");
-const userController = require("../controllers/user");
-const notificationService = require("../middleware/notification");
+const cloudinary = require("cloudinary").v2;
+// const userController = require("../controllers/user");
+// const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
 
 const createProduct = async (req, res, next) => {
@@ -361,17 +357,32 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-const uploadProductImages = async (req, res, next) => {
+const uploadProductImage = async (req, res, next) => {
   try {
+    if (!req.file) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "No image file uploaded",
+      });
+    }
+
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "supplya-assets",
+    });
+
     return res.status(StatusCodes.OK).json({
-      success: "success",
-      image_url: `${process.env.IMAGE_BASE_URL}/${req.file.filename}`,
+      status: "success",
+      message: "Image uploaded successfully",
+      imageUrl: uploadResult.url,
+      secureUrl: uploadResult.secureurl,
+      public_id: uploadResult.public_id,
     });
   } catch (error) {
     console.error(error.message);
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Failed to upload product images" });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to upload product image",
+    });
   }
 };
 
@@ -430,18 +441,16 @@ const searchProducts = async (req, res) => {
     const { keyword } = req.query;
 
     if (!keyword || keyword.trim() === "") {
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message: "Please provide a valid search keyword",
       });
     }
 
-    // Search for products by name
     const productsByName = await Product.find({
       name: { $regex: keyword, $options: "i" },
     });
 
-    // Search for products by vendor shopName
     const usersByShopName = await User.find({
       shopName: { $regex: keyword, $options: "i" },
     });
@@ -450,17 +459,16 @@ const searchProducts = async (req, res) => {
       createdBy: { $in: vendorIds },
     });
 
-    // Combine the results
     const products = [...productsByName, ...productsByVendor];
 
     if (products.length === 0) {
-      return res.status(404).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "No products found matching the search keyword",
       });
     }
 
-    return res.json({
+    return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Products found successfully",
       data: products,
@@ -468,7 +476,7 @@ const searchProducts = async (req, res) => {
   } catch (error) {
     console.error("Failed to search products:", error);
     return res
-      .status(500)
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: "Failed to search products" });
   }
 };
@@ -486,7 +494,7 @@ module.exports = {
   getFlashsaleProducts,
   getDiscountedProducts,
   updateProduct,
-  uploadProductImages,
+  uploadProductImage,
   deleteProduct,
   searchProducts,
 };
