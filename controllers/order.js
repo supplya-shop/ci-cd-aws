@@ -141,19 +141,9 @@ async function checkAndUpdateInventory(orderItems, session) {
 
 const getOrders = async (req, res) => {
   try {
-    const user = req.user.userid;
-    const orders = await Order.find({ user })
-      .populate({
-        path: "orderItems.product",
-        populate: {
-          path: "createdBy",
-          select:
-            "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
-        },
-      })
-      .sort({ dateOrdered: -1 });
+    const orders = await Order.find().sort({ dateOrdered: -1 });
 
-    const totalOrders = await Order.countDocuments({ user });
+    const totalOrders = await Order.countDocuments();
 
     return res.status(StatusCodes.OK).json({
       status: "success",
