@@ -6,9 +6,9 @@ const nodemailer = require("nodemailer");
 const passport = require("passport");
 const {
   generateOTP,
-  sendOTP,
-  resendOTPEmail,
-  sendConfirmationEmail,
+  sendOTPMail,
+  resendOTPMail,
+  sendConfirmationMail,
   forgotPasswordMail,
   resetPasswordMail,
   newUserSignUpMail,
@@ -95,7 +95,7 @@ const registerUser = async (req, res) => {
       phoneNumber,
     });
 
-    await sendOTP(email, otp);
+    await sendOTPMail(email, otp);
 
     userData.createdAt = Date.now();
     userData.otp = otp;
@@ -159,7 +159,7 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       phoneNumber: userData.phoneNumber,
     });
     await newUser.save();
-    await sendConfirmationEmail(email);
+    await sendConfirmationMail(email);
     await newUserSignUpMail(email);
     await OtpLogs.findOneAndDelete({ email, otp });
 
@@ -223,7 +223,7 @@ const resendOTP = async (req, res) => {
 
     await OtpLogs.updateOne({ email }, { otp: newOTP });
 
-    await resendOTPEmail(email, newOTP);
+    await resendOTPMail(email, newOTP);
 
     return res.status(StatusCodes.OK).json({
       status: "success",

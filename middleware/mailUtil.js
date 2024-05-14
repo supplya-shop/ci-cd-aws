@@ -7,7 +7,7 @@ const generateOTP = () => {
   return { otp, expiration };
 };
 
-const sendOTP = async (email, otp) => {
+const sendOTPMail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,
@@ -125,7 +125,7 @@ const sendOTP = async (email, otp) => {
                               style="
                                 display: flex;
                                 text-align: left;
-                                margin-top: 40px;
+                                margin-top: 35px;
                               "
                             >
                               <div
@@ -285,7 +285,7 @@ const sendOTP = async (email, otp) => {
                                 line-height: 20px;
                                 color: #131417;
                                 text-align: left;
-                                margin-top: 50px;
+                                margin-top: 35px;
                               "
                             >
                               Please enter this code on the registration page to
@@ -299,9 +299,9 @@ const sendOTP = async (email, otp) => {
                           <td style="font-size: 14px; line-height: 16px">
                             <p
                               style="
-                                margin-top: 40px;
+                                margin-top: 35px;
                                 text-align: left;
-                                margin-bottom: 40px;
+                                margin-bottom: 35px;
                                 line-height: 20px;
                                 font-weight: 400;
                                 color: #131417;
@@ -376,7 +376,7 @@ const sendOTP = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-const resendOTPEmail = async (email, otp) => {
+const resendOTPMail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,
@@ -442,7 +442,7 @@ const resendOTPEmail = async (email, otp) => {
                                                     <p style="font-size:14px; text-align: left; color:#131417;">
                                                         Thank you for registering on Supplya. Here's that brand new OTP you requested! To finalise your registration and ensure account security, please use the code provided below
                                                     </p>
-                                                    <div style="display:flex; text-align: left; margin-top: 40px;">
+                                                    <div style="display:flex; text-align: left; margin-top: 35px;">
                                                         <div style="background-color: #FFFFFF; border-radius:5px; margin-right:5px;  width:60px; height:70px;">
                                                             <p
                                                                 style="font-size: 30px; text-align:center; font-weight:600;   line-height:20px; color:#0199a4;">
@@ -538,7 +538,7 @@ const resendOTPEmail = async (email, otp) => {
                                             <tr>
                                                 <td style="font-size: 14px; line-height: 16px">
                                                     <p
-                                                        style="margin-top: 40px; text-align: left; margin-bottom: 40px; line-height: 20px; font-weight: 400; color:#131417;">
+                                                        style="margin-top: 35px; text-align: left; margin-bottom: 35px; line-height: 20px; font-weight: 400; color:#131417;">
                                                         If you did not request this OTP code, please disregard this email.</p>
                                                     <p
                                                         style="color:#131417; text-align: left; font-weight:400; line-height: 15px;">
@@ -591,7 +591,7 @@ const resendOTPEmail = async (email, otp) => {
   await transporter.sendMail(mailOptions);
 };
 
-const sendConfirmationEmail = async (email) => {
+const sendConfirmationMail = async (email) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,
@@ -709,8 +709,8 @@ const sendConfirmationEmail = async (email) => {
                             >
                               You have successfully completed your registration
                               on <span style="font-weight: 600"> Supplya</span>.
-                              Click the link below to login and experience a
-                              whole new world of buying and selling now!
+                              We're glad to have you on board. Click the link below to login and experience a
+                              new world of buying and selling now!
                             </p>
 
                             <a
@@ -802,7 +802,7 @@ const newUserSignUpMail = async (email) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: process.env.EMAIL_USERNAME,
-    subject: "New User Onboarded 🎉",
+    subject: "New User Alert!  🎉",
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
@@ -884,20 +884,20 @@ const newUserSignUpMail = async (email) => {
                               style="
                                 font-size: 14px;
                                 font-weight: 600;
-                                margin-top: 40px;
+                                margin-top: 20px;
                                 text-align: left;
                                 font-size: 18px;
                                 color: #131417;
                               "
                             >
-                              New User Registration 🎊
+                              New User Onboarded 🎊 
                             </p>
                             <p
                               style="
                                 font-size: 14px;
                                 text-align: left;
                                 color: #131417;
-                                margin-bottom: 30px;
+                                margin-bottom: 25px;
                                 line-height: 20px;
                               "
                             >
@@ -1425,7 +1425,7 @@ const sendOrderSummaryMail = async (order) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: process.env.EMAIL_USERNAME,
-    subject: "Order Summary",
+    subject: `Order Summary for [Order ID: ${order.id}]`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
@@ -1526,6 +1526,7 @@ const sendOrderSummaryMail = async (order) => {
                         >
                           <tr>
                             <td style="color: #153643">
+                            <p>Hi, </p>
                               <p>
                                 A new order has been created with the following
                                 details:
@@ -1594,6 +1595,31 @@ const sendOrderSummaryMail = async (order) => {
                               </ul>
                             </td>
                           </tr>
+                            <tr>
+                          <td style="font-size: 14px; line-height: 16px">
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                                margin-top: 30px;
+                              "
+                            >
+                              Regards,
+                            </p>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Supplya Support.
+                            </p>
+                          </td>
+                        </tr>
                         </table>
                       </td>
                     </tr>
@@ -1805,9 +1831,9 @@ const approveProductMail = async (vendorName, productName) => {
 
 module.exports = {
   generateOTP,
-  sendOTP,
-  resendOTPEmail,
-  sendConfirmationEmail,
+  sendOTPMail,
+  resendOTPMail,
+  sendConfirmationMail,
   sendOrderSummaryMail,
   newUserSignUpMail,
   forgotPasswordMail,
