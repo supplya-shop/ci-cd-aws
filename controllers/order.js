@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError } = require("../errors");
+const { sendOrderSummaryMail } = require("../middleware/mailUtil");
 
 const mongoose = require("mongoose");
 
@@ -48,11 +49,11 @@ const createOrder = async (req, res) => {
         await session.abortTransaction();
         return res.status(StatusCodes.BAD_REQUEST).json({
           status: "error",
-          message: `Order quantity for product '${product.name}' does not meet the minimum order quantity (MOQ) of ${product.moq}`,
+          message: `Sorry, your order quantity for product '${product.name}' does not meet the minimum order quantity (MOQ) of ${product.moq}`,
         });
       }
 
-      totalPrice += item.quantity * product.price;
+      totalPrice += item.quantity * product.unit_price;
       item.vendorDetails = product.createdBy;
     }
 
@@ -97,6 +98,7 @@ const createOrder = async (req, res) => {
       });
 
     console.log(order);
+    await sendOrderSummaryMail(order);
 
     return res.status(StatusCodes.CREATED).json({
       status: "success",
@@ -140,24 +142,26 @@ async function checkAndUpdateInventory(orderItems, session) {
 const getOrders = async (req, res) => {
   try {
     const user = req.user.userid;
-    const orders = await Order.find({ user }).populate({
-      path: "orderItems.product",
-      populate: {
-        path: "createdBy",
-        select:
-          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify fields you want from User
-      },
-    });
+    const orders = await Order.find({ user })
+      .populate({
+        path: "orderItems.product",
+        populate: {
+          path: "createdBy",
+          select:
+            "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+        },
+      })
+      .sort({ dateOrdered: -1 });
 
     const totalOrders = await Order.countDocuments({ user });
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Orders fetched successfully",
-      data: { orders, totalOrders }, // Include totalOrders in the response
+      data: { orders, totalOrders },
     });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to fetch orders: " + error.message,
     });

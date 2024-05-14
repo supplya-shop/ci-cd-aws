@@ -166,7 +166,9 @@ const getProductsByVendor = async (req, res) => {
       { $unset: { price: "" } }
     );
 
-    const products = await Product.find({ createdBy: vendorId });
+    const products = await Product.find({ createdBy: vendorId }).sort({
+      dateCreated: -1,
+    });
     if (!products || products.length === 0) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -193,7 +195,7 @@ const getProductsByBrand = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
+    // const endIndex = page * limit;
 
     const totalProducts = await Product.countDocuments({
       brand: { $regex: new RegExp(brand, "i") },
@@ -357,32 +359,34 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-const uploadProductImage = async (req, res, next) => {
+const uploadProductImage = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
-        message: "No image file uploaded",
-      });
-    }
-
-    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+    const base64String = req.body.base64String;
+    const imageBuffer = Buffer.from(base64String, "base64");
+    const image = await cloudinary.uploader.upload(imageBuffer, {
       folder: "supplya-assets",
     });
+    cloudinary.image("myphoto", {
+      transformation: [
+        {
+          dpr: "auto",
+          responsive: true,
+          width: "auto",
+          crop: "scale",
+          angle: 20,
+        },
+        { effect: "art:hokusai", border: "3px_solid_rgb:00390b", radius: 20 },
+      ],
+    });
 
-    return res.status(StatusCodes.OK).json({
-      status: "success",
-      message: "Image uploaded successfully",
-      imageUrl: uploadResult.url,
-      secureUrl: uploadResult.secureurl,
-      public_id: uploadResult.public_id,
-    });
+    return res
+      .status(StatusCodes.OK)
+      .json({ status: "success", data: image.secure_url });
   } catch (error) {
-    console.error(error.message);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      message: "Failed to upload product image",
-    });
+    console.error("Error uploading image:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", error: "Failed to upload image" });
   }
 };
 
