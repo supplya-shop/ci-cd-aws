@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>OTP</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,12 +11,6 @@
       rel="stylesheet"
     />
   </head>
-
-  <style>
-    a:hover {
-      background-color: #02555b;
-    }
-  </style>
 
   <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
     <table
@@ -85,26 +79,209 @@
                                 color: #131417;
                               "
                             >
-                              Password Reset Successfully 👁️
+                              Your One-Time Password for Account Verification
                             </p>
                             <p
                               style="
                                 font-size: 14px;
                                 text-align: left;
                                 color: #131417;
-                                margin-bottom: 30px;
-                                line-height: 20px;
                               "
                             >
-                              Your password has been successfully reset. If you
-                              did not request a password reset, please contact
-                              support immediately.
+                              Thank you for registering on Supplya! To finalise
+                              your registration and ensure account security,
+                              please use the OTP code provided below
                             </p>
-                            <p style="margin-bottom: 35px">
-                              Support email:
-                              <strong style="color: #0199a4"
-                                >hi@supplya.shop</strong
+                            <div
+                              style="
+                                display: flex;
+                                text-align: left;
+                                margin-top: 40px;
+                              "
+                            >
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
                               >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${ otpString.charAt(0) !== " " ?
+                                  otpString.charAt(0) : "&#48;" }
+                                </p>
+                              </div>
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${ otpString.charAt(1) !== " " ?
+                                  otpString.charAt(1) : "&#48;" }
+                                </p>
+                              </div>
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${ otpString.charAt(2) !== " " ?
+                                  otpString.charAt(2) : "&#48;" }
+                                </p>
+                              </div>
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${ otpString.charAt(3) !== " " ?
+                                  otpString.charAt(3) : "&#48;" }
+                                </p>
+                              </div>
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${ otpString.charAt(4) !== " " ?
+                                  otpString.charAt(4) : "&#48;" }
+                                </p>
+                              </div>
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${ otpString.charAt(5) !== " " ?
+                                  otpString.charAt(5) : "&#48;" }
+                                </p>
+                              </div>
+                            </div>
+                            <p
+                              style="
+                                font-size: 14px;
+                                line-height: 20px;
+                                color: #131417;
+                                text-align: left;
+                                margin-top: 40px;
+                              "
+                            >
+                              Please enter this code on the registration page to
+                              verify your email and complete the registration
+                              process.
+                            </p>
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td style="font-size: 14px; line-height: 16px">
+                            <p
+                              style="
+                                margin-top: 35px;
+                                text-align: left;
+                                margin-bottom: 35px;
+                                line-height: 20px;
+                                font-weight: 400;
+                                color: #131417;
+                              "
+                            >
+                              If you did not request this OTP code, please
+                              disregard this email.
+                            </p>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Thank you,
+                            </p>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Supplya Team.
                             </p>
                           </td>
                         </tr>
@@ -120,7 +297,25 @@
       <tr>
         <td align="center">
           <footer>
-            <p style="color: #131417; margin-top: 30px; font-size: 14px">
+            <a
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-decoration: none;
+                background-color: #0199a4;
+                color: white;
+                border-radius: 6px;
+                padding: 10px 25px;
+                width: fit-content;
+                margin: 0 auto;
+                cursor: pointer;
+                margin-top: 20px;
+              "
+              href="https://supplya-web.vercel.app/auth/sign-in"
+              >Verify Account</a
+            >
+            <p style="color: #131417; margin-top: 20px; font-size: 14px">
               Copyright © 2024 Supplya
             </p>
           </footer>
