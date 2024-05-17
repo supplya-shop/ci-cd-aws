@@ -91,9 +91,7 @@ const userSchema = new mongoose.Schema({
   },
 
   password: {
-    type: String,
-    required: [true, "Please provide your password"],
-    minlength: [3, "Password must be at least 3 characters"],
+    type: String
   },
 
   email: {
@@ -153,6 +151,7 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+if (this.password) {
 userSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
@@ -162,6 +161,7 @@ userSchema.pre("save", async function (next) {
     next(error);
   }
 });
+}
 
 userSchema.methods.createJWT = function () {
   return jwt.sign(

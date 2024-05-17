@@ -13,11 +13,13 @@ const {
   googleAuthCallback,
   forgotPassword,
   resetPassword,
+  initiateOauth,
+  googleCallback
 } = require("../controllers/auth");
 
 // Google Auth routes
-router.get("/google", googleAuth);
-router.get("/google/redirect", googleAuthCallback);
+router.get("/google", initiateOauth);
+router.get("/google/redirect", googleCallback);
 
 // Regular Auth routes
 router.post("/login", login);

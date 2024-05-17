@@ -30,6 +30,7 @@
     "express-rate-limit": "^6.7.0",
     "express-session": "^1.18.0",
     "express-winston": "^4.2.0",
+    "google-auth-library": "^9.10.0",
     "helmet": "^7.0.0",
     "http-status-codes": "^2.2.0",
     "joi": "^17.12.1",
@@ -37,6 +38,7 @@
     "mongoose": "^5.13.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.2",
+    "oauth2client": "^1.0.0",
     "openai": "^4.25.0",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
@@ -48,6 +50,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0"
   }
 }
