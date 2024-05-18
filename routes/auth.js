@@ -24,7 +24,7 @@ router.post("/login", login);
 // router.post("/vendor/login", vendorLogin);
 router.post("/register", registerUser);
 // router.post("/verify-otp", verifyOTP);
-router.post("/verify-otp-and-generate-token", verifyOTPAndGenerateToken);
+router.post("/verify-otp", verifyOTPAndGenerateToken);
 router.post("/resend-otp", resendOTP);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
