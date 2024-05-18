@@ -55,8 +55,6 @@ const registerUser = async (req, res) => {
       req.body.role = "customer";
     }
 
-    let shopUrl;
-
     let userData = {
       email,
       password,
@@ -65,12 +63,18 @@ const registerUser = async (req, res) => {
       role: role || "customer",
     };
 
+    let shopUrl;
     if (role === "vendor") {
-      if (!shopName || !phoneNumber) {
+      if (!shopName) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           status: "error",
-          message:
-            "Please provide shopName and phoneNumber for vendor registration",
+          message: "Please provide shopName for vendor registration",
+        });
+      }
+      if (!phoneNumber) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: "error",
+          message: "Please provide phoneNumber for vendor registration",
         });
       }
       shopUrl = `https://supplya.shop/store/${shopName}`;
@@ -108,7 +112,9 @@ const registerUser = async (req, res) => {
     });
   } catch (error) {
     if (error.name === "ValidatorError") {
-      return res.status(400).json({ status: "error", message: error.message });
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ status: "error", message: error.message });
     }
     console.error(`error: ${error}`);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -154,9 +160,9 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       password: userData.password,
       otp: otp,
       role: userData.role,
-      shopName: userData.shopName,
-      shopUrl: userData.shopUrl,
-      phoneNumber: userData.phoneNumber,
+      shopName: userData.shopName || null,
+      shopUrl: userData.shopUrl || null,
+      phoneNumber: userData.phoneNumber || null,
     });
     await newUser.save();
     await sendConfirmationMail(email);

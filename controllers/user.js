@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Order = require("../models/Order");
 const validateUser = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
 const {
@@ -8,6 +9,30 @@ const {
 } = require("../errors");
 const multer = require("../middleware/upload");
 // const logger = require("../middleware/logging/logger");
+
+const createUser = async (req, res) => {
+  const { error, value } = validateUser(req.body);
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: "error",
+      message:
+        "Validation error. Please confirm that all required fields are entered and try again.",
+    });
+  }
+  const newUser = new User(value);
+  try {
+    await newUser.save();
+    return res
+      .status(StatusCodes.CREATED)
+      .json({ message: "User created successfully.", status: "success" });
+    // logger.info(`${newUser.email} created successfully.`);
+  } catch (error) {
+    // logger.error(error.message);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "Failed to create user.", status: "error" });
+  }
+};
 
 const getAllUsers = async (req, res) => {
   try {
@@ -80,30 +105,6 @@ const getUserById = async (req, res) => {
     });
 };
 
-const createUser = async (req, res) => {
-  const { error, value } = validateUser(req.body);
-  if (error) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      error: "error",
-      message:
-        "Validation error. Please confirm that all required fields are entered and try again.",
-    });
-  }
-  const newUser = new User(value);
-  try {
-    await newUser.save();
-    return res
-      .status(StatusCodes.CREATED)
-      .json({ message: "User created successfully.", status: "success" });
-    // logger.info(`${newUser.email} created successfully.`);
-  } catch (error) {
-    // logger.error(error.message);
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ message: "Failed to create user.", status: "error" });
-  }
-};
-
 const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -168,6 +169,36 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const getOrdersByUser = async (req, res) => {
+  try {
+    const userId = req.user.userid;
+    const orders = await Order.find({ user: userId }).populate({
+      path: "orderItems.product",
+      populate: {
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      },
+    });
+    if (!orders) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "No orders found" });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Orders fetched successfully",
+      data: orders,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to fetch orders: " + error.message,
+    });
+  }
+};
+
 const bulkdeleteUsers = async (req, res) => {
   try {
     const { ids } = req.body;
@@ -205,5 +236,6 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
+  getOrdersByUser,
   bulkdeleteUsers,
 };
