@@ -72,6 +72,7 @@ const userSchema = new mongoose.Schema({
   shopUrl: {
     type: String,
     unique: true,
+    sparse: true,
   },
 
   googleId: {
