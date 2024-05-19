@@ -256,7 +256,6 @@ const login = async (req, res, next) => {
 
     let user;
 
-    // Check if the login attempt is using shopName
     if (shopName) {
       user = await User.findOne({ shopName });
     } else {
@@ -321,20 +320,22 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      throw new Error("Please provide your email");
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Please provide your email", status: "error" });
     }
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new Error("Invalid Email");
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: error.message, status: "error" });
     }
 
-    // Generate a random 5-digit code
     const resetCode = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Set expiry for 30 minutes
-    const resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
+    const resetPasswordExpires = Date.now() + 30 * 60 * 1000;
 
     user.resetPasswordToken = resetCode;
     user.resetPasswordExpires = resetPasswordExpires;
@@ -356,23 +357,92 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-const resetPassword = async (req, res) => {
+const verifyOTP = async (req, res) => {
   try {
-    const { resetCode, newPassword } = req.body;
+    const { email, otp } = req.body;
 
-    if (!resetCode || !newPassword) {
-      throw new Error("Reset code and new password are required");
+    if (!email) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Email is required",
+      });
+    }
+    if (!otp) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "OTP is required",
+      });
     }
 
+    const currentTime = Date.now();
+
     const user = await User.findOne({
-      resetPasswordToken: resetCode,
-      resetPasswordExpires: {
-        $gt: Date.now(),
-      },
+      email,
+      resetPasswordToken: otp,
+      resetPasswordExpires: { $gt: currentTime },
     });
 
     if (!user) {
-      throw new Error("Invalid reset code or code expired");
+      const storedUser = await User.findOne({ email });
+      if (storedUser) {
+        console.log(
+          `Stored resetPasswordToken: ${storedUser.resetPasswordToken}`
+        );
+        console.log(
+          `Stored resetPasswordExpires: ${storedUser.resetPasswordExpires}`
+        );
+        console.log(`Current Time: ${currentTime}`);
+      } else {
+        console.log("No user found with the provided email.");
+      }
+      console.error(
+        `Verification failed for email: ${email}, OTP: ${otp}, Current Time: ${currentTime}`
+      );
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        status: "error",
+        message: "Invalid OTP or OTP expired",
+      });
+    }
+
+    req.session.resetUserId = user._id;
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "OTP verified successfully. You can now reset your password.",
+    });
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to verify OTP. " + error.message,
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Enter new password", status: "error" });
+    }
+
+    const userId = req.session.resetUserId;
+
+    if (!userId) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "User not found", status: "error" });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "User not found", status: "error" });
     }
 
     user.password = newPassword;
@@ -380,15 +450,16 @@ const resetPassword = async (req, res) => {
     user.resetPasswordExpires = null;
 
     await user.save();
-
     await resetPasswordMail(user.email);
+
+    req.session.resetUserId = null;
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Password reset successfully",
     });
   } catch (error) {
-    console.error("Error resetting password: ", error);
+    console.error("Error resetting password:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: error.message,
@@ -414,6 +485,7 @@ module.exports = {
   login,
   registerUser,
   verifyOTPAndGenerateToken,
+  verifyOTP,
   resendOTP,
   forgotPassword,
   resetPassword,
