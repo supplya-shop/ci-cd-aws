@@ -18,7 +18,7 @@ const {
 const userRegistrationCache = new Map();
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
-const registerUser = async (req, res) => {
+const signUp = async (req, res) => {
   try {
     const {
       email,
@@ -124,7 +124,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-const verifyOTPAndGenerateToken = async (req, res, next) => {
+const signUpComplete = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     if (!email) {
@@ -236,7 +236,6 @@ const resendOTP = async (req, res) => {
       message: "New OTP sent successfully. Please check your email.",
     });
   } catch (error) {
-    // console.error(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to re-send OTP. Please try again later.",
@@ -250,7 +249,7 @@ const login = async (req, res, next) => {
 
     if ((!email || !password) && !shopName) {
       throw new BadRequestError(
-        "Please provide your email and password or shopName and password"
+        "Please provide your email and password or shopName and password."
       );
     }
 
@@ -263,13 +262,13 @@ const login = async (req, res, next) => {
     }
 
     if (!user) {
-      throw new NotFoundError("User does not exist");
+      throw new NotFoundError("User does not exist.");
     }
 
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new BadRequestError("You have entered an invalid password");
+      throw new BadRequestError("You have entered an invalid password.");
     }
 
     const token = user.createJWT();
@@ -322,7 +321,7 @@ const forgotPassword = async (req, res) => {
     if (!email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Please provide your email", status: "error" });
+        .json({ message: "Please provide your email.", status: "error" });
     }
 
     const user = await User.findOne({ email });
@@ -333,7 +332,7 @@ const forgotPassword = async (req, res) => {
         .json({ message: error.message, status: "error" });
     }
 
-    const resetCode = Math.floor(10000 + Math.random() * 90000).toString();
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     const resetPasswordExpires = Date.now() + 30 * 60 * 1000;
 
@@ -346,7 +345,7 @@ const forgotPassword = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
-      message: "Password reset code sent to your email",
+      message: "Password reset code sent to your email.",
     });
   } catch (error) {
     console.error("Error sending password reset code:", error);
@@ -364,13 +363,13 @@ const verifyOTP = async (req, res) => {
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
-        message: "Email is required",
+        message: "Email is required.",
       });
     }
     if (!otp) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
-        message: "OTP is required",
+        message: "OTP is required.",
       });
     }
 
@@ -391,16 +390,15 @@ const verifyOTP = async (req, res) => {
         console.log(
           `Stored resetPasswordExpires: ${storedUser.resetPasswordExpires}`
         );
-        console.log(`Current Time: ${currentTime}`);
       } else {
         console.log("No user found with the provided email.");
       }
       console.error(
-        `Verification failed for email: ${email}, OTP: ${otp}, Current Time: ${currentTime}`
+        `Verification failed for email: ${email}, Current Time: ${currentTime}`
       );
       return res.status(StatusCodes.UNAUTHORIZED).json({
         status: "error",
-        message: "Invalid OTP or OTP expired",
+        message: "Invalid OTP or OTP expired.",
       });
     }
 
@@ -408,7 +406,7 @@ const verifyOTP = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
-      message: "OTP verified successfully. You can now reset your password.",
+      message: "OTP verified successfully.",
     });
   } catch (error) {
     console.error("Error verifying OTP:", error);
@@ -483,8 +481,8 @@ const googleAuthCallback = (req, res, next) => {
 
 module.exports = {
   login,
-  registerUser,
-  verifyOTPAndGenerateToken,
+  signUp,
+  signUpComplete,
   verifyOTP,
   resendOTP,
   forgotPassword,

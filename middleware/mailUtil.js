@@ -1186,6 +1186,31 @@ const forgotPasswordMail = async (email, resetCode) => {
                                   }
                                 </p>
                               </div>
+                              <div
+                                style="
+                                  background-color: #ffffff;
+                                  border-radius: 5px;
+                                  margin-right: 5px;
+                                  width: 60px;
+                                  height: 70px;
+                                "
+                              >
+                                <p
+                                  style="
+                                    font-size: 30px;
+                                    text-align: center;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    color: #0199a4;
+                                  "
+                                >
+                                  ${
+                                    resetCode.charAt(5) !== " "
+                                      ? resetCode.charAt(5)
+                                      : "&#48;"
+                                  }
+                                </p>
+                              </div>
                             </div>
                             <p style="font-size: 14px">
                               This code will expire in 30 minutes. Please go to
