@@ -135,6 +135,8 @@ const getVendorById = async (req, res) => {
 const updateVendor = async (req, res) => {
   try {
     const {
+      firstName,
+      lastName,
       shopName,
       phoneNumber,
       dob,
@@ -145,6 +147,8 @@ const updateVendor = async (req, res) => {
       address,
     } = req.body;
     let updatedData = {
+      firstName,
+      lastName,
       shopName,
       phoneNumber,
       dob,
