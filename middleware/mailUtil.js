@@ -285,12 +285,12 @@ const sendOTPMail = async (email, otp) => {
                                 line-height: 20px;
                                 color: #131417;
                                 text-align: left;
-                                margin-top: 35px;
+                                margin-top: 40px;
                               "
                             >
-                              Please enter this code on the registration page to
+                              Enter this code to
                               verify your email and complete the registration
-                              process.
+                              process securely.
                             </p>
                           </td>
                         </tr>
@@ -395,7 +395,7 @@ const resendOTPMail = async (email, otp) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: email,
-    subject: "Supplya Registration OTP",
+    subject: "Supplya OTP",
     html: `<!DOCTYPE html
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
@@ -437,10 +437,10 @@ const resendOTPMail = async (email, otp) => {
                                                 <td style="color: #153643;">
                                                     
                                                     <p style="font-size:14px; font-weight: 600; margin-top: 40px; text-align: left; font-size: 18px; color:#131417;">
-                                                        Your One-Time Password for Account Verification
+                                                        Your One-Time Password for Account Verification 🔄
                                                     </p>
                                                     <p style="font-size:14px; text-align: left; color:#131417;">
-                                                        Thank you for registering on Supplya. Here's that brand new OTP you requested! To finalise your registration and ensure account security, please use the code provided below
+                                                        Here's that brand new OTP you requested! Please enter the code provided below:
                                                     </p>
                                                     <div style="display:flex; text-align: left; margin-top: 35px;">
                                                         <div style="background-color: #FFFFFF; border-radius:5px; margin-right:5px;  width:60px; height:70px;">
@@ -530,7 +530,7 @@ const resendOTPMail = async (email, otp) => {
                                                     </div>
                                                     <p
                                                         style="font-size:14px; line-height:20px; color:#131417; text-align:left; margin-top: 50px;">
-                                                        Please enter this code on the registration page to verify your email and complete the registration process.
+                                                        Enter this code to verify your email and complete the process securely.
                                                     </p>
 
                                             </tr>
@@ -561,24 +561,6 @@ const resendOTPMail = async (email, otp) => {
         <tr>
             <td align="center">
                 <footer>
-                     <a
-              style="
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                text-decoration: none;
-                background-color: #0199a4;
-                color: white;
-                border-radius: 6px;
-                padding: 10px 25px;
-                width: fit-content;
-                margin: 0 auto;
-                cursor: pointer;
-                margin-top: 20px;
-              "
-              href="https://supplya-web.vercel.app/auth/sign-in"
-              >Verify Account</a
-            >
                     <p style="color: #131417; margin-top: 20px; font-size: 14px;">Copyright © 2024 Supplya</p>
                 </footer>
             </td>
@@ -1039,7 +1021,7 @@ const forgotPasswordMail = async (email, resetCode) => {
                                 color: #131417;
                               "
                             >
-                              Reset Your Password 📟
+                              Reset Your Password  📟
                             </p>
                             <p
                               style="
@@ -1212,7 +1194,7 @@ const forgotPasswordMail = async (email, resetCode) => {
                                 </p>
                               </div>
                             </div>
-                            <p style="font-size: 14px">
+                            <p style="font-size: 14px; margin-top: 30px;">
                               This code will expire in 30 minutes. Please go to
                               the following page and enter this code to reset
                               your password:
@@ -1238,7 +1220,7 @@ const forgotPasswordMail = async (email, resetCode) => {
 
                             <p
                               style="
-                                font-size: 16px;
+                                font-size: 14px;
                                 text-align: center;
                                 margin-top: 25px;
                               "

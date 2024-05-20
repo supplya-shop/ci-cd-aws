@@ -213,29 +213,42 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    const userData = userRegistrationCache.get(email);
+    let userData = userRegistrationCache.get(email);
+
     if (!userData) {
-      console.log(`User with email ${email} not found in cache.`);
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
-        message: "User not found. Please register first.",
-      });
+      const existingUser = await User.findOne({ email });
+
+      if (!existingUser) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          status: "error",
+          message: "User not found. Please register first.",
+        });
+      }
+
+      userData = { email };
+      const newOTPData = generateOTP();
+      const newOTP = newOTPData.otp;
+      existingUser.resetPasswordToken = newOTP;
+      existingUser.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
+      await existingUser.save();
+
+      await resendOTPMail(email, newOTP);
+    } else {
+      const newOTPData = generateOTP();
+      const newOTP = newOTPData.otp;
+      userRegistrationCache.set(email, { ...userData, otp: newOTP });
+
+      await OtpLogs.updateOne({ email }, { otp: newOTP });
+
+      await resendOTPMail(email, newOTP);
     }
-
-    const newOTPData = generateOTP();
-    const newOTP = newOTPData.otp;
-
-    userRegistrationCache.set(email, { ...userData, otp: newOTP });
-
-    await OtpLogs.updateOne({ email }, { otp: newOTP });
-
-    await resendOTPMail(email, newOTP);
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "New OTP sent successfully. Please check your email.",
     });
   } catch (error) {
+    console.error("Error resending OTP:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to re-send OTP. Please try again later.",
