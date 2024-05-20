@@ -432,28 +432,45 @@ const verifyOTP = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { newPassword } = req.body;
+    const { newPassword, confirmPassword } = req.body;
 
     if (!newPassword) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ message: "Enter new password", status: "error" });
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "New password is required",
+        status: "error",
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Confirm the password entered above.",
+        status: "error",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Passwords do not match",
+        status: "error",
+      });
     }
 
     const userId = req.session.resetUserId;
 
     if (!userId) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ message: "User not found", status: "error" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "User not found",
+        status: "error",
+      });
     }
 
     const user = await User.findById(userId);
 
     if (!user) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ message: "User not found", status: "error" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "User not found",
+        status: "error",
+      });
     }
 
     user.password = newPassword;
