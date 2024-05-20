@@ -19,7 +19,7 @@ const {
 router.get("/google", googleAuth);
 router.get("/google/redirect", googleAuthCallback);
 
-// Regular Auth routes
+// Auth routes
 router.post("/login", login);
 router.post("/sign-up", signUp);
 router.post("/sign-up-complete", signUpComplete);
