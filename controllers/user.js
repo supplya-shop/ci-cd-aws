@@ -107,25 +107,39 @@ const getUserById = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const userId = req.params.id;
-    let updates = req.body;
+    const { id } = req.params;
+    const updates = req.body;
+
     delete updates.password;
-    const options = { new: true };
 
-    const result = await User.findByIdAndUpdate(
-      userId,
-      { $set: updates },
-      options
-    );
-
-    if (!result) {
+    const existingUser = await User.findById(id);
+    if (!existingUser) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ status: "error", message: "User not found" });
     }
 
-    const response = result.toObject();
+    if (updates.storeName) {
+      updates.storeUrl = `https://supplya.shop/store/${updates.storeName.replace(
+        /\s+/g,
+        "-"
+      )}`;
+    }
 
+    const updatedData = {};
+    for (const key in updates) {
+      if (updates[key] !== undefined) {
+        updatedData[key] = updates[key];
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: updatedData },
+      { new: true }
+    );
+
+    const response = updatedUser.toObject();
     delete response.password;
 
     return res.status(StatusCodes.OK).json({
@@ -137,7 +151,7 @@ const updateUser = async (req, res) => {
     console.error("Error updating user:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Failed to update user" });
+      .json({ status: "error", message: "Internal server error" });
   }
 };
 
@@ -207,7 +221,6 @@ const bulkdeleteUsers = async (req, res) => {
         status: "error",
         message: "Invalid input. Please provide an array of user IDs.",
       });
-      throw new NotFoundError("Unable to find user");
     }
     const result = await User.deleteMany({ _id: { $in: ids } });
 
