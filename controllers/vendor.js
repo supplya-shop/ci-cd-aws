@@ -44,7 +44,7 @@ const createVendor = async (req, res) => {
       shopName,
       shopUrl,
       phoneNumber,
-      address: { street, state, country, city },
+      address: { street, city, state, country },
       role: "vendor",
     });
 
@@ -132,64 +132,6 @@ const getVendorById = async (req, res) => {
   }
 };
 
-const updateVendor = async (req, res) => {
-  try {
-    const {
-      firstName,
-      lastName,
-      shopName,
-      phoneNumber,
-      dob,
-      state,
-      city,
-      country,
-      street,
-      address,
-    } = req.body;
-    let updatedData = {
-      firstName,
-      lastName,
-      shopName,
-      phoneNumber,
-      dob,
-      state,
-      city,
-      country,
-      street,
-      address,
-    };
-
-    if (shopName) {
-      updatedData = {
-        ...updatedData,
-        shopName,
-        shopUrl: `https://supplya.shop/store/${shopName.replace(/\s+/g, "-")}`,
-      };
-    }
-
-    const user = await User.findByIdAndUpdate(req.params.id, updatedData, {
-      new: true,
-    });
-
-    if (!user || user.role !== "vendor") {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Vendor not found" });
-    }
-
-    return res.status(200).json({
-      status: "success",
-      message: "Vendor updated successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ status: "error", message: "Internal server error" });
-  }
-};
-
 const deleteVendor = async () => {
   try {
     const vendor = await User.findByIdAndDelete(req.params.id);
@@ -214,6 +156,5 @@ module.exports = {
   createStore,
   getAllVendors,
   getVendorById,
-  updateVendor,
   deleteVendor,
 };

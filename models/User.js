@@ -65,13 +65,12 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 
-  shopName: {
+  storeName: {
     type: String,
     default: "",
   },
-  shopUrl: {
+  storeUrl: {
     type: String,
-    unique: true,
     sparse: true,
   },
 

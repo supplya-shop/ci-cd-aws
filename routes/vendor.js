@@ -5,7 +5,6 @@ const {
   createStore,
   getAllVendors,
   getVendorById,
-  updateVendor,
   deleteVendor,
 } = require("../controllers/vendor");
 
@@ -18,7 +17,6 @@ const {
 router.post("/create", authenticateUser, createVendor);
 router.get("/", authenticateUser, getAllVendors);
 router.get("/:id", authenticateUser, getVendorById);
-router.put("/:id", authenticateUser, updateVendor);
 router.delete("/:id", authenticateUser, deleteVendor);
 
 module.exports = router;
