@@ -3,11 +3,11 @@ const router = express.Router();
 const passport = require("passport");
 
 const {
-  registerUser,
-  verifyOTPAndGenerateToken,
+  signUp,
+  signUpComplete,
   resendOTP,
   login,
-  // vendorLogin,
+  verifyOTP,
   // getBanks,
   googleAuth,
   googleAuthCallback,
@@ -21,11 +21,11 @@ const {
 router.get("/google", initiateOauth);
 router.get("/google/redirect", googleCallback);
 
-// Regular Auth routes
+// Auth routes
 router.post("/login", login);
-// router.post("/vendor/login", vendorLogin);
-router.post("/register", registerUser);
-router.post("/verify-otp", verifyOTPAndGenerateToken);
+router.post("/sign-up", signUp);
+router.post("/sign-up-complete", signUpComplete);
+router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);

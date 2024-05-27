@@ -265,36 +265,6 @@ const getLatestOrder = async (req, res) => {
   }
 };
 
-const getOrdersByUser = async (req, res) => {
-  try {
-    const userId = req.user.userid;
-    const orders = await Order.find({ user: userId }).populate({
-      path: "orderItems.product",
-      populate: {
-        path: "createdBy",
-        select:
-          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
-      },
-    });
-    if (!orders) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No orders found" });
-    }
-
-    return res.status(StatusCodes.OK).json({
-      status: "success",
-      message: "Orders fetched successfully",
-      data: orders,
-    });
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
-      message: "Failed to fetch orders: " + error.message,
-    });
-  }
-};
-
 const updateOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -387,7 +357,6 @@ module.exports = {
   getOrders,
   getOrderById,
   getOrdersByStatus,
-  getOrdersByUser,
   getLatestOrder,
   updateOrder,
   cancelOrder,

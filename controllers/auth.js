@@ -20,7 +20,7 @@ const jwt = require('jsonwebtoken')
 const userRegistrationCache = new Map();
 
 // EMAIL AND PASSWORD REGISTER AND LOGIN
-const registerUser = async (req, res) => {
+const signUp = async (req, res) => {
   try {
     const {
       email,
@@ -57,8 +57,6 @@ const registerUser = async (req, res) => {
       req.body.role = "customer";
     }
 
-    let shopUrl;
-
     let userData = {
       email,
       password,
@@ -67,12 +65,18 @@ const registerUser = async (req, res) => {
       role: role || "customer",
     };
 
+    let shopUrl;
     if (role === "vendor") {
-      if (!shopName || !phoneNumber) {
+      if (!shopName) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           status: "error",
-          message:
-            "Please provide shopName and phoneNumber for vendor registration",
+          message: "Please provide shopName for vendor registration",
+        });
+      }
+      if (!phoneNumber) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: "error",
+          message: "Please provide phoneNumber for vendor registration",
         });
       }
       shopUrl = `https://supplya.shop/store/${shopName}`;
@@ -110,7 +114,9 @@ const registerUser = async (req, res) => {
     });
   } catch (error) {
     if (error.name === "ValidatorError") {
-      return res.status(400).json({ status: "error", message: error.message });
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json({ status: "error", message: error.message });
     }
     console.error(`error: ${error}`);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -120,7 +126,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-const verifyOTPAndGenerateToken = async (req, res, next) => {
+const signUpComplete = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
     if (!email) {
@@ -156,9 +162,9 @@ const verifyOTPAndGenerateToken = async (req, res, next) => {
       password: userData.password,
       otp: otp,
       role: userData.role,
-      shopName: userData.shopName,
-      shopUrl: userData.shopUrl,
-      phoneNumber: userData.phoneNumber,
+      shopName: userData.shopName || null,
+      shopUrl: userData.shopUrl || null,
+      phoneNumber: userData.phoneNumber || null,
     });
     await newUser.save();
     await sendConfirmationMail(email);
@@ -209,30 +215,42 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    const userData = userRegistrationCache.get(email);
+    let userData = userRegistrationCache.get(email);
+
     if (!userData) {
-      console.log(`User with email ${email} not found in cache.`);
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
-        message: "User not found. Please register first.",
-      });
+      const existingUser = await User.findOne({ email });
+
+      if (!existingUser) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          status: "error",
+          message: "User not found. Please register first.",
+        });
+      }
+
+      userData = { email };
+      const newOTPData = generateOTP();
+      const newOTP = newOTPData.otp;
+      existingUser.resetPasswordToken = newOTP;
+      existingUser.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
+      await existingUser.save();
+
+      await resendOTPMail(email, newOTP);
+    } else {
+      const newOTPData = generateOTP();
+      const newOTP = newOTPData.otp;
+      userRegistrationCache.set(email, { ...userData, otp: newOTP });
+
+      await OtpLogs.updateOne({ email }, { otp: newOTP });
+
+      await resendOTPMail(email, newOTP);
     }
-
-    const newOTPData = generateOTP();
-    const newOTP = newOTPData.otp;
-
-    userRegistrationCache.set(email, { ...userData, otp: newOTP });
-
-    await OtpLogs.updateOne({ email }, { otp: newOTP });
-
-    await resendOTPMail(email, newOTP);
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "New OTP sent successfully. Please check your email.",
     });
   } catch (error) {
-    // console.error(error);
+    console.error("Error resending OTP:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to re-send OTP. Please try again later.",
@@ -246,13 +264,12 @@ const login = async (req, res, next) => {
 
     if ((!email || !password) && !shopName) {
       throw new BadRequestError(
-        "Please provide your email and password or shopName and password"
+        "Please provide your email and password or shopName and password."
       );
     }
 
     let user;
 
-    // Check if the login attempt is using shopName
     if (shopName) {
       user = await User.findOne({ shopName });
     } else {
@@ -260,13 +277,13 @@ const login = async (req, res, next) => {
     }
 
     if (!user) {
-      throw new NotFoundError("User does not exist");
+      throw new NotFoundError("User does not exist.");
     }
 
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw new BadRequestError("You have entered an invalid password");
+      throw new BadRequestError("You have entered an invalid password.");
     }
 
     const token = user.createJWT();
@@ -317,20 +334,22 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      throw new Error("Please provide your email");
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Please provide your email.", status: "error" });
     }
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      throw new Error("Invalid Email");
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: error.message, status: "error" });
     }
 
-    // Generate a random 5-digit code
-    const resetCode = Math.floor(10000 + Math.random() * 90000).toString();
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Set expiry for 30 minutes
-    const resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
+    const resetPasswordExpires = Date.now() + 30 * 60 * 1000;
 
     user.resetPasswordToken = resetCode;
     user.resetPasswordExpires = resetPasswordExpires;
@@ -341,7 +360,7 @@ const forgotPassword = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: "success",
-      message: "Password reset code sent to your email",
+      message: "Password reset code sent to your email.",
     });
   } catch (error) {
     console.error("Error sending password reset code:", error);
@@ -352,23 +371,108 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-const resetPassword = async (req, res) => {
+const verifyOTP = async (req, res) => {
   try {
-    const { resetCode, newPassword } = req.body;
+    const { email, otp } = req.body;
 
-    if (!resetCode || !newPassword) {
-      throw new Error("Reset code and new password are required");
+    if (!email) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Email is required.",
+      });
+    }
+    if (!otp) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "OTP is required.",
+      });
     }
 
+    const currentTime = Date.now();
+
     const user = await User.findOne({
-      resetPasswordToken: resetCode,
-      resetPasswordExpires: {
-        $gt: Date.now(),
-      },
+      email,
+      resetPasswordToken: otp,
+      resetPasswordExpires: { $gt: currentTime },
     });
 
     if (!user) {
-      throw new Error("Invalid reset code or code expired");
+      const storedUser = await User.findOne({ email });
+      if (storedUser) {
+        console.log(
+          `Stored resetPasswordToken: ${storedUser.resetPasswordToken}`
+        );
+        console.log(
+          `Stored resetPasswordExpires: ${storedUser.resetPasswordExpires}`
+        );
+      } else {
+        console.log("No user found with the provided email.");
+      }
+      console.error(
+        `Verification failed for email: ${email}, Current Time: ${currentTime}`
+      );
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        status: "error",
+        message: "Invalid OTP or OTP expired.",
+      });
+    }
+
+    req.session.resetUserId = user._id;
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "OTP verified successfully.",
+    });
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to verify OTP. " + error.message,
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "New password is required",
+        status: "error",
+      });
+    }
+
+    if (!confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Confirm the password entered above.",
+        status: "error",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Passwords do not match",
+        status: "error",
+      });
+    }
+
+    const userId = req.session.resetUserId;
+
+    if (!userId) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "User not found",
+        status: "error",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "User not found",
+        status: "error",
+      });
     }
 
     user.password = newPassword;
@@ -376,15 +480,16 @@ const resetPassword = async (req, res) => {
     user.resetPasswordExpires = null;
 
     await user.save();
-
     await resetPasswordMail(user.email);
+
+    req.session.resetUserId = null;
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Password reset successfully",
     });
   } catch (error) {
-    console.error("Error resetting password: ", error);
+    console.error("Error resetting password:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: error.message,
@@ -485,8 +590,9 @@ const googleCallback = async (req, res) => {
 
 module.exports = {
   login,
-  registerUser,
-  verifyOTPAndGenerateToken,
+  signUp,
+  signUpComplete,
+  verifyOTP,
   resendOTP,
   forgotPassword,
   resetPassword,
