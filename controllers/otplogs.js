@@ -30,22 +30,18 @@ const getAllOtpLogs = async (req, res) => {
 
 const bulkdeleteOtpLogs = async (req, res) => {
   try {
-    const { ids } = req.body;
-    if (!ids || !Array.isArray(ids)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
-        message: "Invalid input. Please provide an array of otplogs IDs.",
-      });
-      throw new NotFoundError("Unable to find otplogs");
-    }
-    const result = await OtpLogs.deleteMany({ _id: { $in: ids } });
+    const allLogs = await OtpLogs.find({}, "_id");
+    const ids = allLogs.map((log) => log._id);
 
-    if (result.deletedCount === 0) {
+    if (ids.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
-        message: "No otplogs found with the provided IDs.",
+        message: "No otplogs found to delete.",
       });
     }
+
+    const result = await OtpLogs.deleteMany({ _id: { $in: ids } });
+
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: `${result.deletedCount} otplog(s) deleted successfully.`,

@@ -85,7 +85,7 @@ const getAllProducts = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
+    // const endIndex = page * limit;
 
     const totalProducts = await Product.countDocuments();
     const totalPages = Math.ceil(totalProducts / limit);
@@ -440,6 +440,32 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+const bulkdeleteProducts = async (req, res) => {
+  try {
+    const products = await Product.find({}, "_id");
+    const ids = products.map((product) => product._id);
+
+    if (ids.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "No products found to delete.",
+      });
+    }
+
+    const result = await Product.deleteMany({ _id: { $in: ids } });
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: `${result.deletedCount} product(s) deleted successfully.`,
+    });
+  } catch (error) {
+    console.error("Error in bulk delete operation:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: "Internal server error" });
+  }
+};
+
 const searchProducts = async (req, res) => {
   try {
     const { keyword } = req.query;
@@ -455,10 +481,10 @@ const searchProducts = async (req, res) => {
       name: { $regex: keyword, $options: "i" },
     });
 
-    const usersByShopName = await User.find({
-      shopName: { $regex: keyword, $options: "i" },
+    const usersByStoreName = await User.find({
+      storeName: { $regex: keyword, $options: "i" },
     });
-    const vendorIds = usersByShopName.map((user) => user._id);
+    const vendorIds = usersByStoreName.map((user) => user._id);
     const productsByVendor = await Product.find({
       createdBy: { $in: vendorIds },
     });
@@ -500,5 +526,6 @@ module.exports = {
   updateProduct,
   uploadProductImage,
   deleteProduct,
+  bulkdeleteProducts,
   searchProducts,
 };

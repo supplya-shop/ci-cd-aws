@@ -15,8 +15,9 @@ const {
   getFlashsaleProducts,
   updateProduct,
   uploadProductImage,
-  deleteProduct,
   getRelatedProducts,
+  deleteProduct,
+  bulkdeleteProducts,
   searchProducts,
 } = require("../controllers/product");
 
@@ -83,10 +84,16 @@ router.patch(
   updateProduct
 );
 router.delete(
-  "/:id",
+  "/bulk-delete",
   authenticateUser,
-  rolesAllowed("vendor, admin"),
+  rolesAllowed("admin"),
   deleteProduct
-);
+),
+  router.delete(
+    "/:id",
+    authenticateUser,
+    rolesAllowed("vendor, admin"),
+    deleteProduct
+  );
 
 module.exports = router;

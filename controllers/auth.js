@@ -41,6 +41,16 @@ const signUp = async (req, res) => {
         .status(StatusCodes.BAD_REQUEST)
         .json({ status: "error", message: "Please enter your password" });
     }
+    if (!firstName) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ status: "error", message: "Please enter your first name" });
+    }
+    if (!lastName) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ status: "error", message: "Please enter your last name" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -59,7 +69,6 @@ const signUp = async (req, res) => {
 
     let userData = {
       email,
-      password,
       firstName,
       lastName,
       role: role || "customer",
@@ -101,12 +110,14 @@ const signUp = async (req, res) => {
       phoneNumber,
     });
 
-    await sendOTPMail(email, otp);
+    const sendOtp = sendOTPMail(email, otp);
+    const createOtpLog = OtpLogs.create({
+      ...userData,
+      createdAt: Date.now(),
+      otp,
+    });
 
-    userData.createdAt = Date.now();
-    userData.otp = otp;
-
-    await OtpLogs.create(userData);
+    await Promise.all([sendOtp, createOtpLog]);
 
     return res.status(StatusCodes.OK).json({
       status: "success",
