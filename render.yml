@@ -1,0 +1,47 @@
+# Exported from Render on 2024-05-28T17:52:05Z
+services:
+- type: web
+  name: supplya
+  runtime: node
+  repo: https://github.com/dvco-xx/supplya
+  plan: starter
+  envVars:
+  - key: CLOUDINARY_API_SECRET
+    sync: false
+  - key: CLOUDINARY_API_KEY
+    sync: false
+  - key: CLOUDINARY_CLOUD_NAME
+    sync: false
+  - key: USERS_KEY
+    sync: false
+  - key: MONGO_URL
+    sync: false
+  - key: JWT_SECRET
+    sync: false
+  - key: JWT_LIFETIME
+    sync: false
+  - key: IMAGE_BASE_URL
+    sync: false
+  - key: GOOGLE_OAUTH_PASSWORD
+    sync: false
+  - key: GOOGLE_MAPS_API_KEY
+    sync: false
+  - key: GOOGLE_CLIENT_SECRET
+    sync: false
+  - key: GOOGLE_CLIENT_ID
+    sync: false
+  - key: GOOGLE_CALLBACK_URL
+    sync: false
+  - key: EMAIL_USERNAME
+    sync: false
+  - key: EMAIL_PASSWORD
+    sync: false
+  - key: EMAIL_HOST
+    sync: false
+  - key: ANCHOR
+    sync: false
+  region: virginia
+  buildCommand: npm install
+  startCommand: node app.js
+  healthCheckPath: /
+version: "1"
