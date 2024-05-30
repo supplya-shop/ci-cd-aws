@@ -6,7 +6,6 @@ this.secretKey = process.env.DIKRIPT_SECRET_KEY;
 
 const verifyPhoneNo = async (req, res) => {
   const { phoneNo } = req.query;
-
   if (!phoneNo) {
     return res
       .status(400)
