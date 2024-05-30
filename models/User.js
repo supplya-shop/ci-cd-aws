@@ -91,7 +91,7 @@ const userSchema = new mongoose.Schema({
   },
 
   password: {
-    type: String
+    type: String,
   },
 
   email: {
@@ -151,7 +151,6 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-if (this.password) {
 userSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
@@ -161,7 +160,6 @@ userSchema.pre("save", async function (next) {
     next(error);
   }
 });
-}
 
 userSchema.methods.createJWT = function () {
   return jwt.sign(

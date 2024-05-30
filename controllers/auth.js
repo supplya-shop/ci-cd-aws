@@ -14,8 +14,8 @@ const {
   newUserSignUpMail,
 } = require("../middleware/mailUtil");
 // const logger = require("../middleware/logging/logger");
-const oauth2Client = require('../oauth2Client')
-const jwt = require('jsonwebtoken')
+const oauth2Client = require("../oauth2Client");
+const jwt = require("jsonwebtoken");
 
 const userRegistrationCache = new Map();
 
@@ -28,7 +28,7 @@ const signUp = async (req, res) => {
       firstName,
       lastName,
       role,
-      shopName,
+      storeName,
       phoneNumber,
     } = req.body;
     if (!email) {
@@ -44,14 +44,13 @@ const signUp = async (req, res) => {
     if (!firstName) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ status: "error", message: "Please enter your first name" });
+        .json({ status: "error", message: "Please enter your firstName" });
     }
     if (!lastName) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ status: "error", message: "Please enter your last name" });
+        .json({ status: "error", message: "Please enter your lastName" });
     }
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -60,26 +59,24 @@ const signUp = async (req, res) => {
           "This email already exists within our records. Please use a unique email or reset your password if you don't remember it.",
       });
     }
-
     if (req.body.uniqueKey === 1212) {
       req.body.role = "admin";
     } else {
       req.body.role = "customer";
     }
-
     let userData = {
       email,
+      password,
       firstName,
       lastName,
       role: role || "customer",
     };
-
-    let shopUrl;
+    let storeUrl;
     if (role === "vendor") {
-      if (!shopName) {
+      if (!storeName) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           status: "error",
-          message: "Please provide shopName for vendor registration",
+          message: "Please provide storeName for vendor registration",
         });
       }
       if (!phoneNumber) {
@@ -88,15 +85,14 @@ const signUp = async (req, res) => {
           message: "Please provide phoneNumber for vendor registration",
         });
       }
-      shopUrl = `https://supplya.shop/store/${shopName}`;
+      storeUrl = `https://supplya.store/store/${storeName}`;
       userData = {
         ...userData,
-        shopName,
-        shopUrl,
+        storeName,
+        storeUrl,
         phoneNumber,
       };
     }
-
     const otpData = generateOTP();
     const otp = otpData.otp;
     userRegistrationCache.set(email, {
@@ -105,20 +101,14 @@ const signUp = async (req, res) => {
       password,
       otp,
       role,
-      shopName,
-      shopUrl,
+      storeName,
+      storeUrl,
       phoneNumber,
     });
-
-    const sendOtp = sendOTPMail(email, otp);
-    const createOtpLog = OtpLogs.create({
-      ...userData,
-      createdAt: Date.now(),
-      otp,
-    });
-
-    await Promise.all([sendOtp, createOtpLog]);
-
+    await sendOTPMail(email, otp);
+    userData.createdAt = Date.now();
+    userData.otp = otp;
+    await OtpLogs.create(userData);
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "OTP sent successfully. Please check your email.",
@@ -173,8 +163,8 @@ const signUpComplete = async (req, res, next) => {
       password: userData.password,
       otp: otp,
       role: userData.role,
-      shopName: userData.shopName || null,
-      shopUrl: userData.shopUrl || null,
+      storeName: userData.storeName || null,
+      storeUrl: userData.storeUrl || null,
       phoneNumber: userData.phoneNumber || null,
     });
     await newUser.save();
@@ -193,8 +183,8 @@ const signUpComplete = async (req, res, next) => {
         lastName: newUser.lastName,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
-        shopName: newUser.shopName,
-        shopUrl: newUser.shopUrl,
+        storeName: newUser.storeName,
+        storeUrl: newUser.storeUrl,
         dob: newUser.dob,
         role: newUser.role,
         gender: newUser.gender,
@@ -271,18 +261,18 @@ const resendOTP = async (req, res) => {
 
 const login = async (req, res, next) => {
   try {
-    const { password, email, shopName } = req.body;
+    const { password, email, storeName } = req.body;
 
-    if ((!email || !password) && !shopName) {
+    if ((!email || !password) && !storeName) {
       throw new BadRequestError(
-        "Please provide your email and password or shopName and password."
+        "Please provide your email and password or storeName and password."
       );
     }
 
     let user;
 
-    if (shopName) {
-      user = await User.findOne({ shopName });
+    if (storeName) {
+      user = await User.findOne({ storeName });
     } else {
       user = await User.findOne({ email });
     }
@@ -515,89 +505,96 @@ const googleAuth = (req, res, next) => {
 };
 
 const googleAuthCallback = (req, res, next) => {
-  passport.authenticate("google", { 
+  passport.authenticate("google", {
     successRedirect: "/api/v1/products",
     failureRedirect: "/",
     session: false,
   })(req, res, next);
 };
 
-
 //Osama's Oauth
 
 const initiateOauth = async (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/plus.login', 'https://www.googleapis.com/auth/userinfo.email'],
+    access_type: "offline",
+    scope: [
+      "https://www.googleapis.com/auth/plus.login",
+      "https://www.googleapis.com/auth/userinfo.email",
+    ],
   });
   res.redirect(authUrl);
 };
-
 
 const googleCallback = async (req, res) => {
   const { code } = req.query;
 
   if (!code) {
-      return res.status(400).json({ message: 'Authorization code is missing.' });
+    return res.status(400).json({ message: "Authorization code is missing." });
   }
 
   try {
-      const { tokens } = await oauth2Client.getToken(code);
-      oauth2Client.setCredentials({
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-          scope: ['https://www.googleapis.com/auth/plus.login', 'https://www.googleapis.com/auth/userinfo.email'],
-          token_type: tokens.token_type,
-          expiry_date: tokens.expiry_date
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials({
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      scope: [
+        "https://www.googleapis.com/auth/plus.login",
+        "https://www.googleapis.com/auth/userinfo.email",
+      ],
+      token_type: tokens.token_type,
+      expiry_date: tokens.expiry_date,
+    });
+
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const { given_name, family_name, email } = ticket.getPayload();
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "Email is required but not provided." });
+    }
+
+    let user = await User.findOne({ email: email });
+
+    const isNewUser = !user;
+    if (isNewUser) {
+      user = await User.create({
+        firstName: given_name,
+        lastName: family_name,
+        email: email,
       });
+    }
 
-      const ticket = await oauth2Client.verifyIdToken({
-          idToken: tokens.id_token,
-          audience: process.env.GOOGLE_CLIENT_ID,
-      });
+    const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_LIFETIME,
+    });
 
-      const { given_name, family_name, email } = ticket.getPayload();
+    const responseMessage = isNewUser
+      ? "New User Created Successfully"
+      : "Login successful";
 
-      if (!email) {
-          return res.status(400).json({ message: 'Email is required but not provided.' });
-      }
-
-      let user = await User.findOne({ email: email });
-
-      const isNewUser = !user;
-      if (isNewUser) {
-          user = await User.create({
-              firstName: given_name,
-              lastName: family_name,
-              email: email,
-          });
-      }
-
-      const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-          expiresIn: process.env.JWT_LIFETIME,
-      });
-
-      const responseMessage = isNewUser ? "New User Created Successfully" : "Login successful";
-
-      return res.status(200).json({
-          status: "success",
-          message: responseMessage,
-          token: jwtToken,
-          user: {
-              _id: user._id,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              email: user.email
-          }
-      });
+    return res.status(200).json({
+      status: "success",
+      message: responseMessage,
+      token: jwtToken,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+    });
   } catch (error) {
-      console.error('Google authentication error:', error.statusText);  
-      return res.status(500).json({ message: 'Failed to authenticate with Google. Please try again.' });
+    console.error("Google authentication error:", error.statusText);
+    return res.status(500).json({
+      message: "Failed to authenticate with Google. Please try again.",
+    });
   }
 };
-
-
-
 
 module.exports = {
   login,
@@ -610,5 +607,5 @@ module.exports = {
   googleAuth,
   googleAuthCallback,
   initiateOauth,
-  googleCallback
+  googleCallback,
 };
