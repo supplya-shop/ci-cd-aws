@@ -84,16 +84,15 @@ router.patch(
   updateProduct
 );
 router.delete(
+  "/:id",
+  authenticateUser,
+  rolesAllowed("vendor, admin"),
+  deleteProduct
+);
+router.delete(
   "/bulk-delete",
   authenticateUser,
   rolesAllowed("admin"),
   deleteProduct
 ),
-  router.delete(
-    "/:id",
-    authenticateUser,
-    rolesAllowed("vendor, admin"),
-    deleteProduct
-  );
-
-module.exports = router;
+  (module.exports = router);

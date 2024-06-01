@@ -16,6 +16,8 @@ const getAllOtpLogs = async (req, res) => {
       OtpLogs.countDocuments(),
     ]);
 
+    delete otplogs.password;
+
     return res
       .status(StatusCodes.OK)
       .json({ status: "success", data: otplogs, totalCount });

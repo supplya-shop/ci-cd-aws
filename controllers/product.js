@@ -428,7 +428,6 @@ const deleteProduct = async (req, res, next) => {
         message: `Product with id ${productId} not found.`,
       });
     }
-    console.log(result);
     return res
       .status(StatusCodes.OK)
       .json({ status: "success", message: "Product deleted successfully" });
