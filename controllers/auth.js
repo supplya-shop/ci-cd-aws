@@ -105,10 +105,15 @@ const signUp = async (req, res) => {
       storeUrl,
       phoneNumber,
     });
-    await sendOTPMail(email, otp);
-    userData.createdAt = Date.now();
-    userData.otp = otp;
-    await OtpLogs.create(userData);
+
+    const sendOtp = sendOTPMail(email, otp);
+    const createOtpLog = OtpLogs.create({
+      ...userData,
+      createdAt: Date.now(),
+      otp,
+    });
+
+    await Promise.all([sendOtp, createOtpLog]);
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "OTP sent successfully. Please check your email.",
