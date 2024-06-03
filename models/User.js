@@ -71,7 +71,9 @@ const userSchema = new mongoose.Schema({
   },
   storeUrl: {
     type: String,
+    unique: true,
     sparse: true,
+    default: "",
   },
 
   googleId: {

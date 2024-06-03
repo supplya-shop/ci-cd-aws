@@ -1,7 +1,6 @@
 const { StatusCodes } = require("http-status-codes");
 const Product = require("../models/Product");
 const User = require("../models/User");
-const cloudinary = require("cloudinary").v2;
 // const userController = require("../controllers/user");
 // const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
@@ -82,7 +81,7 @@ const submitProduct = async (req, res, next) => {
 const getAllProducts = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 15;
 
     const startIndex = (page - 1) * limit;
     // const endIndex = page * limit;
@@ -98,7 +97,7 @@ const getAllProducts = async (req, res, next) => {
       })
       .populate("category", "name")
       .select(
-        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
       )
       .sort({ dateCreated: -1 })
       .limit(limit)
@@ -305,11 +304,11 @@ const getProductById = async (req, res, next) => {
     .populate({
       path: "createdBy",
       select:
-        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
+        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
     })
     .populate("category", "name")
     .select(
-      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
+      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
     )
     .then((product) => {
       if (!product) {

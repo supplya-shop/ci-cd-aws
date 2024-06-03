@@ -66,7 +66,6 @@ const signUp = async (req, res) => {
     }
     let userData = {
       email,
-      password,
       firstName,
       lastName,
       role: role || "customer",

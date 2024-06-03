@@ -15,7 +15,6 @@ const productSchema = new schema({
   discounted_price: {
     type: Number,
     default: 0,
-    required: true,
   },
   description: {
     type: String,
@@ -81,7 +80,7 @@ const productSchema = new schema({
   },
   sku: {
     type: String,
-    required: true,
+    default: "",
   },
   moq: {
     type: Number,
