@@ -6,7 +6,6 @@ const createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
 
-    // Check for existing category
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
       return res
@@ -73,7 +72,6 @@ const updateCategory = async (req, res) => {
     const categoryId = req.params.categoryId;
     const updates = req.body;
 
-    // Check if category exists
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) {
       return res
