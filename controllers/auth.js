@@ -72,12 +72,12 @@ const signUp = async (req, res) => {
     };
     let storeUrl;
     if (role === "vendor") {
-      if (!phoneNumber) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: "error",
-          message: "Please provide phoneNumber for vendor registration",
-        });
-      }
+      // if (!phoneNumber) {
+      //   return res.status(StatusCodes.BAD_REQUEST).json({
+      //     status: "error",
+      //     message: "Please provide phoneNumber for vendor registration",
+      //   });
+      // }
       if (storeName) {
         storeUrl = `https://supplya.store/store/${storeName}`;
       }
