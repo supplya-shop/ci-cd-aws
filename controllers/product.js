@@ -132,18 +132,19 @@ const getAllProducts = async (req, res, next) => {
         select:
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
       })
-      .populate("category", "name")
       .select(
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
       )
+      .populate("category", "name")
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
 
     if (products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No products found",
+        data: products,
       });
     }
 
@@ -169,9 +170,11 @@ const getRelatedProducts = async (req, res) => {
     const productId = req.params.id;
     const currentProduct = await Product.findById(productId);
     if (!currentProduct) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Product not found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Product not found",
+        data: currentProduct,
+      });
     }
 
     const relatedProducts = await Product.find({
@@ -197,23 +200,38 @@ const getRelatedProducts = async (req, res) => {
 const getProductsByVendor = async (req, res) => {
   try {
     const vendorId = req.user.userid;
-    await Product.updateMany(
-      { createdBy: vendorId },
-      { $unset: { price: "" } }
-    );
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
 
-    const products = await Product.find({ createdBy: vendorId }).sort({
-      dateCreated: -1,
-    });
+    const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+
+    const totalProducts = await Product.countDocuments({ createdBy: vendorId });
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    const products = await Product.find({ createdBy: vendorId })
+      .select(
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
+      )
+      .populate("category", "name")
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
     if (!products || products.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No products could be found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No products could be found",
+        data: products,
+      });
     }
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Products fetched successfully",
       data: products,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts,
     });
   } catch (error) {
     console.error(error);
@@ -249,8 +267,9 @@ const getProductsByBrand = async (req, res) => {
       .skip(startIndex);
     if (products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No products found for the given brand",
+        data: products,
       });
     }
     return res.status(StatusCodes.OK).json({
@@ -274,9 +293,11 @@ const getDiscountedProducts = async (req, res) => {
       discounted_price: { $gt: 0 },
     });
     if (!discountedProducts || discountedProducts.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No products found with discount" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No products found with discount",
+        data: discountedProducts,
+      });
     }
     return res.json({
       status: "success",
@@ -295,9 +316,11 @@ const getFlashsaleProducts = async (req, res) => {
   try {
     const flashsaleProducts = await Product.find({ flashsale: true });
     if (!flashsaleProducts || flashsaleProducts.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No flashsale products found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No flashsale products found",
+        data: flashsaleProducts,
+      });
     }
     return res.json({
       status: "success",
@@ -343,10 +366,10 @@ const getProductById = async (req, res, next) => {
       select:
         "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
     })
-    .populate("category", "name")
     .select(
       "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
     )
+    .populate("category", "name")
     .then((product) => {
       if (!product) {
         return res.status(StatusCodes.NOT_FOUND).json({
