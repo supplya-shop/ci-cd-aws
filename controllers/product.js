@@ -7,16 +7,36 @@ const { approveProductMail } = require("../middleware/mailUtil");
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
+  const user = await User.findOne({ _id: userId });
+
+  if (!user) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
+
+  if (user.blocked) {
+    return res.status(StatusCodes.FORBIDDEN).json({
+      status: "error",
+      message:
+        "Access denied. Account under review. Please contact support for further assistance.",
+    });
+  }
+
   const product = req.body;
+
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      error: "error",
+      status: "error",
       message: "Please enter all required fields",
     });
   }
+
   product.createdBy = userId;
   product.approved = true;
   const newProduct = new Product(product);
+
   try {
     await newProduct.save();
     return res.status(StatusCodes.CREATED).json({
@@ -27,14 +47,31 @@ const createProduct = async (req, res, next) => {
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "Failed to create Product: " + error.message,
       status: "error",
+      message: "Failed to create product: " + error.message,
     });
   }
 };
 
 const submitProduct = async (req, res, next) => {
   const userId = req.user.userid;
+  const user = await User.findOne({ _id: userId });
+
+  if (!user) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
+
+  if (user.blocked) {
+    return res.status(StatusCodes.FORBIDDEN).json({
+      status: "error",
+      message:
+        "Access denied. Account under review. Please contact support for further assistance.",
+    });
+  }
+
   const product = req.body;
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({

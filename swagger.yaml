@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  title: Warehouse Co
-  description: Warehouse and Inventory management system restful Api
+  title: Supplya API Documentation
+  description: Supplya API and Inventory Management System Restful API
   contact: {}
   version: "1.0"
 servers:
-  - url: https://odd-rose-turkey-wear.cyclic.app/api/v1
+  - url: https://prodsupplya.azurewebsites.net/api/v1
     variables: {}
 paths:
   /products:
@@ -22,21 +22,38 @@ paths:
             encoding: {}
             schema:
               required:
-                - product
-                - price
                 - name
+                - description
+                - unit_price
+                - discounted_price
+                - quantity
                 - category
+                - sku
               type: object
               properties:
                 product:
                   type: string
-                price:
+                unit_price:
                   type: integer
                   format: int32
                   example: 32000
+                discounted_price:
+                  type: integer
+                  format: int32
+                  example: 30000
                 name:
                   type: string
+                  example: Rice
+                description:
+                  type: string
                   example: Bag of rice
+                quantity:
+                  type: integer
+                  format: int32
+                  example: 100
+                sku:
+                  type: string
+                  example: 19802UE
                 category:
                   type: string
                   example: Food
@@ -49,7 +66,7 @@ paths:
     get:
       tags:
         - Product
-      summary: Show all Product
+      summary: Show all Products
       description: Show all products for all
       operationId: ShowallProduct
       parameters: []
