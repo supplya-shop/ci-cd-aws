@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 const validateUser = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
 const {
@@ -183,28 +184,116 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-const getOrdersByUser = async (req, res) => {
-  try {
-    const userId = req.user.userid;
-    const orders = await Order.find({ user: userId }).populate({
-      path: "orderItems.product",
-      populate: {
-        path: "createdBy",
-        select:
-          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
-      },
-    });
-    if (!orders) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No orders found" });
-    }
+const getUserOrders = async (req, res) => {
+  const userId = req.user.userid;
+  const userRole = req.user.role;
 
-    return res.status(StatusCodes.OK).json({
-      status: "success",
-      message: "Orders fetched successfully",
-      data: orders,
-    });
+  try {
+    if (userRole === "vendor") {
+      const vendorProducts = await Product.find({
+        createdBy: userId,
+      }).select("quantity");
+
+      const productIds = vendorProducts.map((product) => product._id);
+
+      const orders = await Order.find({
+        "orderItems.product": { $in: productIds },
+      });
+
+      const totalOrders = orders.length;
+
+      const totalStock = vendorProducts.reduce(
+        (acc, product) => acc + product.quantity,
+        0
+      );
+
+      const totalAmountSold = orders.reduce(
+        (acc, order) => acc + parseFloat(order.totalPrice),
+        0
+      );
+
+      const dailySales = await Order.aggregate([
+        { $match: { "orderItems.product": { $in: productIds } } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$dateOrdered" },
+              month: { $month: "$dateOrdered" },
+              day: { $dayOfMonth: "$dateOrdered" },
+            },
+            totalSales: { $sum: "$totalPrice" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { "_id.year": -1, "_id.month": -1, "_id.day": -1 } },
+      ]);
+
+      const monthlySales = await Order.aggregate([
+        { $match: { "orderItems.product": { $in: productIds } } },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$dateOrdered" },
+              month: { $month: "$dateOrdered" },
+            },
+            totalSales: { $sum: "$totalPrice" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { "_id.year": -1, "_id.month": -1 } },
+      ]);
+
+      return res.status(StatusCodes.OK).json({
+        status: "success",
+        data: {
+          totalOrders,
+          totalStock,
+          totalAmountSold,
+          dailySales,
+          monthlySales,
+          orders,
+        },
+      });
+    } else {
+      // Fetch orders for the customer
+      const orders = await Order.find({ user: userId }).populate({
+        path: "orderItems.product",
+        populate: {
+          path: "createdBy",
+          select:
+            "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+        },
+      });
+
+      if (!orders) {
+        return res
+          .status(StatusCodes.NOT_FOUND)
+          .json({ status: "error", message: "No orders found" });
+      }
+
+      const totalOrders = orders.length;
+
+      const totalAmountSpent = orders.reduce(
+        (acc, order) => acc + parseFloat(order.totalPrice),
+        0
+      );
+
+      const totalProductsOrdered = orders.reduce(
+        (acc, order) =>
+          acc + order.orderItems.reduce((acc, item) => acc + item.quantity, 0),
+        0
+      );
+
+      return res.status(StatusCodes.OK).json({
+        status: "success",
+        data: {
+          totalOrders,
+          totalAmountSpent,
+          totalProductsOrdered,
+          orders,
+        },
+      });
+    }
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
@@ -249,6 +338,6 @@ module.exports = {
   createUser,
   updateUser,
   deleteUser,
-  getOrdersByUser,
+  getUserOrders,
   bulkdeleteUsers,
 };
