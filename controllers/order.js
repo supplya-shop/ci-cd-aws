@@ -1,8 +1,12 @@
 const Order = require("../models/Order");
+const User = require("../models/User");
 const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError } = require("../errors");
-const { sendOrderSummaryMail } = require("../middleware/mailUtil");
+const {
+  sendOrderSummaryMail,
+  sendCustomerOrderSummaryMail,
+} = require("../middleware/mailUtil");
 
 const mongoose = require("mongoose");
 
@@ -10,7 +14,7 @@ const createOrder = async (req, res) => {
   let session;
 
   try {
-    const user = req.user.userid;
+    const userId = req.user.userid;
     const email = req.user.email;
     let totalPrice;
     const {
@@ -30,6 +34,8 @@ const createOrder = async (req, res) => {
     // Start a transaction
     session = await mongoose.startSession();
     session.startTransaction();
+
+    const user = await User.findById(userId).select("firstName lastName email");
 
     // Calculate total price and populate vendor details
     totalPrice = 0;
@@ -64,7 +70,7 @@ const createOrder = async (req, res) => {
     const createdOrders = await Order.create(
       [
         {
-          user,
+          userId,
           orderItems,
           shippingAddress1,
           shippingAddress2,
@@ -98,7 +104,9 @@ const createOrder = async (req, res) => {
       });
 
     console.log(order);
+
     await sendOrderSummaryMail(order);
+    await sendCustomerOrderSummaryMail(order, user);
 
     return res.status(StatusCodes.CREATED).json({
       status: "success",
@@ -220,7 +228,7 @@ const getOrdersByStatus = async (req, res, next) => {
 
     if (!orders || orders.length === 0) {
       return res.status(StatusCodes.OK).json({
-        status: "error",
+        status: false,
         message: `No orders found with status '${status}'`,
         data: [],
       });

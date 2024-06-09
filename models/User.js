@@ -144,6 +144,16 @@ const userSchema = new mongoose.Schema({
     default: 0,
   },
 
+  totalOrders: {
+    type: Number,
+    default: 0,
+  },
+
+  totalStock: {
+    type: Number,
+    default: 0,
+  },
+
   resetPasswordToken: {
     type: String,
   },

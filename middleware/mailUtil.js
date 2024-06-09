@@ -1654,7 +1654,7 @@ const sendOrderSummaryMail = async (order) => {
 
   await transporter.sendMail(mailOptions);
 };
-const sendCustomerOrderSummaryMail = async (order) => {
+const sendCustomerOrderSummaryMail = async (order, user) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,
@@ -1671,7 +1671,7 @@ const sendCustomerOrderSummaryMail = async (order) => {
       name: "Supplya",
       address: process.env.EMAIL_USERNAME,
     },
-    to: process.env.EMAIL_USERNAME,
+    to: `${user.email}`,
     subject: `Order Summary for [Order ID: ${order.id}]`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -1773,10 +1773,9 @@ const sendCustomerOrderSummaryMail = async (order) => {
                         >
                           <tr>
                             <td style="color: #153643">
-                            <p>Hi, </p>
+                            <p>Hi ${user.firstName},</p>
                               <p>
-                                A new order has been created with the following
-                                details:
+                                Here is your order summary:
                               </p>
                             </td>
                           </tr>
@@ -1794,12 +1793,10 @@ const sendCustomerOrderSummaryMail = async (order) => {
                                 }, ${order.city}, ${order.zip}, ${order.country}
                               </p>
                               <p>
-                                <strong>Customer Phone Number:</strong> ${
-                                  order.phone
-                                }
+                                <strong>Phone Number:</strong> ${order.phone}
                               </p>
                               <p>
-                                <strong>Customer email:</strong> ${order.email}
+                                <strong>Email:</strong> ${order.email}
                               </p>
                              
                               <p>

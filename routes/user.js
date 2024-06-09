@@ -7,7 +7,7 @@ const {
   getUserById,
   updateUser,
   deleteUser,
-  getOrdersByUser,
+  getUserOrders,
   bulkdeleteUsers,
 } = require("../controllers/user");
 
@@ -20,7 +20,7 @@ const {
 router.patch("/:id", authenticateUser, updateUser);
 router.post("/create", authenticateUser, createUser);
 router.get("/", authenticateUser, getAllUsers);
-router.get("/orders", authenticateUser, getOrdersByUser);
+router.get("/orders", authenticateUser, getUserOrders);
 router.get("/admin", authenticateUser, getAdminUsers);
 router.get("/:id", authenticateUser, getUserById);
 router.delete(
