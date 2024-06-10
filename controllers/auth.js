@@ -12,6 +12,7 @@ const {
   forgotPasswordMail,
   resetPasswordMail,
   newUserSignUpMail,
+  newVendorSignUpMail,
 } = require("../middleware/mailUtil");
 // const logger = require("../middleware/logging/logger");
 const oauth2Client = require("../oauth2Client");
@@ -169,7 +170,11 @@ const signUpComplete = async (req, res, next) => {
     });
     await newUser.save();
     await sendConfirmationMail(email);
-    await newUserSignUpMail(email);
+    if (userData.role === "vendor") {
+      await newVendorSignUpMail(email);
+    } else {
+      await newUserSignUpMail(email);
+    }
     await OtpLogs.findOneAndDelete({ email, otp });
 
     const token = newUser.createJWT();

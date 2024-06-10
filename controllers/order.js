@@ -16,9 +16,8 @@ const createOrder = async (req, res) => {
   try {
     const userId = req.user.userid;
     const email = req.user.email;
-    let totalPrice;
     const {
-      orderItems, // Array of { product: ObjectId, quantity: Number }
+      orderItems,
       shippingAddress1,
       shippingAddress2,
       city,
@@ -31,14 +30,15 @@ const createOrder = async (req, res) => {
       paymentMethod,
     } = req.body;
 
-    // Start a transaction
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const user = await User.findById(userId).select("firstName lastName email");
+    const user = await User.findById(userId)
+      .select("firstName lastName email")
+      .session(session);
 
-    // Calculate total price and populate vendor details
-    totalPrice = 0;
+    let totalPrice = 0;
+    const productUpdates = [];
     for (const item of orderItems) {
       const product = await Product.findById(item.product)
         .populate("createdBy")
@@ -46,7 +46,7 @@ const createOrder = async (req, res) => {
 
       if (!product) {
         await session.abortTransaction();
-        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        return res.status(StatusCodes.NOT_FOUND).json({
           status: "error",
           message: `Product not found: ${item.product}`,
         });
@@ -61,16 +61,29 @@ const createOrder = async (req, res) => {
 
       totalPrice += item.quantity * product.unit_price;
       item.vendorDetails = product.createdBy;
+
+      if (product.quantity < item.quantity) {
+        await session.abortTransaction();
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: "error",
+          message: `Insufficient stock for product '${product.name}'`,
+        });
+      }
+
+      productUpdates.push({
+        updateOne: {
+          filter: { _id: item.product },
+          update: { $inc: { quantity: -item.quantity } },
+        },
+      });
     }
 
-    // Check and update inventory
-    await checkAndUpdateInventory(orderItems, session);
+    await Product.bulkWrite(productUpdates, { session });
 
-    // Create the order
     const createdOrders = await Order.create(
       [
         {
-          userId,
+          user: userId,
           orderItems,
           shippingAddress1,
           shippingAddress2,
@@ -89,21 +102,19 @@ const createOrder = async (req, res) => {
       { session }
     );
 
-    // Commit the transaction before trying to populate
     await session.commitTransaction();
+    session.endSession();
 
-    // Retrieve the first created order and populate necessary fields
     const order = await Order.findById(createdOrders[0]._id)
       .populate({
         path: "orderItems.product",
         model: "Product",
       })
       .populate({
-        path: "createdBy",
+        path: "orderItems.product.createdBy",
         model: "User",
+        select: "firstName lastName email",
       });
-
-    console.log(order);
 
     await sendOrderSummaryMail(order);
     await sendCustomerOrderSummaryMail(order, user);
@@ -114,7 +125,6 @@ const createOrder = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    // Rollback the transaction in case of error
     if (session && session.inTransaction()) await session.abortTransaction();
 
     console.error("Error creating order: ", error);
@@ -128,24 +138,6 @@ const createOrder = async (req, res) => {
     if (session) session.endSession();
   }
 };
-
-async function checkAndUpdateInventory(orderItems, session) {
-  for (const item of orderItems) {
-    const productInInventory = await Product.findOne({
-      _id: item.product,
-    }).session(session);
-
-    if (!productInInventory || productInInventory.quantity < item.quantity) {
-      throw new Error(`Not enough inventory for product ${item.product}`);
-    }
-
-    await Product.findOneAndUpdate(
-      { _id: item.product },
-      { $inc: { quantity: -item.quantity } },
-      { session }
-    );
-  }
-}
 
 const getOrders = async (req, res) => {
   try {
@@ -199,7 +191,9 @@ const getOrderById = async (req, res) => {
 
 const getOrdersByStatus = async (req, res, next) => {
   try {
-    let orderStatus = req.params;
+    const userId = req.user.userid;
+    const userRole = req.user.role; // Assuming role is available in the user object
+    const orderStatus = req.params.orderStatus;
     const validStatuses = [
       "received",
       "processing",
@@ -208,28 +202,52 @@ const getOrdersByStatus = async (req, res, next) => {
       "cancelled",
     ];
 
-    const status = orderStatus && orderStatus.orderStatus;
-
-    if (!status || !validStatuses.includes(status.toLowerCase())) {
+    if (!orderStatus || !validStatuses.includes(orderStatus.toLowerCase())) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
-        message: `Invalid status: ${status}. Please provide one of: ${validStatuses.join(
+        message: `Invalid status: ${orderStatus}. Please provide one of: ${validStatuses.join(
           ", "
         )}`,
       });
     }
 
-    const orders = await Order.find({
-      orderStatus: status.toLowerCase(),
-    }).populate("orderItems");
-    const totalOrders = await Order.countDocuments({
-      orderStatus: status,
-    });
+    let orders, totalOrders;
+
+    if (userRole === "vendor") {
+      // For vendors
+      orders = await Order.find({
+        orderStatus: orderStatus.toLowerCase(),
+        "orderItems.product": { $exists: true },
+      }).populate({
+        path: "orderItems.product",
+        match: { createdBy: userId },
+      });
+
+      // Filter out orders that do not have any orderItems with products created by this vendor
+      orders = orders.filter((order) =>
+        order.orderItems.some(
+          (item) => item.product && item.product.createdBy.equals(userId)
+        )
+      );
+
+      totalOrders = orders.length;
+    } else {
+      // For customers
+      orders = await Order.find({
+        user: userId,
+        orderStatus: orderStatus.toLowerCase(),
+      }).populate("orderItems.product");
+
+      totalOrders = await Order.countDocuments({
+        user: userId,
+        orderStatus: orderStatus.toLowerCase(),
+      });
+    }
 
     if (!orders || orders.length === 0) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: `No orders found with status '${status}'`,
+        message: `No orders found with status '${orderStatus}'`,
         data: [],
       });
     }
@@ -243,7 +261,7 @@ const getOrdersByStatus = async (req, res, next) => {
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
-      message: `Failed to fetch orders with status ${req.params.orderStatus}: ${error.message}`,
+      message: `Failed to fetch orders with status ${orderStatus}: ${error.message}`,
     });
   }
 };
