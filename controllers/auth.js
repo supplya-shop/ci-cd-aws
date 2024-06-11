@@ -585,6 +585,67 @@ const googleCallback = async (req, res) => {
   }
 };
 
+const mobileCallback = async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+      return res.status(400).json({ message: 'Authorization code is missing.' });
+  }
+
+  try {
+      const { tokens } = await oauth2Client.getToken(code);
+      oauth2Client.setCredentials({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          scope: ['https://www.googleapis.com/auth/plus.login', 'https://www.googleapis.com/auth/userinfo.email'],
+          token_type: tokens.token_type,
+          expiry_date: tokens.expiry_date
+      });
+
+      const ticket = await oauth2Client.verifyIdToken({
+          idToken: tokens.id_token,
+          audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const { given_name, family_name, email } = ticket.getPayload();
+
+      if (!email) {
+          return res.status(400).json({ message: 'Email is required but not provided.' });
+      }
+
+      let user = await User.findOne({ email: email });
+
+      const isNewUser = !user;
+      if (isNewUser) {
+          user = await User.create({
+              firstName: given_name,
+              lastName: family_name,
+              email: email,
+          });
+      }
+
+      const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+          expiresIn: process.env.JWT_LIFETIME,
+      });
+
+      const responseMessage = isNewUser ? "New User Created Successfully" : "Login successful";
+
+      return res.status(200).json({
+          status: "success",
+          message: responseMessage,
+          token: jwtToken,
+          user: {
+              _id: user._id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email
+          }
+      });
+  } catch (error) {
+      console.error('Google authentication error:', error.statusText);  
+      return res.status(500).json({ message: 'Failed to authenticate with Google. Please try again.' });
+  }
+};
 
 
 
