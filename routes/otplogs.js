@@ -10,6 +10,6 @@ const {
 
 //user routes
 router.get("/", getAllOtpLogs);
-router.delete("/bulkdeleteOtpLogs", bulkdeleteOtpLogs);
+router.delete("/", bulkdeleteOtpLogs);
 
 module.exports = router;

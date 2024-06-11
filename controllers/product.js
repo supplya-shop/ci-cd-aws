@@ -1,23 +1,42 @@
 const { StatusCodes } = require("http-status-codes");
 const Product = require("../models/Product");
 const User = require("../models/User");
-const cloudinary = require("cloudinary").v2;
 // const userController = require("../controllers/user");
 // const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
+  const user = await User.findOne({ _id: userId });
+
+  if (!user) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
+
+  if (user.blocked) {
+    return res.status(StatusCodes.FORBIDDEN).json({
+      status: "error",
+      message:
+        "Access denied. Account under review. Please contact support for further assistance.",
+    });
+  }
+
   const product = req.body;
+
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      error: "error",
+      status: "error",
       message: "Please enter all required fields",
     });
   }
+
   product.createdBy = userId;
   product.approved = true;
   const newProduct = new Product(product);
+
   try {
     await newProduct.save();
     return res.status(StatusCodes.CREATED).json({
@@ -28,14 +47,31 @@ const createProduct = async (req, res, next) => {
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "Failed to create Product: " + error.message,
       status: "error",
+      message: "Failed to create product: " + error.message,
     });
   }
 };
 
 const submitProduct = async (req, res, next) => {
   const userId = req.user.userid;
+  const user = await User.findOne({ _id: userId });
+
+  if (!user) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "error",
+      message: "User not found",
+    });
+  }
+
+  if (user.blocked) {
+    return res.status(StatusCodes.FORBIDDEN).json({
+      status: "error",
+      message:
+        "Access denied. Account under review. Please contact support for further assistance.",
+    });
+  }
+
   const product = req.body;
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -82,10 +118,10 @@ const submitProduct = async (req, res, next) => {
 const getAllProducts = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 15;
 
     const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
+    // const endIndex = page * limit;
 
     const totalProducts = await Product.countDocuments();
     const totalPages = Math.ceil(totalProducts / limit);
@@ -96,18 +132,19 @@ const getAllProducts = async (req, res, next) => {
         select:
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
       })
-      .populate("category", "name")
       .select(
-        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
       )
+      .populate("category", "name")
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
 
     if (products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No products found",
+        data: products,
       });
     }
 
@@ -133,9 +170,11 @@ const getRelatedProducts = async (req, res) => {
     const productId = req.params.id;
     const currentProduct = await Product.findById(productId);
     if (!currentProduct) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Product not found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Product not found",
+        data: currentProduct,
+      });
     }
 
     const relatedProducts = await Product.find({
@@ -161,23 +200,38 @@ const getRelatedProducts = async (req, res) => {
 const getProductsByVendor = async (req, res) => {
   try {
     const vendorId = req.user.userid;
-    await Product.updateMany(
-      { createdBy: vendorId },
-      { $unset: { price: "" } }
-    );
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
 
-    const products = await Product.find({ createdBy: vendorId }).sort({
-      dateCreated: -1,
-    });
+    const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+
+    const totalProducts = await Product.countDocuments({ createdBy: vendorId });
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    const products = await Product.find({ createdBy: vendorId })
+      .select(
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
+      )
+      .populate("category", "name")
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
     if (!products || products.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No products could be found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No products could be found",
+        data: products,
+      });
     }
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Products fetched successfully",
       data: products,
+      currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProducts,
     });
   } catch (error) {
     console.error(error);
@@ -213,8 +267,9 @@ const getProductsByBrand = async (req, res) => {
       .skip(startIndex);
     if (products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No products found for the given brand",
+        data: products,
       });
     }
     return res.status(StatusCodes.OK).json({
@@ -238,9 +293,11 @@ const getDiscountedProducts = async (req, res) => {
       discounted_price: { $gt: 0 },
     });
     if (!discountedProducts || discountedProducts.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No products found with discount" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No products found with discount",
+        data: discountedProducts,
+      });
     }
     return res.json({
       status: "success",
@@ -259,9 +316,11 @@ const getFlashsaleProducts = async (req, res) => {
   try {
     const flashsaleProducts = await Product.find({ flashsale: true });
     if (!flashsaleProducts || flashsaleProducts.length === 0) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "No flashsale products found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No flashsale products found",
+        data: flashsaleProducts,
+      });
     }
     return res.json({
       status: "success",
@@ -305,12 +364,12 @@ const getProductById = async (req, res, next) => {
     .populate({
       path: "createdBy",
       select:
-        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role", // Specify the fields you want to include from the User schema
+        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
     })
-    .populate("category", "name")
     .select(
-      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved"
+      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
     )
+    .populate("category", "name")
     .then((product) => {
       if (!product) {
         return res.status(StatusCodes.NOT_FOUND).json({
@@ -428,7 +487,6 @@ const deleteProduct = async (req, res, next) => {
         message: `Product with id ${productId} not found.`,
       });
     }
-    console.log(result);
     return res
       .status(StatusCodes.OK)
       .json({ status: "success", message: "Product deleted successfully" });
@@ -437,6 +495,32 @@ const deleteProduct = async (req, res, next) => {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: "error", message: "Failed to delete product" });
+  }
+};
+
+const bulkdeleteProducts = async (req, res) => {
+  try {
+    const products = await Product.find({}, "_id");
+    const ids = products.map((product) => product._id);
+
+    if (ids.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "No products found to delete.",
+      });
+    }
+
+    const result = await Product.deleteMany({ _id: { $in: ids } });
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: `${result.deletedCount} product(s) deleted successfully.`,
+    });
+  } catch (error) {
+    console.error("Error in bulk delete operation:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: "error", message: "Internal server error" });
   }
 };
 
@@ -455,10 +539,10 @@ const searchProducts = async (req, res) => {
       name: { $regex: keyword, $options: "i" },
     });
 
-    const usersByShopName = await User.find({
-      shopName: { $regex: keyword, $options: "i" },
+    const usersByStoreName = await User.find({
+      storeName: { $regex: keyword, $options: "i" },
     });
-    const vendorIds = usersByShopName.map((user) => user._id);
+    const vendorIds = usersByStoreName.map((user) => user._id);
     const productsByVendor = await Product.find({
       createdBy: { $in: vendorIds },
     });
@@ -500,5 +584,6 @@ module.exports = {
   updateProduct,
   uploadProductImage,
   deleteProduct,
+  bulkdeleteProducts,
   searchProducts,
 };

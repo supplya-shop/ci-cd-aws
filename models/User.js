@@ -71,7 +71,9 @@ const userSchema = new mongoose.Schema({
   },
   storeUrl: {
     type: String,
+    unique: true,
     sparse: true,
+    default: "",
   },
 
   googleId: {
@@ -91,7 +93,7 @@ const userSchema = new mongoose.Schema({
   },
 
   password: {
-    type: String
+    type: String,
   },
 
   email: {
@@ -137,6 +139,21 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
 
+  totalSales: {
+    type: Number,
+    default: 0,
+  },
+
+  totalOrders: {
+    type: Number,
+    default: 0,
+  },
+
+  totalStock: {
+    type: Number,
+    default: 0,
+  },
+
   resetPasswordToken: {
     type: String,
   },
@@ -151,7 +168,6 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-if (this.password) {
 userSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
@@ -161,7 +177,6 @@ userSchema.pre("save", async function (next) {
     next(error);
   }
 });
-}
 
 userSchema.methods.createJWT = function () {
   return jwt.sign(
