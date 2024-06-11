@@ -602,9 +602,9 @@ const googleCallback = async (req, res) => {
 };
 
 const mobileCallback = async (req, res) => {
-  const { user, access_token, refresh_token } = req.body;
+  const { user, access_token } = req.body;
 
-  if (!user || !user.email || !access_token || !refresh_token) {
+  if (!user || !user.email || !access_token) {
       return res.status(400).json({ message: 'Missing required user information or tokens.' });
   }
 
