@@ -601,11 +601,12 @@ const googleCallback = async (req, res) => {
   }
 };
 
+//Mobile callback url
 const mobileCallback = async (req, res) => {
   const { user, access_token } = req.body;
 
   if (!user || !user.email || !access_token) {
-      return res.status(400).json({ message: 'Missing required user information or tokens.' });
+      return res.status(400).json({ message: 'Missing required users information or tokens.' });
   }
 
   try {
