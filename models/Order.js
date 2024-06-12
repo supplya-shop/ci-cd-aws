@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const orderSchema = mongoose.Schema({
+  orderId: {
+    type: Number,
+    required: true,
+    unique: true,
+  },
   orderItems: [
     {
       _id: false,
@@ -13,6 +18,14 @@ const orderSchema = mongoose.Schema({
       quantity: {
         type: Number,
         default: 1,
+      },
+      vendorDetails: {
+        firstName: String,
+        lastName: String,
+        storeName: String,
+        storeUrl: String,
+        phoneNumber: String,
+        email: String,
       },
     },
   ],
@@ -73,6 +86,9 @@ const orderSchema = mongoose.Schema({
   dateOrdered: {
     type: Date,
     default: Date.now,
+  },
+  deliveryDate: {
+    type: Date,
   },
 });
 

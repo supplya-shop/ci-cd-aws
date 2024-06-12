@@ -221,7 +221,6 @@ const getProductsByVendor = async (req, res) => {
     if (!products || products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: "No products could be found",
         data: products,
       });
     }

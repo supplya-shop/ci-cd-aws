@@ -256,19 +256,24 @@ const getUserOrders = async (req, res) => {
       });
     } else {
       // Fetch orders for the customer
-      const orders = await Order.find({ user: userId }).populate({
-        path: "orderItems.product",
-        populate: {
-          path: "createdBy",
-          select:
-            "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
-        },
-      });
+      const orders = await Order.find({ user: userId })
+        .populate({
+          path: "orderItems.product",
+          populate: {
+            path: "createdBy",
+            select:
+              "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+          },
+        })
+        .populate({
+          path: "user",
+          select: "firstName lastName email",
+        });
 
       if (!orders) {
         return res
           .status(StatusCodes.NOT_FOUND)
-          .json({ status: "error", message: "No orders found" });
+          .json({ status: false, data: orders });
       }
 
       const totalOrders = orders.length;

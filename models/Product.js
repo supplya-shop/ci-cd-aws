@@ -63,7 +63,7 @@ const productSchema = new schema({
     type: Boolean,
     default: false,
   },
-  saleCount: {
+  salesCount: {
     type: Number,
     default: 0,
   },
