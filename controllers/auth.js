@@ -621,7 +621,6 @@ const mobileCallback = async (req, res) => {
               googleId: user.id,
               profilePicture: user.photo,
               access_token,
-              refresh_token,
               
           });
       }
