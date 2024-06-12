@@ -6,9 +6,29 @@ const { NotFoundError } = require("../errors");
 const {
   sendOrderSummaryMail,
   sendCustomerOrderSummaryMail,
+  sendVendorOrderSummaryMail,
 } = require("../middleware/mailUtil");
 
 const mongoose = require("mongoose");
+
+const generateUniqueOrderId = async () => {
+  try {
+    const lastOrder = await Order.findOne().sort({ orderId: -1 }).limit(1);
+    const nextOrderId = lastOrder ? lastOrder.orderId + 1 : 1;
+    return nextOrderId;
+  } catch (error) {
+    throw new Error("Failed to generate unique order ID");
+  }
+};
+
+// const calculateTotalStock = async (userId) => {
+//   const products = await Product.find({ createdBy: userId }).select("quantity");
+//   const totalStock = products.reduce(
+//     (acc, product) => acc + product.quantity,
+//     0
+//   );
+//   return totalStock;
+// };
 
 const createOrder = async (req, res) => {
   let session;
@@ -37,6 +57,8 @@ const createOrder = async (req, res) => {
       .select("firstName lastName email")
       .session(session);
 
+    let orderId = await generateUniqueOrderId();
+
     let totalPrice = 0;
     const productUpdates = [];
     for (const item of orderItems) {
@@ -60,7 +82,6 @@ const createOrder = async (req, res) => {
       }
 
       totalPrice += item.quantity * product.unit_price;
-      item.vendorDetails = product.createdBy;
 
       if (product.quantity < item.quantity) {
         await session.abortTransaction();
@@ -69,6 +90,7 @@ const createOrder = async (req, res) => {
           message: `Insufficient stock for product '${product.name}'`,
         });
       }
+      item.vendorDetails = product.createdBy;
 
       productUpdates.push({
         updateOne: {
@@ -83,7 +105,13 @@ const createOrder = async (req, res) => {
     const createdOrders = await Order.create(
       [
         {
-          user: userId,
+          orderId: orderId,
+          user: {
+            _id: userId,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+            email: req.user.email,
+          },
           orderItems,
           shippingAddress1,
           shippingAddress2,
@@ -113,11 +141,13 @@ const createOrder = async (req, res) => {
       .populate({
         path: "orderItems.product.createdBy",
         model: "User",
-        select: "firstName lastName email",
+        select:
+          "firstName lastName email storeName storeUrl phoneNumber country state city role",
       });
 
     await sendOrderSummaryMail(order);
-    await sendCustomerOrderSummaryMail(order, user);
+    await sendCustomerOrderSummaryMail(order, user, email);
+    await sendVendorOrderSummaryMail(order, user, email);
 
     return res.status(StatusCodes.CREATED).json({
       status: "success",
@@ -141,14 +171,20 @@ const createOrder = async (req, res) => {
 
 const getOrders = async (req, res) => {
   try {
-    const orders = await Order.find().sort({ dateOrdered: -1 });
+    const orders = await Order.find()
+      .populate({
+        path: "user",
+        select: "firstName lastName email",
+      })
+      .sort({ dateOrdered: -1 });
 
     const totalOrders = await Order.countDocuments();
 
     return res.status(StatusCodes.OK).json({
       status: "success",
       message: "Orders fetched successfully",
-      data: { orders, totalOrders },
+      data: orders,
+      totalOrders,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -161,12 +197,48 @@ const getOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    const order = await Order.findById(orderId).populate({
+    const order = await Order.findById(orderId)
+      .populate({
+        path: "orderItems.product",
+        populate: {
+          path: "createdBy",
+          select:
+            "firstName lastName email country state city postalCode gender storeName storeUrl phoneNumber accountNumber bank role",
+        },
+      })
+      .populate({
+        path: "user",
+        select: "firstName lastName email",
+      });
+
+    if (!order) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: "error", message: "Order not found" });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Order fetched successfully",
+      data: order,
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Failed to fetch order: " + error.message,
+    });
+  }
+};
+
+const getOrderByOrderId = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const order = await Order.findOne({ orderId: orderId }).populate({
       path: "orderItems.product",
       populate: {
         path: "createdBy",
         select:
-          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+          "firstName lastName email country state city postalCode gender storeName storeUrl phoneNumber accountNumber bank role",
       },
     });
 
@@ -192,7 +264,7 @@ const getOrderById = async (req, res) => {
 const getOrdersByStatus = async (req, res, next) => {
   try {
     const userId = req.user.userid;
-    const userRole = req.user.role; // Assuming role is available in the user object
+    const userRole = req.user.role;
     const orderStatus = req.params.orderStatus;
     const validStatuses = [
       "received",
