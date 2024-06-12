@@ -618,9 +618,9 @@ const mobileCallback = async (req, res) => {
               firstName: user.givenName,
               lastName: user.familyName,
               email: user.email,
-              googleId: user.id,
-              profilePicture: user.photo,
-              access_token,
+           //   googleId: user.id,
+            //  profilePicture: user.photo,
+              //access_token,
               
           });
       }
