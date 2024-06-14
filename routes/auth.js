@@ -5,7 +5,6 @@ const passport = require("passport");
 const {
   signUp,
   signUpComplete,
-  checkStoreNameAvailability,
   resendOTP,
   login,
   verifyOTP,
@@ -25,7 +24,6 @@ router.get("/google/redirect", googleCallback);
 // Auth routes
 router.post("/login", login);
 router.post("/sign-up", signUp);
-router.get("/validate-store-name", checkStoreNameAvailability);
 router.post("/sign-up-complete", signUpComplete);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
