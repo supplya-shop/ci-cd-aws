@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema({
     required: [true, "Please provide your firstName"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
-    // lowercase: true,
   },
 
   lastName: {
@@ -17,7 +16,6 @@ const userSchema = new mongoose.Schema({
     required: [true, "Please provide your lastName"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
-    // lowercase: true,
   },
   displayName: {
     type: String,
@@ -65,10 +63,17 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 
+  profileImage: {
+    type: String,
+  },
+
   storeName: {
     type: String,
     default: "",
     unique: true,
+  },
+  storeImage: {
+    type: String,
   },
   storeUrl: {
     type: String,
