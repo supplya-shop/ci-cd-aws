@@ -9,7 +9,7 @@ const createVendor = async (req, res) => {
       lastName,
       email,
       password,
-      shopName,
+      storeName,
       phoneNumber,
       street,
       state,
@@ -20,7 +20,7 @@ const createVendor = async (req, res) => {
     if (
       !firstName ||
       !lastName ||
-      !shopName ||
+      !storeName ||
       !phoneNumber ||
       !street ||
       !state ||
@@ -31,8 +31,15 @@ const createVendor = async (req, res) => {
         .status(400)
         .json({ message: "Please provide all required fields" });
     }
+    const storeNameExists = await User.findOne({ storeName });
+    if (storeNameExists) {
+      return res.status(StatusCodes.CONFLICT).json({
+        status: "error",
+        message: "This store name is already taken",
+      });
+    }
 
-    const shopUrl = `https://supplya.shop/store/${shopName.replace(
+    const storeUrl = `https://supplya.shop/store/${storeName.replace(
       /\s+/g,
       "-"
     )}`;
@@ -41,8 +48,8 @@ const createVendor = async (req, res) => {
       firstName,
       lastName,
       displayName: `${lastName}${firstName}`,
-      shopName,
-      shopUrl,
+      storeName,
+      storeUrl,
       phoneNumber,
       address: { street, city, state, country },
       role: "vendor",
@@ -75,8 +82,8 @@ const checkStoreNameAvailability = async (req, res) => {
     const user = await User.findOne({ storeName });
 
     if (user) {
-      return res.status(StatusCodes.CONFLICT).json({
-        status: "error",
+      return res.status(StatusCodes.OK).json({
+        status: false,
         message: "This store name is already taken",
       });
     }

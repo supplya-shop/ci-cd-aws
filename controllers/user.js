@@ -121,6 +121,13 @@ const updateUser = async (req, res) => {
     }
 
     if (updates.storeName) {
+      const storeNameExists = await User.findOne({ storeName });
+      if (storeNameExists) {
+        return res.status(StatusCodes.CONFLICT).json({
+          status: "error",
+          message: "This store name is already taken",
+        });
+      }
       updates.storeUrl = `https://supplya.shop/store/${updates.storeName.replace(
         /\s+/g,
         "-"
