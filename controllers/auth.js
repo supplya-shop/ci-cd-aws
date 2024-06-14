@@ -504,6 +504,64 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Please provide current password",
+      });
+    }
+    if (!newPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Please provide new password",
+      });
+    }
+    if (!confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Please confirm new password",
+      });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "New password and confirm new password do not match",
+      });
+    }
+    const user = await User.findById(req.user.userid);
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Current password is incorrect",
+      });
+    }
+    user.password = newPassword;
+    await user.save();
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+};
+
 const googleAuth = (req, res, next) => {
   passport.authenticate("google", {
     scope: ["profile", "email"],
@@ -660,6 +718,7 @@ module.exports = {
   resendOTP,
   forgotPassword,
   resetPassword,
+  changePassword,
   googleAuth,
   googleAuthCallback,
   initiateOauth,

@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
-
 const {
   signUp,
   signUpComplete,
@@ -10,16 +9,19 @@ const {
   verifyOTP,
   mobileCallback,
   forgotPassword,
+  changePassword,
   resetPassword,
   initiateOauth,
   googleCallback,
 } = require("../controllers/auth");
+const {
+  authenticateUser,
+  rolesAllowed,
+} = require("../middleware/authenticateUser");
 
 // Google Auth routes
 router.get("/google", initiateOauth);
 router.get("/google/redirect", googleCallback);
-router.post("/google/mobile", mobileCallback);
-
 
 // Auth routes
 router.post("/login", login);
@@ -29,6 +31,7 @@ router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
-
+router.post("/change-password", authenticateUser, changePassword);
+// router.get('/banks', getBanks)
 
 module.exports = router;
