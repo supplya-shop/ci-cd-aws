@@ -602,6 +602,56 @@ const googleCallback = async (req, res) => {
   }
 };
 
+//Mobile callback url
+const mobileCallback = async (req, res) => {
+  const { user, access_token } = req.body;
+
+  if (!user || !user.email || !access_token) {
+      return res.status(400).json({ message: 'Missing required users information or tokens.' });
+  }
+
+  try {
+      let existingUser = await User.findOne({ email: user.email });
+
+      const isNewUser = !existingUser;
+      if (isNewUser) {
+          existingUser = await User.create({
+              firstName: user.givenName,
+              lastName: user.familyName,
+              email: user.email,
+           //   googleId: user.id,
+            //  profilePicture: user.photo,
+              //access_token,
+              
+          });
+      }
+
+      const jwtToken = jwt.sign({ userId: existingUser._id }, process.env.JWT_SECRET, {
+          expiresIn: process.env.JWT_LIFETIME,
+      });
+
+      const responseMessage = isNewUser ? "New User Created Successfully" : "Login successful";
+
+      return res.status(200).json({
+          status: "success",
+          message: responseMessage,
+          token: jwtToken,
+          user: {
+              _id: existingUser._id,
+              firstName: existingUser.firstName,
+              lastName: existingUser.lastName,
+              email: existingUser.email,
+              googleId: existingUser.googleId,
+              profilePicture: existingUser.profilePicture
+          }
+      });
+  } catch (error) {
+      console.error('Error in user registration/login:', error);
+      return res.status(500).json({ message: 'Failed to register or log in the user. Please try again.' });
+  }
+};
+
+
 module.exports = {
   login,
   signUp,
@@ -614,4 +664,5 @@ module.exports = {
   googleAuthCallback,
   initiateOauth,
   googleCallback,
+  mobileCallback
 };

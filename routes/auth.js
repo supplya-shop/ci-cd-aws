@@ -8,9 +8,7 @@ const {
   resendOTP,
   login,
   verifyOTP,
-  // getBanks,
-  googleAuth,
-  googleAuthCallback,
+  mobileCallback,
   forgotPassword,
   resetPassword,
   initiateOauth,
@@ -20,6 +18,8 @@ const {
 // Google Auth routes
 router.get("/google", initiateOauth);
 router.get("/google/redirect", googleCallback);
+router.post("/google/mobile", mobileCallback);
+
 
 // Auth routes
 router.post("/login", login);
@@ -29,6 +29,6 @@ router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
-// router.get('/banks', getBanks)
+
 
 module.exports = router;
