@@ -11,16 +11,6 @@ const {
 
 const mongoose = require("mongoose");
 
-const generateUniqueOrderId = async () => {
-  try {
-    const lastOrder = await Order.findOne().sort({ orderId: -1 }).limit(1);
-    const nextOrderId = lastOrder ? lastOrder.orderId + 1 : 1;
-    return nextOrderId;
-  } catch (error) {
-    throw new Error("Failed to generate unique order ID");
-  }
-};
-
 // const calculateTotalStock = async (userId) => {
 //   const products = await Product.find({ createdBy: userId }).select("quantity");
 //   const totalStock = products.reduce(
@@ -29,6 +19,19 @@ const generateUniqueOrderId = async () => {
 //   );
 //   return totalStock;
 // };
+
+const generateUniqueOrderId = async () => {
+  try {
+    const lastOrder = await Order.findOne()
+      .sort({ orderId: -1 })
+      .limit(1)
+      .select("orderId");
+    const nextOrderId = lastOrder ? lastOrder.orderId + 1 : 1;
+    return nextOrderId;
+  } catch (error) {
+    throw new Error("Failed to generate unique order ID");
+  }
+};
 
 const createOrder = async (req, res) => {
   let session;
@@ -53,14 +56,16 @@ const createOrder = async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const user = await User.findById(userId)
-      .select("firstName lastName email")
-      .session(session);
-
-    let orderId = await generateUniqueOrderId();
+    const [user, orderId] = await Promise.all([
+      User.findById(userId).select("firstName lastName email").session(session),
+      generateUniqueOrderId(),
+    ]);
 
     let totalPrice = 0;
     const productUpdates = [];
+    const insufficientStockProducts = [];
+    const moqProducts = [];
+
     for (const item of orderItems) {
       const product = await Product.findById(item.product)
         .populate("createdBy")
@@ -74,22 +79,15 @@ const createOrder = async (req, res) => {
         });
       }
       if (item.quantity < product.moq) {
-        await session.abortTransaction();
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: "error",
-          message: `Sorry, your order quantity for product '${product.name}' does not meet the minimum order quantity (MOQ) of ${product.moq}`,
-        });
+        moqProducts.push(product.name);
       }
 
       totalPrice += item.quantity * product.unit_price;
 
       if (product.quantity < item.quantity) {
-        await session.abortTransaction();
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: "error",
-          message: `Insufficient stock for product '${product.name}'`,
-        });
+        insufficientStockProducts.push(product.name);
       }
+
       item.vendorDetails = product.createdBy;
 
       productUpdates.push({
@@ -100,17 +98,37 @@ const createOrder = async (req, res) => {
       });
     }
 
+    if (insufficientStockProducts.length > 0) {
+      await session.abortTransaction();
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: `Insufficient stock for products: ${insufficientStockProducts.join(
+          ", "
+        )}`,
+      });
+    }
+
+    if (moqProducts.length > 0) {
+      await session.abortTransaction();
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: `Your order quantity does not meet the minimum order quantity (MOQ) for products: ${moqProducts.join(
+          ", "
+        )}`,
+      });
+    }
+
     await Product.bulkWrite(productUpdates, { session });
 
     const createdOrders = await Order.create(
       [
         {
-          orderId: orderId,
+          orderId,
           user: {
             _id: userId,
-            firstName: req.user.firstName,
-            lastName: req.user.lastName,
-            email: req.user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
           },
           orderItems,
           shippingAddress1,
@@ -143,11 +161,19 @@ const createOrder = async (req, res) => {
         model: "User",
         select:
           "firstName lastName email storeName storeUrl phoneNumber country state city role",
+      })
+      .populate({
+        path: "user",
+        model: "User",
+        select:
+          "firstName lastName email phoneNumber address city state country",
       });
 
-    await sendOrderSummaryMail(order);
-    await sendCustomerOrderSummaryMail(order, user, email);
-    await sendVendorOrderSummaryMail(order, user, email);
+    await Promise.all([
+      sendOrderSummaryMail(order),
+      sendCustomerOrderSummaryMail(order, user, email),
+      sendVendorOrderSummaryMail(order, user),
+    ]);
 
     return res.status(StatusCodes.CREATED).json({
       status: "success",

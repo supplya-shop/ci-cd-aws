@@ -73,13 +73,14 @@ const signUp = async (req, res) => {
     };
     let storeUrl;
     if (role === "vendor") {
-      // if (!phoneNumber) {
-      //   return res.status(StatusCodes.BAD_REQUEST).json({
-      //     status: "error",
-      //     message: "Please provide phoneNumber for vendor registration",
-      //   });
-      // }
       if (storeName) {
+        const storeNameExists = await User.findOne({ storeName });
+        if (storeNameExists) {
+          return res.status(StatusCodes.CONFLICT).json({
+            status: "error",
+            message: "This store name is already taken",
+          });
+        }
         storeUrl = `https://supplya.store/store/${storeName}`;
       }
       userData = {

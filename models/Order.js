@@ -1,11 +1,7 @@
 const mongoose = require("mongoose");
 
 const orderSchema = mongoose.Schema({
-  orderId: {
-    type: Number,
-    required: true,
-    unique: true,
-  },
+  orderId: { type: Number, index: true, unique: true, required: true },
   orderItems: [
     {
       _id: false,
@@ -41,15 +37,13 @@ const orderSchema = mongoose.Schema({
   },
   zip: {
     type: String,
-    required: true,
   },
   country: {
     type: String,
-    required: true,
+    default: "Nigeria",
   },
   email: {
     type: String,
-    required: true,
   },
   phone: {
     type: String,
