@@ -61,6 +61,39 @@ const createVendor = async (req, res) => {
   }
 };
 
+const checkStoreNameAvailability = async (req, res) => {
+  try {
+    const { storeName } = req.query;
+
+    if (!storeName) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Store name is required",
+      });
+    }
+
+    const user = await User.findOne({ storeName });
+
+    if (user) {
+      return res.status(StatusCodes.CONFLICT).json({
+        status: "error",
+        message: "This store name is already taken",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Store name is available",
+    });
+  } catch (error) {
+    console.error("Error checking store name availability:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+};
+
 const createStore = async (req, res) => {
   try {
     const { userId, name } = req.body;
@@ -153,6 +186,7 @@ const deleteVendor = async () => {
 
 module.exports = {
   createVendor,
+  checkStoreNameAvailability,
   createStore,
   getAllVendors,
   getVendorById,
