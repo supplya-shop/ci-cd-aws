@@ -5,6 +5,7 @@ const passport = require("passport");
 const {
   signUp,
   signUpComplete,
+  checkStoreNameAvailability,
   resendOTP,
   login,
   verifyOTP,
@@ -14,7 +15,7 @@ const {
   forgotPassword,
   resetPassword,
   initiateOauth,
-  googleCallback
+  googleCallback,
 } = require("../controllers/auth");
 
 // Google Auth routes
@@ -24,6 +25,7 @@ router.get("/google/redirect", googleCallback);
 // Auth routes
 router.post("/login", login);
 router.post("/sign-up", signUp);
+router.get("/check-store-name", checkStoreNameAvailability);
 router.post("/sign-up-complete", signUpComplete);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);

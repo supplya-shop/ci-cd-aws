@@ -2038,10 +2038,10 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
 `,
   };
 
-  await transporter.sendMail(mailOptions);
+  transporter.sendMail(mailOptions);
 };
 
-const sendVendorOrderSummaryMail = async (order, user, email) => {
+const sendVendorOrderSummaryMail = async (order, user) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,

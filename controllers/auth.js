@@ -73,13 +73,14 @@ const signUp = async (req, res) => {
     };
     let storeUrl;
     if (role === "vendor") {
-      // if (!phoneNumber) {
-      //   return res.status(StatusCodes.BAD_REQUEST).json({
-      //     status: "error",
-      //     message: "Please provide phoneNumber for vendor registration",
-      //   });
-      // }
       if (storeName) {
+        const storeNameExists = await User.findOne({ storeName });
+        if (storeNameExists) {
+          return res.status(StatusCodes.CONFLICT).json({
+            status: "error",
+            message: "This store name is already taken",
+          });
+        }
         storeUrl = `https://supplya.store/store/${storeName}`;
       }
       userData = {
@@ -124,6 +125,39 @@ const signUp = async (req, res) => {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: "error",
       message: "Failed to register user. Please try again later.",
+    });
+  }
+};
+
+const checkStoreNameAvailability = async (req, res) => {
+  try {
+    const { storeName } = req.query;
+
+    if (!storeName) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: "error",
+        message: "Store name is required",
+      });
+    }
+
+    const user = await User.findOne({ storeName });
+
+    if (user) {
+      return res.status(StatusCodes.CONFLICT).json({
+        status: "error",
+        message: "This store name is already taken",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: "success",
+      message: "Store name is available",
+    });
+  } catch (error) {
+    console.error("Error checking store name availability:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
     });
   }
 };
@@ -605,6 +639,7 @@ module.exports = {
   login,
   signUp,
   signUpComplete,
+  checkStoreNameAvailability,
   verifyOTP,
   resendOTP,
   forgotPassword,

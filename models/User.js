@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   country: {
     type: String,
-    default: "",
+    default: "Nigeria",
   },
 
   state: {
@@ -68,6 +68,7 @@ const userSchema = new mongoose.Schema({
   storeName: {
     type: String,
     default: "",
+    unique: true,
   },
   storeUrl: {
     type: String,
