@@ -10,98 +10,12 @@ const userSchema = new mongoose.Schema({
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
   },
-
   lastName: {
     type: String,
     required: [true, "Please provide your lastName"],
     minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
   },
-  displayName: {
-    type: String,
-    lowercase: true,
-  },
-  country: {
-    type: String,
-    default: "Nigeria",
-  },
-
-  state: {
-    type: String,
-    default: "",
-  },
-
-  address: {
-    type: String,
-    default: "",
-  },
-
-  city: {
-    type: String,
-    default: "",
-  },
-
-  postalCode: {
-    type: String,
-    default: "",
-  },
-
-  gender: {
-    type: String,
-  },
-
-  bvn: {
-    type: String,
-  },
-
-  isSoleProprietor: {
-    type: Boolean,
-    default: false,
-  },
-
-  description: {
-    type: String,
-  },
-
-  profileImage: {
-    type: String,
-  },
-
-  storeName: {
-    type: String,
-    default: "",
-    unique: true,
-  },
-  storeImage: {
-    type: String,
-  },
-  storeUrl: {
-    type: String,
-    unique: true,
-    sparse: true,
-    default: "",
-  },
-
-  googleId: {
-    type: String,
-    unique: true,
-    sparse: true,
-  },
-
-  phoneNumber: {
-    type: String,
-    default: "",
-  },
-
-  uniqueKey: {
-    type: Number,
-    default: 9292,
-  },
-
-  password: {
-    type: String,
-  },
-
   email: {
     type: String,
     required: [true, "Please provide your email"],
@@ -112,17 +26,47 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
   },
-
-  accountNumber: {
+  password: {
+    type: String,
+  },
+  phoneNumber: {
     type: String,
     default: "",
   },
-
-  bank: {
+  uniqueKey: {
+    type: Number,
+    default: 9292,
+  },
+  displayName: {
+    type: String,
+    lowercase: true,
+  },
+  country: {
+    type: String,
+    default: "Nigeria",
+  },
+  state: {
     type: String,
     default: "",
   },
-
+  address: {
+    type: String,
+    default: "",
+  },
+  city: {
+    type: String,
+    default: "",
+  },
+  postalCode: {
+    type: String,
+    default: "",
+  },
+  gender: {
+    type: String,
+  },
+  bvn: {
+    type: String,
+  },
   role: {
     type: String,
     enum: ["customer", "admin", "vendor"],
@@ -130,44 +74,78 @@ const userSchema = new mongoose.Schema({
     required: [true, "Please select a role"],
     lowercase: true,
   },
-
   createdAt: {
     type: Date,
     default: Date.now(),
   },
-
   otp: {
     type: Number,
   },
-
   dob: {
     type: Date,
     default: "",
   },
-
+  isSoleProprietor: {
+    type: Boolean,
+    default: false,
+  },
+  description: {
+    type: String,
+  },
+  profileImage: {
+    type: String,
+    default: "",
+  },
+  storeName: {
+    type: String,
+    default: "",
+    unique: true,
+  },
+  storeImage: {
+    type: String,
+    default: "",
+  },
+  storeUrl: {
+    type: String,
+    unique: true,
+    sparse: true,
+    default: "",
+  },
+  storeAddress: {
+    type: String,
+    default: "",
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  accountNumber: {
+    type: String,
+    default: "",
+  },
+  bank: {
+    type: String,
+    default: "",
+  },
   totalSales: {
     type: Number,
     default: 0,
   },
-
   totalOrders: {
     type: Number,
     default: 0,
   },
-
   totalStock: {
     type: Number,
     default: 0,
   },
-
   resetPasswordToken: {
     type: String,
   },
-
   resetPasswordExpires: {
     type: Date,
   },
-
   blocked: {
     type: Boolean,
     default: false,

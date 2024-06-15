@@ -112,26 +112,34 @@ const updateUser = async (req, res) => {
     const updates = req.body;
 
     delete updates.password;
+    delete updates.role;
 
     const existingUser = await User.findById(id);
     if (!existingUser) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "User not found" });
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "User not found",
+      });
     }
 
     if (updates.storeName) {
-      const storeNameExists = await User.findOne({ storeName });
-      if (storeNameExists) {
-        return res.status(StatusCodes.CONFLICT).json({
-          status: "error",
-          message: "This store name is already taken",
+      updates.storeName = updates.storeName.toLowerCase();
+
+      if (updates.storeName !== existingUser.storeName) {
+        const storeNameExists = await User.findOne({
+          storeName: updates.storeName,
         });
+        if (storeNameExists) {
+          return res.status(StatusCodes.CONFLICT).json({
+            status: "error",
+            message: "This store name is already taken",
+          });
+        }
+        updates.storeUrl = `https://supplya.shop/store/${updates.storeName.replace(
+          /\s+/g,
+          "-"
+        )}`;
       }
-      updates.storeUrl = `https://supplya.shop/store/${updates.storeName.replace(
-        /\s+/g,
-        "-"
-      )}`;
     }
 
     const updatedData = {};
@@ -144,7 +152,7 @@ const updateUser = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       id,
       { $set: updatedData },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     const response = updatedUser.toObject();
@@ -157,9 +165,10 @@ const updateUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating user:", error);
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: "error",
+      message: "Internal server error",
+    });
   }
 };
 
@@ -196,6 +205,9 @@ const getUserOrders = async (req, res) => {
   const userRole = req.user.role;
 
   try {
+    const past24Hours = new Date();
+    past24Hours.setDate(past24Hours.getDate() - 1);
+
     if (userRole === "vendor") {
       const vendorProducts = await Product.find({
         createdBy: userId,
@@ -206,6 +218,17 @@ const getUserOrders = async (req, res) => {
       const orders = await Order.find({
         "orderItems.product": { $in: productIds },
       });
+
+      const receivedOrdersCount = orders.filter(
+        (order) => order.orderStatus === "received"
+      ).length;
+      const deliveredOrdersCount = orders.filter(
+        (order) => order.orderStatus === "delivered"
+      ).length;
+
+      const newOrdersCount = orders.filter(
+        (order) => new Date(order.dateOrdered) >= past24Hours
+      ).length;
 
       const totalOrders = orders.length;
 
@@ -259,6 +282,9 @@ const getUserOrders = async (req, res) => {
           dailySales,
           monthlySales,
           orders,
+          receivedOrdersCount,
+          deliveredOrdersCount,
+          newOrdersCount,
         },
       });
     } else {
@@ -283,6 +309,17 @@ const getUserOrders = async (req, res) => {
           .json({ status: false, data: orders });
       }
 
+      const pendingOrdersCount = orders.filter(
+        (order) => order.orderStatus === "received"
+      ).length;
+      const deliveredOrdersCount = orders.filter(
+        (order) => order.orderStatus === "delivered"
+      ).length;
+
+      const newOrdersCount = orders.filter(
+        (order) => new Date(order.dateOrdered) >= past24Hours
+      ).length;
+
       const totalOrders = orders.length;
 
       const totalAmountSpent = orders.reduce(
@@ -303,6 +340,9 @@ const getUserOrders = async (req, res) => {
           totalAmountSpent,
           totalProductsOrdered,
           orders,
+          pendingOrdersCount,
+          deliveredOrdersCount,
+          newOrdersCount,
         },
       });
     }
