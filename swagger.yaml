@@ -1,12 +1,20 @@
 openapi: 3.0.0
 info:
   title: Supplya API Documentation
-  description: Supplya API and Inventory Management System Restful API
+  description: Supplya API
   contact: {}
   version: "1.0"
 servers:
   - url: https://prodsupplya.azurewebsites.net/api/v1
-    variables: {}
+    description: "Test server"
+  - url: http://localhost:3000/api/v1
+    description: "Local server"
+components:
+    securitySchemes:
+      BearerAuth:
+        type: "http"
+        scheme: "bearer"
+        bearerFormat: "JWT"
 paths:
   /products:
     post:
@@ -95,7 +103,8 @@ paths:
           description: ""
           headers: {}
       deprecated: false
-
+      security:
+        - BearerAuth: []
     get:
       tags:
         - Product
@@ -431,13 +440,13 @@ paths:
           description: ""
           headers: {}
       deprecated: false
-  /auth/registerOwner:
+  /auth/sign-up:
     post:
       tags:
         - Auth
-      summary: Register Owner
-      description: Register the Super Admin other users will be registered by the super admin
-      operationId: RegisterOwner
+      summary: Sign up
+      description: Sign up as a customer or vendor
+      operationId: SignUp
       parameters: []
       requestBody:
         description: ""
@@ -445,10 +454,10 @@ paths:
           application/json:
             schema:
               allOf:
-                - $ref: "#/components/schemas/RegisterOwnerRequest"
+                - $ref: "#/components/schemas/SignUpRequest"
                 - example:
                     name: Osama Okunbo
-                    role: owner
+                    role: vendor
                     password: "123456789"
                     uniqueKey: biz7634@web32
                     email: info.drosama@gmail.com
@@ -527,7 +536,7 @@ paths:
           headers: {}
       deprecated: false
       security: []
-  /showUsers:
+  /users:
     get:
       tags:
         - User
@@ -540,6 +549,21 @@ paths:
           description: ""
           headers: {}
       deprecated: false
+  /users/orders:
+    get:
+      tags:
+        - User
+      summary: Show Users Orders
+      description: Show all users orders
+      operationId: ShowUsersOrders
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          headers: {}
+      deprecated: false
+      security:
+        - BearerAuth: []
   /changePassword/{id}:
     parameters:
       - in: path
@@ -572,6 +596,8 @@ paths:
           description: ""
           headers: {}
       deprecated: false
+            security:
+        - BearerAuth: []
   /deleteUser/{id}:
     parameters:
       - in: path
@@ -592,6 +618,8 @@ paths:
           description: ""
           headers: {}
       deprecated: false
+            security:
+        - BearerAuth: []
 components:
   schemas:
     RegisterOwnerRequest:
