@@ -10,11 +10,11 @@ servers:
   - url: http://localhost:3000/api/v1
     description: "Local server"
 components:
-    securitySchemes:
-      BearerAuth:
-        type: "http"
-        scheme: "bearer"
-        bearerFormat: "JWT"
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 paths:
   /products:
     post:
@@ -597,7 +597,7 @@ paths:
           headers: {}
       deprecated: false
             security:
-        - BearerAuth: []
+              - BearerAuth: []
   /deleteUser/{id}:
     parameters:
       - in: path
@@ -619,7 +619,7 @@ paths:
           headers: {}
       deprecated: false
             security:
-        - BearerAuth: []
+              - BearerAuth: []
 components:
   schemas:
     RegisterOwnerRequest:
