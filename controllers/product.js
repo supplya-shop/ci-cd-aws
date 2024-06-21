@@ -1,6 +1,7 @@
 const { StatusCodes } = require("http-status-codes");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const Category = require("../models/Category");
 // const userController = require("../controllers/user");
 // const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
@@ -11,14 +12,14 @@ const createProduct = async (req, res, next) => {
 
   if (!user) {
     return res.status(StatusCodes.NOT_FOUND).json({
-      status: "error",
+      status: false,
       message: "User not found",
     });
   }
 
   if (user.blocked) {
     return res.status(StatusCodes.FORBIDDEN).json({
-      status: "error",
+      status: false,
       message:
         "Access denied. Account under review. Please contact support for further assistance.",
     });
@@ -28,7 +29,7 @@ const createProduct = async (req, res, next) => {
 
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      status: "error",
+      status: false,
       message: "Please enter all required fields",
     });
   }
@@ -40,14 +41,14 @@ const createProduct = async (req, res, next) => {
   try {
     await newProduct.save();
     return res.status(StatusCodes.CREATED).json({
-      status: "success",
+      status: true,
       message: "Product created successfully",
       data: newProduct,
     });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to create product: " + error.message,
     });
   }
@@ -59,14 +60,14 @@ const submitProduct = async (req, res, next) => {
 
   if (!user) {
     return res.status(StatusCodes.NOT_FOUND).json({
-      status: "error",
+      status: false,
       message: "User not found",
     });
   }
 
   if (user.blocked) {
     return res.status(StatusCodes.FORBIDDEN).json({
-      status: "error",
+      status: false,
       message:
         "Access denied. Account under review. Please contact support for further assistance.",
     });
@@ -75,7 +76,7 @@ const submitProduct = async (req, res, next) => {
   const product = req.body;
   if (!product) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      error: "error",
+      error: false,
       message: "Please fill all required fields",
     });
   }
@@ -91,7 +92,7 @@ const submitProduct = async (req, res, next) => {
     if (!vendor) {
       return res.status(StatusCodes.NOT_FOUND).json({
         message: "Vendor not found",
-        status: "error",
+        status: false,
       });
     }
     await newProduct.save();
@@ -104,13 +105,13 @@ const submitProduct = async (req, res, next) => {
     );
     return res.status(StatusCodes.CREATED).json({
       message: "Product successfully submitted for approval",
-      status: "success",
+      status: true,
     });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: "Failed to create Product",
-      status: "error",
+      status: false,
     });
   }
 };
@@ -149,7 +150,7 @@ const getAllProducts = async (req, res, next) => {
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Products fetched successfully",
       data: products,
       currentPage: page,
@@ -159,7 +160,7 @@ const getAllProducts = async (req, res, next) => {
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch products",
     });
   }
@@ -185,7 +186,7 @@ const getRelatedProducts = async (req, res) => {
       .select("name unit_price discounted_price description image status");
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Products fetched successfully",
       data: relatedProducts,
     });
@@ -193,7 +194,7 @@ const getRelatedProducts = async (req, res) => {
     console.error("Error fetching related products:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ message: "Internal Server Error", status: "error" });
+      .json({ message: "Internal Server Error", status: false });
   }
 };
 
@@ -225,7 +226,7 @@ const getProductsByVendor = async (req, res) => {
       });
     }
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Products fetched successfully",
       data: products,
       currentPage: page,
@@ -236,7 +237,45 @@ const getProductsByVendor = async (req, res) => {
     console.error(error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
+  }
+};
+
+const getProductsByCategory = async (req, res) => {
+  const categoryName = req.params.category;
+
+  try {
+    // Find the category by name
+    const category = await Category.findOne({ name: categoryName });
+
+    if (!category) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Category not found",
+      });
+    }
+
+    // Find products by category ID
+    const products = await Product.find({ category: category._id });
+
+    if (!products.length) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No products found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Products fetched successfully",
+      products, // Return the fetched products
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
@@ -272,7 +311,7 @@ const getProductsByBrand = async (req, res) => {
       });
     }
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Products fetched successfully",
       data: products,
       currentPage: page,
@@ -282,7 +321,7 @@ const getProductsByBrand = async (req, res) => {
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: error.message });
+      .json({ status: false, message: error.message });
   }
 };
 
@@ -299,7 +338,7 @@ const getDiscountedProducts = async (req, res) => {
       });
     }
     return res.json({
-      status: "success",
+      status: true,
       message: "Products fetched successfully",
       data: discountedProducts,
     });
@@ -307,7 +346,7 @@ const getDiscountedProducts = async (req, res) => {
     console.log(error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: error.message });
+      .json({ status: false, message: error.message });
   }
 };
 
@@ -322,14 +361,14 @@ const getFlashsaleProducts = async (req, res) => {
       });
     }
     return res.json({
-      status: "success",
+      status: true,
       message: "Products fetched successfully",
       data: flashsaleProducts,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: error.message });
+      .json({ status: false, message: error.message });
   }
 };
 
@@ -345,13 +384,11 @@ const getNewlyArrivedBrands = async (req, res, next) => {
     });
     const products = Array.from(brandMap.values());
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ status: "success", data: products });
+    return res.status(StatusCodes.OK).json({ status: true, data: products });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: error.message,
     });
   }
@@ -372,12 +409,12 @@ const getProductById = async (req, res, next) => {
     .then((product) => {
       if (!product) {
         return res.status(StatusCodes.NOT_FOUND).json({
-          status: "error",
+          status: false,
           message: "Product not found",
         });
       }
       return res.status(StatusCodes.OK).json({
-        status: "success",
+        status: true,
         message: "Product fetched successfully",
         data: product,
       });
@@ -385,7 +422,7 @@ const getProductById = async (req, res, next) => {
     .catch((error) => {
       console.error(error.message);
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        status: "error",
+        status: false,
         message: "Failed to fetch product",
       });
     });
@@ -401,17 +438,17 @@ const updateProduct = async (req, res, next) => {
     if (!result) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Product not found" });
+        .json({ status: false, message: "Product not found" });
     }
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Product updated successfully",
       data: result,
     });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to update product",
     });
   }
@@ -439,12 +476,12 @@ const uploadProductImage = async (req, res) => {
 
     return res
       .status(StatusCodes.OK)
-      .json({ status: "success", data: image.secure_url });
+      .json({ status: true, data: image.secure_url });
   } catch (error) {
     console.error("Error uploading image:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", error: "Failed to upload image" });
+      .json({ status: false, error: "Failed to upload image" });
   }
 };
 
@@ -455,7 +492,7 @@ const approveProduct = async (req, res, next) => {
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).json({
         message: "Product not found",
-        status: "error",
+        status: false,
       });
     }
 
@@ -464,14 +501,14 @@ const approveProduct = async (req, res, next) => {
 
     return res.status(StatusCodes.OK).json({
       message: "Product successfully approved",
-      status: "success",
+      status: true,
       data: product,
     });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: "Failed to approve product",
-      status: "error",
+      status: false,
     });
   }
 };
@@ -482,18 +519,18 @@ const deleteProduct = async (req, res, next) => {
     const product = await Product.findByIdAndDelete(productId);
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: `Product with id ${productId} not found.`,
       });
     }
     return res
       .status(StatusCodes.OK)
-      .json({ status: "success", message: "Product deleted successfully" });
+      .json({ status: true, message: "Product deleted successfully" });
   } catch (error) {
     console.log(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Failed to delete product" });
+      .json({ status: false, message: "Failed to delete product" });
   }
 };
 
@@ -504,7 +541,7 @@ const bulkdeleteProducts = async (req, res) => {
 
     if (ids.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No products found to delete.",
       });
     }
@@ -512,14 +549,14 @@ const bulkdeleteProducts = async (req, res) => {
     const result = await Product.deleteMany({ _id: { $in: ids } });
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: `${result.deletedCount} product(s) deleted successfully.`,
     });
   } catch (error) {
     console.error("Error in bulk delete operation:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 
@@ -529,7 +566,7 @@ const searchProducts = async (req, res) => {
 
     if (!keyword || keyword.trim() === "") {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please provide a valid search keyword",
       });
     }
@@ -550,13 +587,13 @@ const searchProducts = async (req, res) => {
 
     if (products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No products found matching the search keyword",
       });
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Products found successfully",
       data: products,
     });
@@ -564,7 +601,7 @@ const searchProducts = async (req, res) => {
     console.error("Failed to search products:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Failed to search products" });
+      .json({ status: false, message: "Failed to search products" });
   }
 };
 
@@ -575,6 +612,7 @@ module.exports = {
   getAllProducts,
   getProductsByVendor,
   getProductsByBrand,
+  getProductsByCategory,
   getNewlyArrivedBrands,
   getProductById,
   getRelatedProducts,

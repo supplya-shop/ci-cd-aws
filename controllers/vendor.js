@@ -34,7 +34,7 @@ const createVendor = async (req, res) => {
     const storeNameExists = await User.findOne({ storeName });
     if (storeNameExists) {
       return res.status(StatusCodes.CONFLICT).json({
-        status: "error",
+        status: false,
         message: "This store name is already taken",
       });
     }
@@ -56,7 +56,7 @@ const createVendor = async (req, res) => {
     });
 
     return res.status(201).json({
-      status: "success",
+      status: true,
       message: "Vendor created successfully",
       data: vendor,
     });
@@ -64,7 +64,7 @@ const createVendor = async (req, res) => {
     console.error(error);
     return res
       .status(500)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 
@@ -74,7 +74,7 @@ const checkStoreNameAvailability = async (req, res) => {
 
     if (!storeName) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Store name is required",
       });
     }
@@ -89,13 +89,13 @@ const checkStoreNameAvailability = async (req, res) => {
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Store name is available",
     });
   } catch (error) {
     console.error("Error checking store name availability:", error);
     return res.status(500).json({
-      status: "error",
+      status: false,
       message: "Internal server error",
     });
   }
@@ -106,13 +106,11 @@ const createStore = async (req, res) => {
     const { userId, name } = req.body;
     const user = await User.findById(userId);
     if (!user) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "User not found" });
+      return res.status(404).json({ status: false, message: "User not found" });
     }
     if (user.role !== "vendor") {
       return res.status(StatusCodes.FORBIDDEN).json({
-        status: "error",
+        status: false,
         message: "User is not authorized to create a store",
       });
     }
@@ -124,7 +122,7 @@ const createStore = async (req, res) => {
     });
     const store = await newStore.save();
     return res.status(StatusCodes.CREATED).json({
-      status: "success",
+      status: true,
       message: "Store created successfully",
       data: store,
     });
@@ -132,7 +130,7 @@ const createStore = async (req, res) => {
     console.log(error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 
@@ -140,14 +138,14 @@ const getAllVendors = async (req, res) => {
   try {
     const vendors = await User.find({ role: "vendor" });
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Vendors fetched successfully",
       data: vendors,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 
@@ -157,10 +155,10 @@ const getVendorById = async (req, res) => {
     if (!vendor || vendor.role !== "vendor") {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Vendor not found" });
+        .json({ status: false, message: "Vendor not found" });
     }
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Vendor fetched successfully",
       data: vendor,
     });
@@ -168,7 +166,7 @@ const getVendorById = async (req, res) => {
     console.error(error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 
@@ -178,16 +176,16 @@ const deleteVendor = async () => {
     if (!vendor || vendor.role !== "vendor") {
       return res
         .status(404)
-        .json({ status: "error", message: "Vendor not found" });
+        .json({ status: false, message: "Vendor not found" });
     }
     return res
       .status(200)
-      .json({ status: "success", message: "Vendor deleted successfully" });
+      .json({ status: true, message: "Vendor deleted successfully" });
   } catch (error) {
     console.error(error);
     return res
       .status(500)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 

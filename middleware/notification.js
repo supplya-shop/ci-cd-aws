@@ -10,7 +10,7 @@ const notificationService = {
       console.error("Error creating notification:", error);
       return res
         .status(500)
-        .json({ status: "error", message: "Internal Server Error" });
+        .json({ status: false, message: "Internal Server Error" });
     }
   },
 

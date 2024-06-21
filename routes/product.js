@@ -10,6 +10,7 @@ const {
   getProductById,
   getProductsByVendor,
   getProductsByBrand,
+  getProductsByCategory,
   getNewlyArrivedBrands,
   getDiscountedProducts,
   getFlashsaleProducts,
@@ -62,6 +63,7 @@ router.patch(
 );
 
 router.get("/deals", getDiscountedProducts);
+router.get("/category/:category", getProductsByCategory);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/", getAllProducts);
 router.get("/vendor", authenticateUser, getProductsByVendor);

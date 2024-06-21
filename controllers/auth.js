@@ -35,27 +35,27 @@ const signUp = async (req, res) => {
     if (!email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ status: "error", message: "Please enter your email" });
+        .json({ status: false, message: "Please enter your email" });
     }
     if (!password) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ status: "error", message: "Please enter your password" });
+        .json({ status: false, message: "Please enter your password" });
     }
     if (!firstName) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ status: "error", message: "Please enter your firstName" });
+        .json({ status: false, message: "Please enter your firstName" });
     }
     if (!lastName) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ status: "error", message: "Please enter your lastName" });
+        .json({ status: false, message: "Please enter your lastName" });
     }
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message:
           "This email already exists within our records. Please use a unique email or reset your password if you don't remember it.",
       });
@@ -77,7 +77,7 @@ const signUp = async (req, res) => {
         const storeNameExists = await User.findOne({ storeName });
         if (storeNameExists) {
           return res.status(StatusCodes.CONFLICT).json({
-            status: "error",
+            status: false,
             message: "This store name is already taken",
           });
         }
@@ -112,18 +112,18 @@ const signUp = async (req, res) => {
 
     await Promise.all([sendOtp, createOtpLog]);
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "OTP sent successfully. Please check your email.",
     });
   } catch (error) {
     if (error.name === "ValidatorError") {
       return res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ status: "error", message: error.message });
+        .json({ status: false, message: error.message });
     }
     console.error(`error: ${error}`);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to register user. Please try again later.",
     });
   }
@@ -134,27 +134,27 @@ const signUpComplete = async (req, res, next) => {
     const { email, otp } = req.body;
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please enter your email.",
       });
     }
     if (!otp) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please enter OTP.",
       });
     }
     const user = await OtpLogs.findOne({ email, otp });
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "Wrong OTP. Please verify and retry.",
       });
     }
     const userData = userRegistrationCache.get(email);
     if (!userData) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "An error occurred.",
       });
     }
@@ -181,7 +181,7 @@ const signUpComplete = async (req, res, next) => {
     const token = newUser.createJWT();
 
     return res.status(StatusCodes.CREATED).json({
-      status: "success",
+      status: true,
       message: "Congratulations! You have successfully registered on Supplya.",
       data: {
         _id: newUser._id,
@@ -205,7 +205,7 @@ const signUpComplete = async (req, res, next) => {
   } catch (error) {
     console.error(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Internal server error. Please try again later.",
     });
   }
@@ -217,7 +217,7 @@ const resendOTP = async (req, res) => {
 
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please provide your email.",
       });
     }
@@ -229,7 +229,7 @@ const resendOTP = async (req, res) => {
 
       if (!existingUser) {
         return res.status(StatusCodes.NOT_FOUND).json({
-          status: "error",
+          status: false,
           message: "User not found. Please register first.",
         });
       }
@@ -253,13 +253,13 @@ const resendOTP = async (req, res) => {
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "New OTP sent successfully. Please check your email.",
     });
   } catch (error) {
     console.error("Error resending OTP:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to re-send OTP. Please try again later.",
     });
   }
@@ -299,7 +299,7 @@ const login = async (req, res, next) => {
     // logger.info(user.role + " " + user.email + " just logged in.");
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Login successful",
       data: {
         _id: user._id,
@@ -331,12 +331,12 @@ const login = async (req, res, next) => {
     if (error.status === 404) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ message: error.message, status: "error" });
+        .json({ message: error.message, status: false });
     }
     // logger.error(error.message);
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ message: error.message, status: "error" });
+      .json({ message: error.message, status: false });
   }
 };
 
@@ -347,7 +347,7 @@ const forgotPassword = async (req, res) => {
     if (!email) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Please provide your email.", status: "error" });
+        .json({ message: "Please provide your email.", status: false });
     }
 
     const user = await User.findOne({ email });
@@ -355,7 +355,7 @@ const forgotPassword = async (req, res) => {
     if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ message: error.message, status: "error" });
+        .json({ message: error.message, status: false });
     }
 
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -370,13 +370,13 @@ const forgotPassword = async (req, res) => {
     await forgotPasswordMail(email, resetCode);
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Password reset code sent to your email.",
     });
   } catch (error) {
     console.error("Error sending password reset code:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to send password reset code. " + error.message,
     });
   }
@@ -388,13 +388,13 @@ const verifyOTP = async (req, res) => {
 
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Email is required.",
       });
     }
     if (!otp) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "OTP is required.",
       });
     }
@@ -423,7 +423,7 @@ const verifyOTP = async (req, res) => {
         `Verification failed for email: ${email}, Current Time: ${currentTime}`
       );
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        status: "error",
+        status: false,
         message: "Invalid OTP or OTP expired.",
       });
     }
@@ -431,13 +431,13 @@ const verifyOTP = async (req, res) => {
     req.session.resetUserId = user._id;
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "OTP verified successfully.",
     });
   } catch (error) {
     console.error("Error verifying OTP:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to verify OTP. " + error.message,
     });
   }
@@ -450,21 +450,21 @@ const resetPassword = async (req, res) => {
     if (!newPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "New password is required",
-        status: "error",
+        status: false,
       });
     }
 
     if (!confirmPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Confirm the password entered above.",
-        status: "error",
+        status: false,
       });
     }
 
     if (newPassword !== confirmPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Passwords do not match",
-        status: "error",
+        status: false,
       });
     }
 
@@ -473,7 +473,7 @@ const resetPassword = async (req, res) => {
     if (!userId) {
       return res.status(StatusCodes.NOT_FOUND).json({
         message: "User not found",
-        status: "error",
+        status: false,
       });
     }
 
@@ -482,7 +482,7 @@ const resetPassword = async (req, res) => {
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         message: "User not found",
-        status: "error",
+        status: false,
       });
     }
 
@@ -496,13 +496,13 @@ const resetPassword = async (req, res) => {
     req.session.resetUserId = null;
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Password reset successfully",
     });
   } catch (error) {
     console.error("Error resetting password:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: error.message,
     });
   }
@@ -514,39 +514,39 @@ const changePassword = async (req, res) => {
 
     if (!currentPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please provide current password",
       });
     }
     if (!newPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please provide new password",
       });
     }
     if (!confirmPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Please confirm new password",
       });
     }
     if (newPassword !== confirmPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "New password and confirm new password do not match",
       });
     }
     const user = await User.findById(req.user.userid);
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "User not found",
       });
     }
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: "Current password is incorrect",
       });
     }
@@ -554,13 +554,13 @@ const changePassword = async (req, res) => {
     await user.save();
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Password changed successfully",
     });
   } catch (error) {
     console.error("Error changing password:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Internal server error",
     });
   }
@@ -646,7 +646,7 @@ const googleCallback = async (req, res) => {
       : "Login successful";
 
     return res.status(200).json({
-      status: "success",
+      status: true,
       message: responseMessage,
       token: jwtToken,
       user: {
@@ -702,7 +702,7 @@ const mobileCallback = async (req, res) => {
       : "Login successful";
 
     return res.status(200).json({
-      status: "success",
+      status: true,
       message: responseMessage,
       token: jwtToken,
       user: {
