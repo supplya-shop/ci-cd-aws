@@ -23,11 +23,11 @@ const authenticateUser = async (req, res, next) => {
     if (error instanceof jwt.JsonWebTokenError) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
-        .send({ status: "error", message: "Unauthorized: Please log in" });
+        .send({ status: false, message: "Unauthorized: Please log in" });
     } else {
       return res
         .status(StatusCodes.FORBIDDEN)
-        .send({ status: "error", message: error.message });
+        .send({ status: false, message: error.message });
     }
   }
 };

@@ -15,7 +15,7 @@ const createUser = async (req, res) => {
   const { error, value } = validateUser(req.body);
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      error: "error",
+      error: false,
       message:
         "Validation error. Please confirm that all required fields are entered and try again.",
     });
@@ -25,13 +25,13 @@ const createUser = async (req, res) => {
     await newUser.save();
     return res
       .status(StatusCodes.CREATED)
-      .json({ message: "User created successfully.", status: "success" });
+      .json({ message: "User created successfully.", status: true });
     // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
     // logger.error(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ message: "Failed to create user.", status: "error" });
+      .json({ message: "Failed to create user.", status: false });
   }
 };
 
@@ -43,7 +43,7 @@ const getAllUsers = async (req, res) => {
     ]);
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Users fetched successfully",
       data: users,
       totalCount: totalCount,
@@ -51,7 +51,7 @@ const getAllUsers = async (req, res) => {
   } catch (error) {
     // logger.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch users",
     });
   }
@@ -64,7 +64,7 @@ const getAdminUsers = async (req, res, next) => {
     console.log("Admin users:", adminUsers);
 
     return res.status(200).json({
-      status: "success",
+      status: true,
       message: "Admin users fetched successfully",
       data: adminIds,
       adminUsers: adminUsers,
@@ -73,7 +73,7 @@ const getAdminUsers = async (req, res, next) => {
     console.error("Error fetching admin users:", error);
     return res
       .status(500)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 
@@ -83,7 +83,7 @@ const getUserById = async (req, res) => {
     .then((User) => {
       if (!User) {
         return res.status(StatusCodes.NOT_FOUND).json({
-          status: "error",
+          status: false,
           message: "user not found",
         });
       }
@@ -92,7 +92,7 @@ const getUserById = async (req, res) => {
       User.lastName =
         User.lastName.charAt(0).toUpperCase() + User.lastName.slice(1);
       return res.status(StatusCodes.OK).json({
-        status: "success",
+        status: true,
         message: "User fetched successfully",
         data: User,
       });
@@ -100,7 +100,7 @@ const getUserById = async (req, res) => {
     .catch((error) => {
       // logger.error(error.message);
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        status: "error",
+        status: false,
         message: "Failed to fetch user",
       });
     });
@@ -117,7 +117,7 @@ const updateUser = async (req, res) => {
     const existingUser = await User.findById(id);
     if (!existingUser) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "User not found",
       });
     }
@@ -131,7 +131,7 @@ const updateUser = async (req, res) => {
         });
         if (storeNameExists) {
           return res.status(StatusCodes.CONFLICT).json({
-            status: "error",
+            status: false,
             message: "This store name is already taken",
           });
         }
@@ -159,14 +159,14 @@ const updateUser = async (req, res) => {
     delete response.password;
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "User updated successfully",
       data: response,
     });
   } catch (error) {
     console.error("Error updating user:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Internal server error",
     });
   }
@@ -179,16 +179,16 @@ const deleteUser = async (req, res, next) => {
     if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "User not found" });
+        .json({ status: false, message: "User not found" });
     }
     const result = await User.findByIdAndDelete(userId);
     if (!result) {
       return res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ status: "error", message: "Failed to delete user" });
+        .json({ status: false, message: "Failed to delete user" });
     }
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "User deleted successfully",
       data: user,
     });
@@ -196,7 +196,7 @@ const deleteUser = async (req, res, next) => {
     // logger.error(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal Server Error" });
+      .json({ status: false, message: "Internal Server Error" });
   }
 };
 
@@ -274,7 +274,7 @@ const getUserOrders = async (req, res) => {
       ]);
 
       return res.status(StatusCodes.OK).json({
-        status: "success",
+        status: true,
         data: {
           totalOrders,
           totalStock,
@@ -334,7 +334,7 @@ const getUserOrders = async (req, res) => {
       );
 
       return res.status(StatusCodes.OK).json({
-        status: "success",
+        status: true,
         data: {
           totalOrders,
           totalAmountSpent,
@@ -348,7 +348,7 @@ const getUserOrders = async (req, res) => {
     }
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch orders: " + error.message,
     });
   }
@@ -359,7 +359,7 @@ const bulkdeleteUsers = async (req, res) => {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "Invalid input. Please provide an array of user IDs.",
       });
     }
@@ -367,19 +367,19 @@ const bulkdeleteUsers = async (req, res) => {
 
     if (result.deletedCount === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No users found with the provided IDs.",
       });
     }
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: `${result.deletedCount} user(s) deleted successfully.`,
     });
   } catch (error) {
     console.error("Error in bulk delete operation:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: "Internal server error" });
+      .json({ status: false, message: "Internal server error" });
   }
 };
 

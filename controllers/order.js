@@ -74,7 +74,7 @@ const createOrder = async (req, res) => {
       if (!product) {
         await session.abortTransaction();
         return res.status(StatusCodes.NOT_FOUND).json({
-          status: "error",
+          status: false,
           message: `Product not found: ${item.product}`,
         });
       }
@@ -101,7 +101,7 @@ const createOrder = async (req, res) => {
     if (insufficientStockProducts.length > 0) {
       await session.abortTransaction();
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: `Insufficient stock for products: ${insufficientStockProducts.join(
           ", "
         )}`,
@@ -111,7 +111,7 @@ const createOrder = async (req, res) => {
     if (moqProducts.length > 0) {
       await session.abortTransaction();
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: `Your order quantity does not meet the minimum order quantity (MOQ) for products: ${moqProducts.join(
           ", "
         )}`,
@@ -176,7 +176,7 @@ const createOrder = async (req, res) => {
     ]);
 
     return res.status(StatusCodes.CREATED).json({
-      status: "success",
+      status: true,
       message: "Order created successfully",
       data: order,
     });
@@ -187,7 +187,7 @@ const createOrder = async (req, res) => {
     return res
       .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
       .json({
-        status: "error",
+        status: false,
         message: "Failed to create order. " + error.message,
       });
   } finally {
@@ -207,14 +207,14 @@ const getOrders = async (req, res) => {
     const totalOrders = await Order.countDocuments();
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Orders fetched successfully",
       data: orders,
       totalOrders,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch orders: " + error.message,
     });
   }
@@ -240,17 +240,17 @@ const getOrderById = async (req, res) => {
     if (!order) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Order not found" });
+        .json({ status: false, message: "Order not found" });
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Order fetched successfully",
       data: order,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch order: " + error.message,
     });
   }
@@ -271,17 +271,17 @@ const getOrderByOrderId = async (req, res) => {
     if (!order) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Order not found" });
+        .json({ status: false, message: "Order not found" });
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Order fetched successfully",
       data: order,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch order: " + error.message,
     });
   }
@@ -302,7 +302,7 @@ const getOrdersByStatus = async (req, res, next) => {
 
     if (!orderStatus || !validStatuses.includes(orderStatus.toLowerCase())) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        status: "error",
+        status: false,
         message: `Invalid status: ${orderStatus}. Please provide one of: ${validStatuses.join(
           ", "
         )}`,
@@ -351,14 +351,14 @@ const getOrdersByStatus = async (req, res, next) => {
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Orders fetched successfully",
       data: orders,
       totalOrders: totalOrders,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: `Failed to fetch orders with status ${orderStatus}: ${error.message}`,
     });
   }
@@ -370,20 +370,20 @@ const getLatestOrder = async (req, res) => {
 
     if (!order) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        status: "error",
+        status: false,
         message: "No orders found",
       });
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Latest order fetched successfully",
       data: order,
     });
   } catch (error) {
     console.error("Error fetching latest order: ", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: "error",
+      status: false,
       message: "Failed to fetch latest order",
     });
   }
@@ -403,18 +403,18 @@ const updateOrder = async (req, res) => {
     if (!updatedOrder) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ status: "error", message: "Order not found" });
+        .json({ status: false, message: "Order not found" });
     }
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Order updated successfully",
       data: updatedOrder,
     });
   } catch (error) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: "error", message: error.message });
+      .json({ status: false, message: error.message });
   }
 };
 
@@ -454,7 +454,7 @@ const cancelOrder = async (req, res) => {
     await session.commitTransaction();
 
     return res.status(StatusCodes.OK).json({
-      status: "success",
+      status: true,
       message: "Order cancelled successfully",
       data: order,
     });
@@ -466,7 +466,7 @@ const cancelOrder = async (req, res) => {
     return res
       .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
       .json({
-        status: "error",
+        status: false,
         message: "Failed to cancel order. " + error.message,
       });
   } finally {

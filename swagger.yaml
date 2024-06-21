@@ -535,7 +535,6 @@ paths:
           description: ""
           headers: {}
       deprecated: false
-      security: []
   /users:
     get:
       tags:
@@ -565,6 +564,7 @@ paths:
       security:
         - BearerAuth: []
   /changePassword/{id}:
+  
     parameters:
       - in: path
         name: id
