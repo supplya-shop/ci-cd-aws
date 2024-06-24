@@ -18,6 +18,7 @@ const {
   uploadProductImage,
   getRelatedProducts,
   deleteProduct,
+  deleteProductsWithoutVendor,
   bulkdeleteProducts,
   searchProducts,
 } = require("../controllers/product");
@@ -61,7 +62,11 @@ router.patch(
   rolesAllowed("admin"),
   approveProduct
 );
-
+router.delete(
+  "/delete-products-without-vendor",
+  authenticateUser,
+  deleteProductsWithoutVendor
+);
 router.get("/deals", getDiscountedProducts);
 router.get("/category/:category", getProductsByCategory);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
@@ -91,10 +96,11 @@ router.delete(
   rolesAllowed("vendor, admin"),
   deleteProduct
 );
+
 router.delete(
   "/bulk-delete",
   authenticateUser,
   rolesAllowed("admin"),
-  deleteProduct
+  bulkdeleteProducts
 ),
   (module.exports = router);

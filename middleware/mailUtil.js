@@ -1648,7 +1648,7 @@ const sendOrderSummaryMail = async (order) => {
               <img
                 src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
                 alt="Supplya-Logo-on-GBG"
-                style="text-align: left; width: 90px; margin-left: 70px"
+                style="text-align: left; width: 90px; margin-left: 60px"
               />
             </div>
             <table
@@ -1699,7 +1699,9 @@ const sendOrderSummaryMail = async (order) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.city}, ${order.state}, ${
+      order.country
+    }
                               </p>
                               <p>
                                 <strong>Customer Phone Number:</strong> ${
@@ -1889,7 +1891,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
               <img
                 src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
                 alt="Supplya-Logo-on-GBG"
-                style="text-align: left; width: 90px; margin-left: 70px"
+                style="text-align: left; width: 90px; margin-left: 60px"
               />
             </div>
             <table
@@ -1939,7 +1941,9 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.city}, ${order.state}, ${
+      order.country
+    }
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -2127,7 +2131,7 @@ const sendVendorOrderSummaryMail = async (order, user) => {
               <img
                 src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
                 alt="Supplya-Logo-on-GBG"
-                style="text-align: left; width: 90px; margin-left: 70px"
+                style="text-align: left; width: 90px; margin-left: 60px"
               />
             </div>
             <table
@@ -2181,7 +2185,9 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.city}, ${order.state}, ${
+      order.country
+    }
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}

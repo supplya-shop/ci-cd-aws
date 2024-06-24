@@ -5,10 +5,10 @@ info:
   contact: {}
   version: "1.0"
 servers:
-  - url: https://prodsupplya.azurewebsites.net/api/v1
-    description: "Test server"
   - url: http://localhost:3000/api/v1
     description: "Local server"
+  - url: https://prodsupplya.azurewebsites.net/api/v1
+    description: "Test server"
 components:
   securitySchemes:
     BearerAuth:
@@ -26,7 +26,7 @@ paths:
       parameters: []
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             encoding: {}
             schema:
               required:
@@ -35,8 +35,11 @@ paths:
                 - unit_price
                 - discounted_price
                 - quantity
+                - image
                 - category
                 - sku
+                - moq
+                - status
               type: object
               properties:
                 product:
@@ -62,6 +65,12 @@ paths:
                 sku:
                   type: string
                   example: 19802UE
+                moq:
+                  type: int32
+                  example: 5
+                status:
+                  type: string
+                  example: inStock
                 category:
                   type: string
                   example: Food
@@ -74,16 +83,82 @@ paths:
     get:
       tags:
         - Product
-      summary: Show all Products
-      description: Show all products for all
-      operationId: ShowallProduct
+      summary: Get All Products
+      description: Get all products
+      operationId: GetAllProducts
       parameters: []
       responses:
         "200":
           description: ""
           headers: {}
       deprecated: false
-  /product/{id}:
+  /products/submit:
+    post:
+      tags:
+        - Product
+      summary: Submit Product
+      description: Submit new product for the admin to approve
+      operationId: SubmitProduct
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            encoding: {}
+            schema:
+              required:
+                - name
+                - description
+                - unit_price
+                - discounted_price
+                - quantity
+                - image
+                - category
+                - sku
+                - moq
+                - status
+              type: object
+              properties:
+                product:
+                  type: string
+                unit_price:
+                  type: integer
+                  format: int32
+                  example: 32000
+                discounted_price:
+                  type: integer
+                  format: int32
+                  example: 30000
+                name:
+                  type: string
+                  example: Rice
+                description:
+                  type: string
+                  example: Bag of rice
+                quantity:
+                  type: integer
+                  format: int32
+                  example: 100
+                sku:
+                  type: string
+                  example: 19802UE
+                moq:
+                  type: int32
+                  example: 5
+                status:
+                  type: string
+                  example: inStock
+                category:
+                  type: string
+                  example: Food
+        required: false
+      responses:
+        "200":
+          description: ""
+          headers: {}
+      deprecated: false
+      security:
+        - BearerAuth: []
+  /products/{id}:
     parameters:
       - in: path
         name: id
@@ -95,7 +170,7 @@ paths:
       tags:
         - Product
       summary: Delete Product
-      description: Delete Product for the owner
+      description: Delete a product
       operationId: DeleteProduct
       parameters: []
       responses:
@@ -108,25 +183,26 @@ paths:
     get:
       tags:
         - Product
-      summary: Show Single Product
-      description: Show single product
-      operationId: ShowSingleProduct
+      summary: Get Single Product
+      description: Get single product
+      operationId: GetSingleProduct
       parameters: []
       responses:
         "200":
           description: ""
           headers: {}
       deprecated: false
+      
     patch:
       tags:
         - Product
       summary: Edit Product
-      description: Make edits to product for owner
+      description: Edit a product
       operationId: EditProduct
       parameters: []
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             encoding: {}
             schema:
               required:
@@ -143,13 +219,42 @@ paths:
           description: ""
           headers: {}
       deprecated: false
+
+  /products/flashsale:
+    get:
+      tags:
+        - Product
+      summary: Get Flashsale Products
+      description: Get products listed on flashsale
+      operationId: GetFlashsaleProducts
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          headers: {}
+      deprecated: false
+    
+  /products/deals:
+    get:
+      tags:
+        - Product
+      summary: Get Discounted Products
+      description: Get products with discount
+      operationId: GetDiscountedProducts
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          headers: {}
+      deprecated: false
+  
   /inventory:
     get:
       tags:
         - Inventory
-      summary: Show all inventory list
-      description: Show all inventory lists for all except cashier
-      operationId: Showallinventorylist
+      summary: Get all inventory list
+      description: Get all inventory lists
+      operationId: Getallinventorylist
       parameters: []
       responses:
         "200":
@@ -263,9 +368,9 @@ paths:
     get:
       tags:
         - Inventory
-      summary: Show Single Inventory List
-      description: Show single inventory lists by Id for all except cashier
-      operationId: ShowSingleInventoryList
+      summary: Get Single Inventory List
+      description: Get single inventory lists by Id for all except cashier
+      operationId: GetSingleInventoryList
       parameters: []
       responses:
         "200":
@@ -307,9 +412,9 @@ paths:
     get:
       tags:
         - Inventory
-      summary: Show inventory by status
-      description: Shows inventory lists by status according to what parameter you pass in(eg verified,declined or pending) in id  parameter for owner and admin
-      operationId: ShowinventorybyStatus
+      summary: Get inventory by status
+      description: Gets inventory lists by status according to what parameter you pass in(eg verified,declined or pending) in id  parameter for owner and admin
+      operationId: GetinventorybyStatus
       parameters: []
       responses:
         "200":
@@ -327,9 +432,9 @@ paths:
     get:
       tags:
         - Inventory
-      summary: Show list by branch
-      description: Shows inventory list by status passed in and by users branch
-      operationId: Showlistbybranch
+      summary: Get list by branch
+      description: Gets inventory list by status passed in and by users branch
+      operationId: Getlistbybranch
       parameters: []
       responses:
         "200":
@@ -378,9 +483,9 @@ paths:
     get:
       tags:
         - Sales
-      summary: Show all Sales
-      description: Show all sales for all
-      operationId: ShowallSales
+      summary: Get all Sales
+      description: Get all sales for all
+      operationId: GetallSales
       parameters: []
       responses:
         "200":
@@ -398,9 +503,9 @@ paths:
     get:
       tags:
         - Sales
-      summary: Show single sale
-      description: Show single sales for all
-      operationId: Showsinglesale
+      summary: Get single sale
+      description: Get single sales for all
+      operationId: Getsinglesale
       parameters: []
       responses:
         "200":
@@ -411,9 +516,9 @@ paths:
     get:
       tags:
         - Sales
-      summary: Show Daily Sales
-      description: Show daily sales for all
-      operationId: ShowDailySales
+      summary: Get Daily Sales
+      description: Get daily sales for all
+      operationId: GetDailySales
       parameters: []
       responses:
         "200":
@@ -431,9 +536,9 @@ paths:
     get:
       tags:
         - Sales
-      summary: Show Sales by branch
-      description: Show sales by branch by passing values like benin, lagos or abuja in id pararmeter for all but cashier and warehouse-manager
-      operationId: ShowSalesbybranch
+      summary: Get Sales by branch
+      description: Get sales by branch by passing values like benin, lagos or abuja in id pararmeter for all but cashier and warehouse-manager
+      operationId: GetSalesbybranch
       parameters: []
       responses:
         "200":
@@ -508,7 +613,7 @@ paths:
           description: ""
           headers: {}
       deprecated: false
-  /auth:
+  /auth/login:
     post:
       tags:
         - Auth
@@ -524,11 +629,11 @@ paths:
               allOf:
                 - $ref: "#/components/schemas/LoginRequest"
                 - example:
-                    password: "123456789"
-                    email: cashier1@gmail.com
+                    password: "1234$Vendor"
+                    email: osuchukwudavid@gmail.com
             example:
-              password: "123456789"
-              email: cashier1@gmail.com
+              password: "1234$Vendor"
+              email: osuchukwudavid@gmail.com
         required: true
       responses:
         "200":
@@ -539,9 +644,9 @@ paths:
     get:
       tags:
         - User
-      summary: Show Users
-      description: Show all users for the super admin
-      operationId: ShowUsers
+      summary: Get Users
+      description: Get all users for the super admin
+      operationId: GetUsers
       parameters: []
       responses:
         "200":
@@ -552,9 +657,9 @@ paths:
     get:
       tags:
         - User
-      summary: Show Users Orders
-      description: Show all users orders
-      operationId: ShowUsersOrders
+      summary: Get Users Orders
+      description: Get all users orders
+      operationId: GetUsersOrders
       parameters: []
       responses:
         "200":

@@ -12,10 +12,10 @@ const {
   deleteCategory,
 } = require("../controllers/category");
 
-router.post("/create", authenticateUser, createCategory);
+router.post("/", authenticateUser, createCategory);
 router.get("/", getAllCategories);
 router.get("/:categoryId", authenticateUser, getCategoryById);
 router.put("/:categoryId", authenticateUser, updateCategory);
-router.delete("/delete/:categoryId", authenticateUser, deleteCategory);
+router.delete("/:categoryId", authenticateUser, deleteCategory);
 
 module.exports = router;
