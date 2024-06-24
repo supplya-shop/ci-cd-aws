@@ -203,7 +203,6 @@ const getProductsByVendor = async (req, res) => {
     const vendorId = req.user.userid;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
-
     const startIndex = (page - 1) * limit;
     // const endIndex = page * limit;
 
@@ -243,32 +242,39 @@ const getProductsByVendor = async (req, res) => {
 
 const getProductsByCategory = async (req, res) => {
   const categoryName = req.params.category;
-
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const startIndex = (page - 1) * limit;
+  // const endIndex = page * limit;
   try {
-    // Find the category by name
     const category = await Category.findOne({ name: categoryName });
-
     if (!category) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "Category not found",
       });
     }
+    const products = await Product.find({ category: category._id })
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
 
-    // Find products by category ID
-    const products = await Product.find({ category: category._id });
+    const totalPages = Math.ceil(products / limit);
 
     if (!products.length) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "No products found",
+        data: [],
       });
     }
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Products fetched successfully",
-      products, // Return the fetched products
+      data: products,
+      currentPage: page,
+      totalPages: totalPages,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -326,10 +332,16 @@ const getProductsByBrand = async (req, res) => {
 };
 
 const getDiscountedProducts = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 1;
+  const startIndex = (page - 1) * limit;
   try {
     const discountedProducts = await Product.find({
       discounted_price: { $gt: 0 },
-    });
+    })
+      .sort({ dateCreated: -1 })
+      .limit(limit);
+
     if (!discountedProducts || discountedProducts.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
@@ -341,6 +353,7 @@ const getDiscountedProducts = async (req, res) => {
       status: true,
       message: "Products fetched successfully",
       data: discountedProducts,
+      currentPage: page,
     });
   } catch (error) {
     console.log(error);
@@ -351,8 +364,14 @@ const getDiscountedProducts = async (req, res) => {
 };
 
 const getFlashsaleProducts = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 1;
+  const startIndex = (page - 1) * limit;
   try {
-    const flashsaleProducts = await Product.find({ flashsale: true });
+    const flashsaleProducts = await Product.find({ flashsale: true })
+      .sort({ dateCreated: -1 })
+      .limit(limit);
+
     if (!flashsaleProducts || flashsaleProducts.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
@@ -364,6 +383,7 @@ const getFlashsaleProducts = async (req, res) => {
       status: true,
       message: "Products fetched successfully",
       data: flashsaleProducts,
+      currentPage: page,
     });
   } catch (error) {
     return res
@@ -373,8 +393,14 @@ const getFlashsaleProducts = async (req, res) => {
 };
 
 const getNewlyArrivedBrands = async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 1;
+  const startIndex = (page - 1) * limit;
   try {
-    const response = await Product.find({}).sort({ dateCreated: -1 }).limit(10);
+    const response = await Product.find({})
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
     const brandMap = new Map();
     response.forEach((product) => {
       const brand = product.brand;
@@ -384,7 +410,11 @@ const getNewlyArrivedBrands = async (req, res, next) => {
     });
     const products = Array.from(brandMap.values());
 
-    return res.status(StatusCodes.OK).json({ status: true, data: products });
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      data: products,
+      currentPage: page,
+    });
   } catch (error) {
     console.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -534,6 +564,25 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+const deleteProductsWithoutVendor = async (req, res, next) => {
+  try {
+    const result = await Product.deleteMany({ createdBy: null });
+
+    return res.status(200).json({
+      status: "success",
+      message: "Products without vendors deleted successfully",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Error deleting products: ", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to delete products",
+      error: error.message,
+    });
+  }
+};
+
 const bulkdeleteProducts = async (req, res) => {
   try {
     const products = await Product.find({}, "_id");
@@ -620,6 +669,7 @@ module.exports = {
   getDiscountedProducts,
   updateProduct,
   uploadProductImage,
+  deleteProductsWithoutVendor,
   deleteProduct,
   bulkdeleteProducts,
   searchProducts,

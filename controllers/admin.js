@@ -9,7 +9,169 @@ const {
   NotFoundError,
 } = require("../errors");
 const multer = require("../middleware/upload");
-// const logger = require("../middleware/logging/logger");
+const moment = require("moment");
+
+const getDashboardStats = async (req, res) => {
+  try {
+    const today = moment().startOf("day").toDate();
+    const yesterday = moment().subtract(1, "day").startOf("day").toDate();
+    const lastWeek = moment().subtract(7, "days").startOf("day").toDate();
+    const lastMonth = moment().subtract(200, "days").startOf("day").toDate();
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = 5;
+    const skip = (page - 1) * limit;
+
+    const totalRevenue = await Order.aggregate([
+      { $match: { dateOrdered: { $gte: lastMonth, $lt: today } } },
+      { $group: { _id: null, total: { $sum: { $toDouble: "$totalPrice" } } } },
+    ]);
+
+    const yesterdayRevenue = await Order.aggregate([
+      { $match: { dateOrdered: { $gte: yesterday, $lt: today } } },
+      { $group: { _id: null, total: { $sum: { $toDouble: "$totalPrice" } } } },
+    ]);
+
+    const totalOrders = await Order.countDocuments();
+    const todayOrders = await Order.countDocuments({
+      dateOrdered: { $gte: today },
+    });
+    const totalCustomers = await User.countDocuments({ role: "customer" });
+    const newCustomersLastWeek = await User.countDocuments({
+      role: "customer",
+      createdAt: { $gte: lastWeek },
+    });
+    const totalVendors = await User.countDocuments({ role: "vendor" });
+    const newVendorsLastWeek = await User.countDocuments({
+      role: "vendor",
+      createdAt: { $gte: lastWeek },
+    });
+
+    const topSellingProducts = await Order.aggregate([
+      { $unwind: "$orderItems" },
+      {
+        $group: {
+          _id: "$orderItems.product",
+          totalSold: { $sum: "$orderItems.quantity" },
+        },
+      },
+      { $sort: { totalSold: -1 } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "product.createdBy",
+          foreignField: "_id",
+          as: "vendor",
+        },
+      },
+      { $unwind: "$vendor" },
+      {
+        $project: {
+          totalSold: 1,
+          "product.name": 1,
+          "vendor.firstName": 1,
+          "vendor.lastName": 1,
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+    ]);
+
+    const totalTopSellingProducts = await Order.aggregate([
+      { $unwind: "$orderItems" },
+      { $group: { _id: "$orderItems.product" } },
+      { $count: "total" },
+    ]);
+
+    const totalPages = Math.ceil(
+      (totalTopSellingProducts[0]?.total || 0) / limit
+    );
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Statistics fetched successfully",
+      data: {
+        totalRevenue: totalRevenue[0]?.total || 0,
+        yesterdayRevenue: yesterdayRevenue[0]?.total || 0,
+        totalOrders,
+        todayOrders,
+        totalCustomers,
+        newCustomersLastWeek,
+        totalVendors,
+        newVendorsLastWeek,
+        topSellingProducts: topSellingProducts.map((item) => ({
+          totalSold: item.totalSold,
+          product: item.product.name,
+          vendorFirstName: item.vendor.firstName,
+          vendorLastName: item.vendor.lastName,
+        })),
+        currentPage: page,
+        totalPages,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching statistics:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+const getProductDashboardStats = async (req, res) => {
+  try {
+    const today = moment().startOf("day").toDate();
+    const startOfMonth = moment().startOf("month").toDate();
+    const startOfWeek = moment().startOf("week").toDate();
+
+    const totalProducts = await Product.countDocuments();
+    const totalProductsLastMonth = await Product.countDocuments({
+      createdAt: { $gte: startOfMonth },
+    });
+    const totalProductsLastWeek = await Product.countDocuments({
+      createdAt: { $gte: startOfWeek },
+    });
+    const newProductsToday = await Product.countDocuments({
+      createdAt: { $gte: today },
+    });
+    const totalProductsInStock = await Product.countDocuments({
+      quantity: { $gt: 0 },
+    });
+    const totalProductsOutOfStock = await Product.countDocuments({
+      quantity: { $lte: 0 },
+    });
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Product statistics fetched successfully",
+      data: {
+        totalProducts,
+        totalProductsLastMonth,
+        totalProductsLastWeek,
+        newProductsToday,
+        totalProductsInStock,
+        totalProductsOutOfStock,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching product statistics: ", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: fasle,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
 
 const createUser = async (req, res) => {
   const { error, value } = validateUser(req.body);
@@ -181,7 +343,7 @@ const deleteUser = async (req, res, next) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: false, message: "User not found" });
     }
-    const result = await user.remove(userId);
+    const result = await User.findByIdAndDelete(userId);
     if (!result) {
       return res
         .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -384,12 +546,14 @@ const bulkdeleteUsers = async (req, res) => {
 };
 
 module.exports = {
-  getAllUsers,
-  getAdminUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
-  getUserOrders,
-  bulkdeleteUsers,
+  getDashboardStats,
+  getProductDashboardStats,
+  // getAllUsers,
+  // getAdminUsers,
+  // getUserById,
+  // createUser,
+  // updateUser,
+  // deleteUser,
+  // getUserOrders,
+  // bulkdeleteUsers,
 };

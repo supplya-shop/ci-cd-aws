@@ -162,6 +162,15 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+userSchema.pre("remove", async function (next) {
+  try {
+    await Product.deleteMany({ createdBy: this._id });
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 userSchema.methods.createJWT = function () {
   return jwt.sign(
     {
