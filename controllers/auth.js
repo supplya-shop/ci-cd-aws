@@ -566,19 +566,19 @@ const changePassword = async (req, res) => {
   }
 };
 
-const googleAuth = (req, res, next) => {
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })(req, res, next);
-};
+// const googleAuth = (req, res, next) => {
+//   passport.authenticate("google", {
+//     scope: ["profile", "email"],
+//   })(req, res, next);
+// };
 
-const googleAuthCallback = (req, res, next) => {
-  passport.authenticate("google", {
-    successRedirect: "/api/v1/products",
-    failureRedirect: "/",
-    session: false,
-  })(req, res, next);
-};
+// const googleAuthCallback = (req, res, next) => {
+//   passport.authenticate("google", {
+//     successRedirect: "/api/v1/products",
+//     failureRedirect: "/",
+//     session: false,
+//   })(req, res, next);
+// };
 
 //Osama's Oauth
 
@@ -590,7 +590,7 @@ const initiateOauth = async (req, res) => {
       "https://www.googleapis.com/auth/userinfo.email",
     ],
   });
-  res.redirect(authUrl);
+  res.json(authUrl);
 };
 
 const googleCallback = async (req, res) => {
@@ -657,7 +657,7 @@ const googleCallback = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Google authentication error:", error.statusText);
+    console.error("Google authentication error:", error);
     return res.status(500).json({
       message: "Failed to authenticate with Google. Please try again.",
     });
@@ -731,8 +731,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
-  googleAuth,
-  googleAuthCallback,
   initiateOauth,
   googleCallback,
   mobileCallback,

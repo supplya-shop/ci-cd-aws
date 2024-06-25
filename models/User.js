@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Product = require("../models/Product");
 require("dotenv");
 
 const userSchema = new mongoose.Schema({
@@ -167,6 +168,7 @@ userSchema.pre("remove", async function (next) {
     await Product.deleteMany({ createdBy: this._id });
     next();
   } catch (err) {
+    console.error("Error in pre remove middleware:", err);
     next(err);
   }
 });

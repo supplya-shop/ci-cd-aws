@@ -111,8 +111,7 @@ const getDashboardStats = async (req, res) => {
         topSellingProducts: topSellingProducts.map((item) => ({
           totalSold: item.totalSold,
           product: item.product.name,
-          vendorFirstName: item.vendor.firstName,
-          vendorLastName: item.vendor.lastName,
+          vendor: `${item.vendor.firstName} ${item.vendor.lastName}`,
         })),
         currentPage: page,
         totalPages,

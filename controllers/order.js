@@ -196,13 +196,18 @@ const createOrder = async (req, res) => {
 };
 
 const getOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
   try {
     const orders = await Order.find()
       .populate({
         path: "user",
         select: "firstName lastName email",
       })
-      .sort({ dateOrdered: -1 });
+      .sort({ dateOrdered: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const totalOrders = await Order.countDocuments();
 
@@ -211,6 +216,8 @@ const getOrders = async (req, res) => {
       message: "Orders fetched successfully",
       data: orders,
       totalOrders,
+      totalPages: Math.ceil(totalOrders / limit),
+      currentPage: page,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -292,6 +299,9 @@ const getOrdersByStatus = async (req, res, next) => {
     const userId = req.user.userid;
     const userRole = req.user.role;
     const orderStatus = req.params.orderStatus;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     const validStatuses = [
       "received",
       "processing",
@@ -316,12 +326,14 @@ const getOrdersByStatus = async (req, res, next) => {
       orders = await Order.find({
         orderStatus: orderStatus.toLowerCase(),
         "orderItems.product": { $exists: true },
-      }).populate({
-        path: "orderItems.product",
-        match: { createdBy: userId },
-      });
+      })
+        .populate({
+          path: "orderItems.product",
+          match: { createdBy: userId },
+        })
+        .skip(skip)
+        .limit(limit);
 
-      // Filter out orders that do not have any orderItems with products created by this vendor
       orders = orders.filter((order) =>
         order.orderItems.some(
           (item) => item.product && item.product.createdBy.equals(userId)
@@ -334,7 +346,10 @@ const getOrdersByStatus = async (req, res, next) => {
       orders = await Order.find({
         user: userId,
         orderStatus: orderStatus.toLowerCase(),
-      }).populate("orderItems.product");
+      })
+        .populate("orderItems.product")
+        .skip(skip)
+        .limit(limit);
 
       totalOrders = await Order.countDocuments({
         user: userId,
@@ -345,8 +360,8 @@ const getOrdersByStatus = async (req, res, next) => {
     if (!orders || orders.length === 0) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: `No orders found with status '${orderStatus}'`,
-        data: [],
+        message: `No orders found`,
+        data: orders,
       });
     }
 
@@ -355,6 +370,8 @@ const getOrdersByStatus = async (req, res, next) => {
       message: "Orders fetched successfully",
       data: orders,
       totalOrders: totalOrders,
+      totalPages: Math.ceil(totalOrders / limit),
+      currentPage: page,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -369,15 +386,16 @@ const getLatestOrder = async (req, res) => {
     const order = await Order.findOne().sort({ dateOrdered: -1 });
 
     if (!order) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No orders found",
+        message: "No order found",
+        data: order,
       });
     }
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Latest order fetched successfully",
+      message: "Order fetched successfully",
       data: order,
     });
   } catch (error) {

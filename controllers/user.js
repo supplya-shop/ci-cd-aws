@@ -23,9 +23,11 @@ const createUser = async (req, res) => {
   const newUser = new User(value);
   try {
     await newUser.save();
-    return res
-      .status(StatusCodes.CREATED)
-      .json({ message: "User created successfully.", status: true });
+    return res.status(StatusCodes.CREATED).json({
+      message: "User created successfully.",
+      status: true,
+      data: newUser,
+    });
     // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
     // logger.error(error.message);
@@ -82,7 +84,7 @@ const getUserById = async (req, res) => {
   await User.findById(userId)
     .then((User) => {
       if (!User) {
-        return res.status(StatusCodes.NOT_FOUND).json({
+        return res.status(StatusCodes.OK).json({
           status: false,
           message: "user not found",
         });
@@ -181,19 +183,14 @@ const deleteUser = async (req, res, next) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: false, message: "User not found" });
     }
-    const result = await user.remove(userId);
-    if (!result) {
-      return res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ status: false, message: "Failed to delete user" });
-    }
+    await user.remove();
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "User deleted successfully",
       data: user,
     });
   } catch (error) {
-    // logger.error(error.message);
+    console.error("Error in delete user api:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ status: false, message: "Internal Server Error" });
@@ -203,21 +200,29 @@ const deleteUser = async (req, res, next) => {
 const getUserOrders = async (req, res) => {
   const userId = req.user.userid;
   const userRole = req.user.role;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
   try {
     const past24Hours = new Date();
     past24Hours.setDate(past24Hours.getDate() - 1);
 
     if (userRole === "vendor") {
-      const vendorProducts = await Product.find({
-        createdBy: userId,
-      }).select("quantity");
-
+      const vendorProducts = await Product.find({ createdBy: userId }).select(
+        "quantity"
+      );
       const productIds = vendorProducts.map((product) => product._id);
+
+      const totalOrdersCount = await Order.countDocuments({
+        "orderItems.product": { $in: productIds },
+      });
 
       const orders = await Order.find({
         "orderItems.product": { $in: productIds },
-      });
+      })
+        .skip(skip)
+        .limit(limit);
 
       const receivedOrdersCount = orders.filter(
         (order) => order.orderStatus === "received"
@@ -225,18 +230,14 @@ const getUserOrders = async (req, res) => {
       const deliveredOrdersCount = orders.filter(
         (order) => order.orderStatus === "delivered"
       ).length;
-
       const newOrdersCount = orders.filter(
         (order) => new Date(order.dateOrdered) >= past24Hours
       ).length;
-
       const totalOrders = orders.length;
-
       const totalStock = vendorProducts.reduce(
         (acc, product) => acc + product.quantity,
         0
       );
-
       const totalAmountSold = orders.reduce(
         (acc, order) => acc + parseFloat(order.totalPrice),
         0
@@ -285,10 +286,14 @@ const getUserOrders = async (req, res) => {
           receivedOrdersCount,
           deliveredOrdersCount,
           newOrdersCount,
+          totalOrdersCount,
+          totalPages: Math.ceil(totalOrdersCount / limit),
+          currentPage: page,
         },
       });
     } else {
-      // Fetch orders for the customer
+      const totalOrdersCount = await Order.countDocuments({ user: userId });
+
       const orders = await Order.find({ user: userId })
         .populate({
           path: "orderItems.product",
@@ -301,12 +306,14 @@ const getUserOrders = async (req, res) => {
         .populate({
           path: "user",
           select: "firstName lastName email",
-        });
+        })
+        .skip(skip)
+        .limit(limit);
 
       if (!orders) {
         return res
-          .status(StatusCodes.NOT_FOUND)
-          .json({ status: false, data: orders });
+          .status(StatusCodes.OK)
+          .json({ status: false, message: "No orders found", data: orders });
       }
 
       const pendingOrdersCount = orders.filter(
@@ -315,18 +322,14 @@ const getUserOrders = async (req, res) => {
       const deliveredOrdersCount = orders.filter(
         (order) => order.orderStatus === "delivered"
       ).length;
-
       const newOrdersCount = orders.filter(
         (order) => new Date(order.dateOrdered) >= past24Hours
       ).length;
-
       const totalOrders = orders.length;
-
       const totalAmountSpent = orders.reduce(
         (acc, order) => acc + parseFloat(order.totalPrice),
         0
       );
-
       const totalProductsOrdered = orders.reduce(
         (acc, order) =>
           acc + order.orderItems.reduce((acc, item) => acc + item.quantity, 0),
@@ -343,6 +346,9 @@ const getUserOrders = async (req, res) => {
           pendingOrdersCount,
           deliveredOrdersCount,
           newOrdersCount,
+          totalOrdersCount,
+          totalPages: Math.ceil(totalOrdersCount / limit),
+          currentPage: page,
         },
       });
     }
