@@ -90,7 +90,7 @@ const submitProduct = async (req, res, next) => {
     );
 
     if (!vendor) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         message: "Vendor not found",
         status: false,
       });
@@ -142,7 +142,7 @@ const getAllProducts = async (req, res, next) => {
       .skip(startIndex);
 
     if (products.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
         message: "No products found",
         data: products,
@@ -171,9 +171,9 @@ const getRelatedProducts = async (req, res) => {
     const productId = req.params.id;
     const currentProduct = await Product.findById(productId);
     if (!currentProduct) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
-        message: "Product not found",
+        message: "No product found",
         data: currentProduct,
       });
     }
@@ -219,8 +219,9 @@ const getProductsByVendor = async (req, res) => {
       .skip(startIndex);
 
     if (!products || products.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
+        message: "No products found",
         data: products,
       });
     }
@@ -243,7 +244,7 @@ const getProductsByVendor = async (req, res) => {
 const getProductsByCategory = async (req, res) => {
   const categoryName = req.params.category;
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
   // const endIndex = page * limit;
   try {
@@ -262,7 +263,7 @@ const getProductsByCategory = async (req, res) => {
     const totalPages = Math.ceil(products / limit);
 
     if (!products.length) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
         message: "No products found",
         data: [],
@@ -290,7 +291,7 @@ const getProductsByBrand = async (req, res) => {
     let brand = req.params.brand;
     brand = brand.toLowerCase();
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 15;
 
     const startIndex = (page - 1) * limit;
     // const endIndex = page * limit;
@@ -310,9 +311,9 @@ const getProductsByBrand = async (req, res) => {
       .limit(limit)
       .skip(startIndex);
     if (products.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No products found for the given brand",
+        message: "No products found",
         data: products,
       });
     }
@@ -333,7 +334,7 @@ const getProductsByBrand = async (req, res) => {
 
 const getDiscountedProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 1;
+  const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
   try {
     const discountedProducts = await Product.find({
@@ -343,9 +344,9 @@ const getDiscountedProducts = async (req, res) => {
       .limit(limit);
 
     if (!discountedProducts || discountedProducts.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No products found with discount",
+        message: "No products found",
         data: discountedProducts,
       });
     }
@@ -365,7 +366,7 @@ const getDiscountedProducts = async (req, res) => {
 
 const getFlashsaleProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 1;
+  const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
   try {
     const flashsaleProducts = await Product.find({ flashsale: true })
@@ -373,9 +374,9 @@ const getFlashsaleProducts = async (req, res) => {
       .limit(limit);
 
     if (!flashsaleProducts || flashsaleProducts.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No flashsale products found",
+        message: "No products found",
         data: flashsaleProducts,
       });
     }
@@ -394,7 +395,7 @@ const getFlashsaleProducts = async (req, res) => {
 
 const getNewlyArrivedBrands = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 1;
+  const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
   try {
     const response = await Product.find({})
@@ -412,6 +413,7 @@ const getNewlyArrivedBrands = async (req, res, next) => {
 
     return res.status(StatusCodes.OK).json({
       status: true,
+      message: "Products fetched successfully",
       data: products,
       currentPage: page,
     });
@@ -440,7 +442,7 @@ const getProductById = async (req, res, next) => {
       if (!product) {
         return res.status(StatusCodes.NOT_FOUND).json({
           status: false,
-          message: "Product not found",
+          message: "No product found",
         });
       }
       return res.status(StatusCodes.OK).json({
@@ -467,7 +469,7 @@ const updateProduct = async (req, res, next) => {
     const result = await Product.findByIdAndUpdate(productId, updates, options);
     if (!result) {
       return res
-        .status(StatusCodes.NOT_FOUND)
+        .status(StatusCodes.OK)
         .json({ status: false, message: "Product not found" });
     }
     return res.status(StatusCodes.OK).json({
@@ -520,7 +522,7 @@ const approveProduct = async (req, res, next) => {
     const productId = req.params.id;
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         message: "Product not found",
         status: false,
       });
@@ -550,7 +552,7 @@ const deleteProduct = async (req, res, next) => {
     if (!product) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: `Product with id ${productId} not found.`,
+        message: "No product found",
       });
     }
     return res

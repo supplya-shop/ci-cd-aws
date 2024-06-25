@@ -75,7 +75,7 @@ const updateCategory = async (req, res) => {
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) {
       return res
-        .status(StatusCodes.NOT_FOUND)
+        .status(StatusCodes.OK)
         .json({ status: false, message: "Category not found" });
     }
 

@@ -26,7 +26,7 @@ const createInventory = async (req, res) => {
       } catch (error) {
         hasError = true;
         errorProducts.push({ productId, error: error.message });
-        continue; // Continue processing other products
+        continue;
       }
     }
 
@@ -52,11 +52,11 @@ const createInventory = async (req, res) => {
 
 const getInventory = async (req, res) => {
   try {
-    const inventory = await Product.find({}, "_id name quantity"); // Select only specific fields
+    const inventory = await Product.find({}, "_id name quantity");
     if (!inventory) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+      return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No Inventory information available",
+        message: "No Inventory found",
       });
     }
 
@@ -90,7 +90,7 @@ const getInventoryByProduct = async (req, res) => {
 
     if (!inventory) {
       return res
-        .status(StatusCodes.NOT_FOUND)
+        .status(StatusCodes.OK)
         .json({ status: false, message: "Inventory not found" });
     }
 
