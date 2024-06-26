@@ -172,6 +172,206 @@ const getProductDashboardStats = async (req, res) => {
   }
 };
 
+const getOrderDashboardStats = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  try {
+    const past7Days = new Date();
+    past7Days.setDate(past7Days.getDate() - 7);
+
+    const currentDayStart = new Date();
+    currentDayStart.setHours(0, 0, 0, 0);
+
+    const totalOrders = await Order.countDocuments({});
+    const totalOrdersLast7Days = await Order.countDocuments({
+      dateOrdered: { $gte: past7Days },
+    });
+    const totalNewOrdersToday = await Order.countDocuments({
+      dateOrdered: { $gte: currentDayStart },
+    });
+    const totalDeliveredOrders = await Order.countDocuments({
+      orderStatus: "delivered",
+    });
+    const totalDeliveredOrdersToday = await Order.countDocuments({
+      orderStatus: "delivered",
+      dateOrdered: { $gte: currentDayStart },
+    });
+    const totalPendingOrders = await Order.countDocuments({
+      orderStatus: "received",
+    });
+    const totalCancelledOrders = await Order.countDocuments({
+      orderStatus: "cancelled",
+    });
+
+    const orders = await Order.find({})
+      .skip(skip)
+      .limit(limit)
+      .sort({ dateOrdered: -1 })
+      .populate({
+        path: "orderItems.product",
+        select: "name unit_price discounted_price description category image",
+        populate: {
+          path: "category",
+          select: "name",
+        },
+      });
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Orders fetched successfully",
+      data: {
+        totalOrders,
+        totalOrdersLast7Days,
+        totalNewOrdersToday,
+        totalDeliveredOrders,
+        totalDeliveredOrdersToday,
+        totalPendingOrders,
+        totalCancelledOrders,
+        orders,
+        totalPages: Math.ceil(totalOrders / limit),
+        currentPage: page,
+      },
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch order statistics: " + error.message,
+    });
+  }
+};
+
+const getCustomerStats = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  try {
+    const currentDate = new Date();
+    const past7Days = new Date(currentDate);
+    past7Days.setDate(currentDate.getDate() - 7);
+
+    const past90Days = new Date(currentDate);
+    past90Days.setDate(currentDate.getDate() - 90);
+
+    const startOfDay = new Date(currentDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const totalCustomers = await User.countDocuments({ role: "customer" });
+
+    const newCustomersLast7Days = await User.countDocuments({
+      role: "customer",
+      createdAt: { $gte: past7Days },
+    });
+
+    const newCustomersToday = await User.countDocuments({
+      role: "customer",
+      createdAt: { $gte: startOfDay },
+    });
+
+    const activeCustomers = await User.countDocuments({
+      role: "customer",
+      lastLogin: { $gte: past90Days },
+    });
+
+    const inactiveCustomers = await User.countDocuments({
+      role: "customer",
+      $or: [
+        { lastLogin: { $lt: past90Days } },
+        { lastLogin: { $exists: false } },
+      ],
+    });
+
+    const costumers = await User.find({ role: "customer" })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Customer data fetched successfully",
+      data: {
+        totalCustomers,
+        newCustomersLast7Days,
+        newCustomersToday,
+        activeCustomers,
+        inactiveCustomers,
+        costumers,
+        totalPages: Math.ceil(totalCustomers / limit),
+        currentPage: page,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch customer statistics: " + error.message,
+    });
+  }
+};
+
+const getVendorStats = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  try {
+    const currentDate = new Date();
+    const past7Days = new Date(currentDate);
+    past7Days.setDate(currentDate.getDate() - 7);
+
+    const past90Days = new Date(currentDate);
+    past90Days.setDate(currentDate.getDate() - 90);
+
+    const startOfDay = new Date(currentDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const totalVendors = await User.countDocuments({ role: "vendor" });
+
+    const newVendorsLast7Days = await User.countDocuments({
+      role: "vendor",
+      createdAt: { $gte: past7Days },
+    });
+
+    const newVendorsToday = await User.countDocuments({
+      role: "vendor",
+      createdAt: { $gte: startOfDay },
+    });
+
+    const activeVendors = await User.countDocuments({
+      role: "vendor",
+      lastLogin: { $gte: past90Days },
+    });
+
+    const inactiveVendors = await User.countDocuments({
+      role: "vendor",
+      $or: [
+        { lastLogin: { $lt: past90Days } },
+        { lastLogin: { $exists: false } },
+      ],
+    });
+
+    const vendors = await User.find({ role: "vendor" }).skip(skip).limit(limit);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Vendor data fetched successfully",
+      data: {
+        totalVendors,
+        newVendorsLast7Days,
+        newVendorsToday,
+        activeVendors,
+        inactiveVendors,
+        vendors,
+        totalPages: Math.ceil(totalVendors / limit),
+        currentPage: page,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch vendor statistics: " + error.message,
+    });
+  }
+};
+
 const createUser = async (req, res) => {
   const { error, value } = validateUser(req.body);
   if (error) {
@@ -547,6 +747,9 @@ const bulkdeleteUsers = async (req, res) => {
 module.exports = {
   getDashboardStats,
   getProductDashboardStats,
+  getOrderDashboardStats,
+  getCustomerStats,
+  getVendorStats,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,

@@ -5,6 +5,7 @@ const {
   getAllUsers,
   getAdminUsers,
   getUserById,
+  getUsersByRole,
   updateUser,
   deleteUser,
   getUserOrders,
@@ -23,6 +24,7 @@ router.get("/", authenticateUser, getAllUsers);
 router.get("/orders", authenticateUser, getUserOrders);
 router.get("/admin", authenticateUser, getAdminUsers);
 router.get("/:id", authenticateUser, getUserById);
+router.get("/role/:role", authenticateUser, getUsersByRole);
 router.delete(
   "/bulkdeleteusers",
   authenticateUser,
