@@ -64,7 +64,7 @@ const orderSchema = mongoose.Schema({
     type: String,
   },
   totalPrice: {
-    type: String,
+    type: Number,
     required: true,
   },
   orderNote: {
