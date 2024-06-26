@@ -4,13 +4,23 @@ const passport = require("passport");
 const {
   getDashboardStats,
   getProductDashboardStats,
+  getOrderDashboardStats,
+  getCustomerStats,
+  getVendorStats,
 } = require("../controllers/admin");
 const {
   authenticateUser,
   rolesAllowed,
 } = require("../middleware/authenticateUser");
 
-router.get("/dashboard", getDashboardStats);
-router.get("/products/dashboard", getProductDashboardStats);
+router.get("/dashboard", rolesAllowed("admin"), getDashboardStats);
+router.get(
+  "/dashboard/product",
+  rolesAllowed("admin"),
+  getProductDashboardStats
+);
+router.get("/dashboard/order", rolesAllowed("admin"), getOrderDashboardStats);
+router.get("/dashboard/customer", rolesAllowed("admin"), getCustomerStats);
+router.get("/dashboard/vendor", rolesAllowed("admin"), getVendorStats);
 
 module.exports = router;

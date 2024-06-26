@@ -108,6 +108,36 @@ const getUserById = async (req, res) => {
     });
 };
 
+const getUsersByRole = async (req, res) => {
+  const role = req.params.role;
+  try {
+    const users = await User.find({ role })
+      .select(
+        "firstName lastName email phoneNumber role createdAt storeName blocked"
+      )
+      .sort({ createdAt: -1 });
+
+    if (!users || users.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "Users not found",
+        data: users,
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Users fetched successfully",
+      data: users,
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal Server Error: " + error.message,
+    });
+  }
+};
+
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -276,6 +306,7 @@ const getUserOrders = async (req, res) => {
 
       return res.status(StatusCodes.OK).json({
         status: true,
+        message: "Orders fetched successfully",
         data: {
           totalOrders,
           totalStock,
@@ -338,6 +369,7 @@ const getUserOrders = async (req, res) => {
 
       return res.status(StatusCodes.OK).json({
         status: true,
+        message: "Orders fetched successfully",
         data: {
           totalOrders,
           totalAmountSpent,
@@ -393,6 +425,7 @@ module.exports = {
   getAllUsers,
   getAdminUsers,
   getUserById,
+  getUsersByRole,
   createUser,
   updateUser,
   deleteUser,
