@@ -134,13 +134,13 @@ const getProductDashboardStats = async (req, res) => {
     const startOfWeek = moment().startOf("week").toDate();
 
     const totalProducts = await Product.countDocuments();
-    const totalProductsLastMonth = await Product.countDocuments({
+    const totalProductsAddedLastMonth = await Product.countDocuments({
       createdAt: { $gte: startOfMonth },
     });
-    const totalProductsLastWeek = await Product.countDocuments({
+    const totalProductsAddedLastWeek = await Product.countDocuments({
       createdAt: { $gte: startOfWeek },
     });
-    const newProductsToday = await Product.countDocuments({
+    const newProductsAddedToday = await Product.countDocuments({
       createdAt: { $gte: today },
     });
     const totalProductsInStock = await Product.countDocuments({
@@ -155,9 +155,9 @@ const getProductDashboardStats = async (req, res) => {
       message: "Product statistics fetched successfully",
       data: {
         totalProducts,
-        totalProductsLastMonth,
-        totalProductsLastWeek,
-        newProductsToday,
+        totalProductsAddedLastMonth,
+        totalProductsAddedLastWeek,
+        newProductsAddedToday,
         totalProductsInStock,
         totalProductsOutOfStock,
       },

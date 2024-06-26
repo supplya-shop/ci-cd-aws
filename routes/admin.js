@@ -13,9 +13,15 @@ const {
   rolesAllowed,
 } = require("../middleware/authenticateUser");
 
-router.get("/dashboard", rolesAllowed("admin"), getDashboardStats);
+router.get(
+  "/dashboard",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getDashboardStats
+);
 router.get(
   "/dashboard/product",
+  authenticateUser,
   rolesAllowed("admin"),
   getProductDashboardStats
 );
