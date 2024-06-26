@@ -19,8 +19,23 @@ router.get(
   rolesAllowed("admin"),
   getProductDashboardStats
 );
-router.get("/dashboard/order", rolesAllowed("admin"), getOrderDashboardStats);
-router.get("/dashboard/customer", rolesAllowed("admin"), getCustomerStats);
-router.get("/dashboard/vendor", rolesAllowed("admin"), getVendorStats);
+router.get(
+  "/dashboard/order",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getOrderDashboardStats
+);
+router.get(
+  "/dashboard/customer",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getCustomerStats
+);
+router.get(
+  "/dashboard/vendor",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getVendorStats
+);
 
 module.exports = router;
