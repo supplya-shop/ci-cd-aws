@@ -296,9 +296,6 @@ const login = async (req, res, next) => {
     const token = user.createJWT();
     const refreshToken = user.createRefreshToken();
 
-    user.lastLogin = Date.now();
-    await user.save();
-
     // logger.info(user.role + " " + user.email + " just logged in.");
 
     return res.status(StatusCodes.OK).json({
@@ -326,7 +323,6 @@ const login = async (req, res, next) => {
         state: user.state,
         address: user.address,
         createdAt: user.createdAt,
-        lastLogin: user.lastLogin,
       },
       token,
       refreshToken,
