@@ -41,8 +41,6 @@ const createOrder = async (req, res) => {
     const email = req.user.email;
     const {
       orderItems,
-      shippingAddress1,
-      shippingAddress2,
       city,
       zip,
       country,
@@ -123,7 +121,7 @@ const createOrder = async (req, res) => {
     const createdOrders = await Order.create(
       [
         {
-          orderId,
+          orderId: orderId,
           user: {
             _id: userId,
             firstName: user.firstName,
@@ -131,8 +129,6 @@ const createOrder = async (req, res) => {
             email: user.email,
           },
           orderItems,
-          shippingAddress1,
-          shippingAddress2,
           city,
           zip,
           country,
@@ -494,6 +490,32 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+const deleteOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await Order.findByIdAndDelete(orderId);
+
+    if (!order) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Order not found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Order deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to delete order",
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getOrders,
@@ -502,4 +524,5 @@ module.exports = {
   getLatestOrder,
   updateOrder,
   cancelOrder,
+  deleteOrder,
 };
