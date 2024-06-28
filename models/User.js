@@ -151,10 +151,16 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  lastLogin: {
+    type: Date,
+  },
 });
 
 userSchema.pre("save", async function (next) {
   try {
+    if (!this.isModified("password")) {
+      return next();
+    }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
@@ -179,26 +185,15 @@ userSchema.methods.createJWT = function () {
       userid: this._id,
       firstName: this.firstName,
       lastName: this.lastName,
-      country: this.country,
-      state: this.state,
-      address: this.address,
-      city: this.city,
-      postalCode: this.postalCode,
-      dateOfBirth: this.dateOfBirth,
-      gender: this.gender,
-      isSoleProprietor: this.isSoleProprietor,
-      description: this.description,
-      businessName: this.businessName,
       googleId: this.googleId,
       phoneNumber: this.phoneNumber,
       uniqueKey: this.uniqueKey,
       email: this.email,
-      accountNumber: this.accountNumber,
-      bank: this.bank,
       role: this.role,
       createdAt: this.createdAt,
       dob: this.dob,
       blocked: this.blocked,
+      lastLogin: this.lastLogin,
     },
     process.env.JWT_SECRET,
     {
@@ -213,21 +208,15 @@ userSchema.methods.createRefreshToken = function () {
       userid: this._id,
       firstName: this.firstName,
       lastName: this.lastName,
-      country: this.country,
-      state: this.state,
-      address: this.address,
-      city: this.city,
-      postalCode: this.postalCode,
-      dateOfBirth: this.dateOfBirth,
-      gender: this.gender,
-      isSoleProprietor: this.isSoleProprietor,
-      description: this.description,
-      businessName: this.businessName,
       googleId: this.googleId,
       phoneNumber: this.phoneNumber,
-      uniqueKey: this.uniqueKey,
       email: this.email,
+      dob: this.dob,
+      uniqueKey: this.uniqueKey,
+      role: this.role,
+      createdAt: this.createdAt,
       blocked: this.blocked,
+      lastLogin: this.lastLogin,
     },
     process.env.JWT_SECRET,
     {

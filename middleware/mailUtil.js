@@ -789,7 +789,7 @@ const newUserSignUpMail = async (email) => {
   <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>New User Registration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -937,7 +937,7 @@ const newVendorSignUpMail = async (email) => {
   <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>New Vendor Registration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1086,7 +1086,7 @@ const forgotPasswordMail = async (email, resetCode) => {
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>Forgot Password</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1429,7 +1429,7 @@ const resetPasswordMail = async (email) => {
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>Reset Password</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1606,7 +1606,7 @@ const sendOrderSummaryMail = async (order) => {
   <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
     <head>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Registration successful</title>
+      <title>Admin Order Summary</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1689,7 +1689,7 @@ const sendOrderSummaryMail = async (order) => {
                             </td>
                           </tr>
                           <tr>
-                            <td style="font-size: 12px; background-color: white;">
+                            <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
                                 <strong>Order Status:</strong> ${
@@ -1699,9 +1699,7 @@ const sendOrderSummaryMail = async (order) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.state}, ${
-      order.country
-    }
+                                }, ${order.city}, ${order.zip}, ${order.country}
                               </p>
                               <p>
                                 <strong>Customer Phone Number:</strong> ${
@@ -1829,7 +1827,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>Customer Order Summary</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1931,7 +1929,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                             </td>
                           </tr>
                           <tr>
-                            <td style="font-size: 12px; background-color: white;">
+                            <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
                                 <strong>Order Status:</strong> ${
@@ -1941,9 +1939,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.state}, ${
-      order.country
-    }
+                                }, ${order.city}, ${order.zip}, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -2069,7 +2065,7 @@ const sendVendorOrderSummaryMail = async (order, user) => {
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>Vendor Order Summary</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -2169,13 +2165,13 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                             },</p>
                               <p>
                                 ${
-                                  user.firstName
+                                  order.user.firstName
                                 } just made an order. View the order summary below:
                               </p>
                             </td>
                           </tr>
                           <tr>
-                            <td style="font-size: 12px; background-color: white;">
+                            <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
                                 <strong>Order Status:</strong> ${
@@ -2185,9 +2181,8 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.state}, ${
-      order.country
-    }
+                                }, 
+                                ${order.city}, ${order.zip}, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}

@@ -30,7 +30,6 @@ const createUser = async (req, res) => {
     });
     // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
-    // logger.error(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ message: "Failed to create user.", status: false });
@@ -38,20 +37,26 @@ const createUser = async (req, res) => {
 };
 
 const getAllUsers = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+
   try {
     const [users, totalCount] = await Promise.all([
-      User.find(),
+      User.find().sort({ createdAt: -1 }).limit(limit).skip(startIndex),
       User.countDocuments(),
     ]);
-
+    const totalPages = Math.ceil(totalCount / limit);
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Users fetched successfully",
       data: users,
+      currentPage: page,
       totalCount: totalCount,
+      totalPages: totalPages,
     });
   } catch (error) {
-    // logger.error(error.message);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to fetch users",
