@@ -209,29 +209,6 @@ const updateUser = async (req, res) => {
   }
 };
 
-const deleteUser = async (req, res, next) => {
-  const userId = req.params.id;
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: false, message: "User not found" });
-    }
-    await user.remove();
-    return res.status(StatusCodes.OK).json({
-      status: true,
-      message: "User deleted successfully",
-      data: user,
-    });
-  } catch (error) {
-    console.error("Error in delete user api:", error);
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: "Internal Server Error" });
-  }
-};
-
 const getUserOrders = async (req, res) => {
   const userId = req.user.userid;
   const userRole = req.user.role;
@@ -426,6 +403,59 @@ const bulkdeleteUsers = async (req, res) => {
   }
 };
 
+const deleteUser = async (req, res, next) => {
+  const userId = req.params.id;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ status: false, message: "User not found" });
+    }
+    await user.remove();
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "User deleted successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.error("Error in delete user api:", error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: false, message: "Internal Server Error" });
+  }
+};
+
+const deleteUserAccount = async (req, res) => {
+  const userId = req.user.userid;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    await User.findByIdAndDelete(userId);
+
+    await Order.deleteMany({ "user._id": userId });
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "User account and data deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to delete user account. " + error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAdminUsers,
@@ -433,7 +463,8 @@ module.exports = {
   getUsersByRole,
   createUser,
   updateUser,
-  deleteUser,
   getUserOrders,
+  deleteUser,
   bulkdeleteUsers,
+  deleteUserAccount,
 };

@@ -8,6 +8,7 @@ const {
   approveProduct,
   getAllProducts,
   getProductById,
+  getProductsByUserId,
   getProductsByVendor,
   getProductsByBrand,
   getProductsByCategory,
@@ -75,6 +76,7 @@ router.get("/vendor", authenticateUser, getProductsByVendor);
 router.get("/search", searchProducts);
 router.get("/flashsale", getFlashsaleProducts);
 router.get("/:id", getProductById);
+router.get("/user/:userId", getProductsByUserId);
 router.get("/brands/:brand", getProductsByBrand);
 router.get("/:id/get-related", getRelatedProducts);
 router.post(

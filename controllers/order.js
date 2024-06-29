@@ -79,8 +79,9 @@ const createOrder = async (req, res) => {
       if (item.quantity < product.moq) {
         moqProducts.push(product.name);
       }
+      const price = product.discounted_price || product.unit_price;
 
-      totalPrice += item.quantity * product.unit_price;
+      totalPrice += item.quantity * price;
 
       if (product.quantity < item.quantity) {
         insufficientStockProducts.push(product.name);
@@ -198,6 +199,10 @@ const getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate({
+        path: "orderItems.product",
+        model: "Product",
+      })
+      .populate({
         path: "user",
         select: "firstName lastName email",
       })
@@ -219,6 +224,42 @@ const getOrders = async (req, res) => {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to fetch orders: " + error.message,
+    });
+  }
+};
+
+const getOrdersByUserId = async (req, res) => {
+  const userId = req.params.id;
+  console.log(`Fetching orders for user ID: ${userId}`);
+
+  try {
+    let orders = await Order.find({
+      "orderItems.vendorDetails.vendorId": userId,
+    }).populate("user");
+    console.log(`Orders for vendor with user ID ${userId}:`, orders);
+    if (!orders || orders.length === 0) {
+      orders = await Order.find({ user: userId }).populate("user");
+      console.log(`Orders for customer with user ID ${userId}:`, orders);
+    }
+
+    if (!orders || orders.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "No orders found for this user",
+        data: orders,
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Orders fetched successfully",
+      data: orders,
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch orders. " + error.message,
     });
   }
 };
@@ -520,6 +561,7 @@ module.exports = {
   createOrder,
   getOrders,
   getOrderById,
+  getOrdersByUserId,
   getOrdersByStatus,
   getLatestOrder,
   updateOrder,

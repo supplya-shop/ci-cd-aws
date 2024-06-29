@@ -4,34 +4,41 @@ const { BadRequestError, NotFoundError } = require("../errors");
 const crypto = require("crypto");
 require("dotenv").config();
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // Must be 256 bits (32 characters)
-const IV_LENGTH = 16; // AES block size
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const IV_LENGTH = 16;
 
 const encrypt = (text) => {
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(
-    "aes-256-cbc",
-    Buffer.from(ENCRYPTION_KEY, "hex"),
-    iv
-  );
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString("hex") + ":" + encrypted.toString("hex");
+  try {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(
+      "aes-256-cbc",
+      Buffer.from(ENCRYPTION_KEY, "hex"),
+      iv
+    );
+    let encrypted = cipher.update(text, "utf8", "hex");
+    encrypted += cipher.final("hex");
+    return iv.toString("hex") + ":" + encrypted;
+  } catch (error) {
+    throw new Error("Encryption failed: " + error.message);
+  }
 };
 
-// Helper function to decrypt the credential value
 const decrypt = (text) => {
-  const textParts = text.split(":");
-  const iv = Buffer.from(textParts.shift(), "hex");
-  const encryptedText = Buffer.from(textParts.join(":"), "hex");
-  const decipher = crypto.createDecipheriv(
-    "aes-256-cbc",
-    Buffer.from(ENCRYPTION_KEY, "hex"),
-    iv
-  );
-  let decrypted = decipher.update(encryptedText);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
+  try {
+    const textParts = text.split(":");
+    const iv = Buffer.from(textParts.shift(), "hex");
+    const encryptedText = Buffer.from(textParts.join(":"), "hex");
+    const decipher = crypto.createDecipheriv(
+      "aes-256-cbc",
+      Buffer.from(ENCRYPTION_KEY, "hex"),
+      iv
+    );
+    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch (error) {
+    throw new Error("Decryption failed: " + error.message);
+  }
 };
 
 const createCredential = async (req, res) => {
@@ -98,10 +105,22 @@ const fetchCredentials = async (req, res) => {
     }
 
     const decryptedCredentials = credentials.map((credential) => {
-      return {
-        ...credential.toObject(),
-        value: decrypt(credential.value),
-      };
+      try {
+        const decryptedValue = decrypt(credential.value);
+        return {
+          ...credential.toObject(),
+          value: decryptedValue,
+        };
+      } catch (error) {
+        console.error(
+          `Error decrypting credential ${credential.name}: ${error.message}`
+        );
+        console.error("Stored value:", credential.value);
+        return {
+          ...credential.toObject(),
+          value: "Decryption error",
+        };
+      }
     });
 
     return res.status(200).json({

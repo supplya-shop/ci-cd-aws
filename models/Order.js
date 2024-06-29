@@ -16,6 +16,10 @@ const orderSchema = mongoose.Schema({
         default: 1,
       },
       vendorDetails: {
+        vendorId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
         firstName: String,
         lastName: String,
         storeName: String,

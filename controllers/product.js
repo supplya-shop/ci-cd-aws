@@ -286,6 +286,43 @@ const getProductsByCategory = async (req, res) => {
   }
 };
 
+const getProductsByUserId = async (req, res) => {
+  const { userId } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
+  // const endIndex = page * limit;
+
+  try {
+    const products = await Product.find({ createdBy: userId })
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
+    if (!products || products.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No products found for this user",
+      });
+    }
+    const totalPages = Math.ceil(products / limit);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Products fetched successfully",
+      data: products,
+      currentPage: page,
+      totalPages: totalPages,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch products. " + error.message,
+    });
+  }
+};
+
 const getProductsByBrand = async (req, res) => {
   try {
     let brand = req.params.brand;
@@ -662,6 +699,7 @@ module.exports = {
   approveProduct,
   getAllProducts,
   getProductsByVendor,
+  getProductsByUserId,
   getProductsByBrand,
   getProductsByCategory,
   getNewlyArrivedBrands,
