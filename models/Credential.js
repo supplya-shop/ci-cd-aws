@@ -13,7 +13,6 @@ const credentialSchema = new mongoose.Schema({
   },
   value: {
     type: String,
-    maxlength: [200, "value cannot exceed 500 characters"],
   },
   createdAt: {
     type: Date,
