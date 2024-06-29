@@ -7,9 +7,10 @@ const {
   getUserById,
   getUsersByRole,
   updateUser,
-  deleteUser,
   getUserOrders,
   bulkdeleteUsers,
+  deleteUser,
+  deleteUserAccount,
 } = require("../controllers/user");
 
 const {
@@ -32,5 +33,6 @@ router.delete(
   bulkdeleteUsers
 );
 router.delete("/:id", authenticateUser, deleteUser);
+router.delete("/:id", authenticateUser, deleteUserAccount);
 
 module.exports = router;

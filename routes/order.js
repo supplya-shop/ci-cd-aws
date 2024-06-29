@@ -8,6 +8,7 @@ const {
   createOrder,
   getOrders,
   getOrderById,
+  getOrdersByUserId,
   getOrdersByStatus,
   getLatestOrder,
   updateOrder,
@@ -17,6 +18,7 @@ const {
 // order routes
 router.get("/latest", authenticateUser, getLatestOrder);
 router.post("/create", authenticateUser, createOrder);
+router.get("/user/:id", authenticateUser, getOrdersByUserId);
 router.get("/", authenticateUser, getOrders);
 router.get("/:orderId", authenticateUser, getOrderById);
 router.get("/status/:orderStatus", authenticateUser, getOrdersByStatus);
