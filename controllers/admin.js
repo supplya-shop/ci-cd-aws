@@ -78,8 +78,10 @@ const getDashboardStats = async (req, res) => {
         $project: {
           totalSold: 1,
           "product.name": 1,
+          "product.image": 1,
           "vendor.firstName": 1,
           "vendor.lastName": 1,
+          "vendor.storeUrl": 1,
         },
       },
       { $skip: skip },
@@ -111,7 +113,9 @@ const getDashboardStats = async (req, res) => {
         topSellingProducts: topSellingProducts.map((item) => ({
           totalSold: item.totalSold,
           product: item.product.name,
+          image: item.product.image,
           vendor: `${item.vendor.firstName} ${item.vendor.lastName}`,
+          storeUrl: item.vendor.storeUrl,
         })),
         currentPage: page,
         totalPages,
