@@ -295,6 +295,10 @@ const getProductsByUserId = async (req, res) => {
 
   try {
     const products = await Product.find({ createdBy: userId })
+      .select(
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
+      )
+      .populate("category", "name")
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
