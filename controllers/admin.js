@@ -16,14 +16,13 @@ const getDashboardStats = async (req, res) => {
     const today = moment().startOf("day").toDate();
     const yesterday = moment().subtract(1, "day").startOf("day").toDate();
     const lastWeek = moment().subtract(7, "days").startOf("day").toDate();
-    const lastMonth = moment().subtract(200, "days").startOf("day").toDate();
+    const lastMonth = moment().subtract(30, "days").startOf("day").toDate();
 
     const page = parseInt(req.query.page) || 1;
     const limit = 5;
     const skip = (page - 1) * limit;
 
     const totalRevenue = await Order.aggregate([
-      { $match: { dateOrdered: { $gte: lastMonth, $lt: today } } },
       { $group: { _id: null, total: { $sum: { $toDouble: "$totalPrice" } } } },
     ]);
 
@@ -100,7 +99,7 @@ const getDashboardStats = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Statistics fetched successfully",
+      message: "Dashboard data fetched successfully",
       data: {
         totalRevenue: totalRevenue[0]?.total || 0,
         yesterdayRevenue: yesterdayRevenue[0]?.total || 0,
@@ -156,7 +155,7 @@ const getProductDashboardStats = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Product statistics fetched successfully",
+      message: "Product data fetched successfully",
       data: {
         totalProducts,
         totalProductsAddedLastMonth,
@@ -220,11 +219,13 @@ const getOrderDashboardStats = async (req, res) => {
           path: "category",
           select: "name",
         },
+        path: "user",
+        select: "firstName lastName email phoneNumber",
       });
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Orders fetched successfully",
+      message: "Order data fetched successfully",
       data: {
         totalOrders,
         totalOrdersLast7Days,
@@ -391,9 +392,7 @@ const createUser = async (req, res) => {
     return res
       .status(StatusCodes.CREATED)
       .json({ message: "User created successfully.", status: true });
-    // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
-    // logger.error(error.message);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ message: "Failed to create user.", status: false });
