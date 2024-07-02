@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/Supplya/Supplya_api.git#readme",
   "dependencies": {
+    "@sentry/node": "^8.13.0",
+    "@sentry/profiling-node": "^8.13.0",
     "api": "^6.1.1",
     "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",

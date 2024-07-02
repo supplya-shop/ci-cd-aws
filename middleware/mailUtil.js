@@ -1692,6 +1692,11 @@ const sendOrderSummaryMail = async (order) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
+                                <strong>Customer Full Name:</strong> ${
+                                  order.user.firstName
+                                }  ${order.user.lastName}
+                              </p>
+                              <p>
                                 <strong>Order Status:</strong> ${
                                   order.orderStatus
                                 }
@@ -1701,6 +1706,7 @@ const sendOrderSummaryMail = async (order) => {
                                   order.address
                                 }, ${order.city}, ${order.zip}, ${order.country}
                               </p>
+                              
                               <p>
                                 <strong>Customer Phone Number:</strong> ${
                                   order.phone
@@ -1743,11 +1749,20 @@ const sendOrderSummaryMail = async (order) => {
                                     <strong>Price per Unit:</strong>
                                     ₦${item.product.unit_price}
                                   </p>
+                                  <p>
+                                    <strong>Vendor Name:</strong>
+                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                  </p>
+                                  <p>
+                                    <strong>Supplya store address:</strong>
+                                    ${item.vendorDetails.storeUrl} 
+                                  </p>
                                 </li>
                                 `
                                   )
                                   .join(", ")}
                               </ul>
+                               
                             </td>
                           </tr>
                             <tr>
@@ -1932,6 +1947,11 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
+                                <strong>Customer Full Name:</strong> ${
+                                  order.user.firstName
+                                }  ${order.user.lastName}
+                              </p>
+                              <p>
                                 <strong>Order Status:</strong> ${
                                   order.orderStatus
                                 }
@@ -1981,11 +2001,20 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                                     <strong>Price per Unit:</strong>
                                     ₦${item.product.unit_price}
                                   </p>
+                                  <p>
+                                    <strong>Vendor Name:</strong>
+                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                  </p>
+                                  <p>
+                                    <strong>Supplya store address:</strong>
+                                    ${item.vendorDetails.storeUrl} 
+                                  </p>
                                 </li>
                                 `
                                   )
                                   .join(", ")}
                               </ul>
+                              
                             </td>
                           </tr>
                             <tr>
@@ -2174,6 +2203,11 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
+                                <strong>Customer Full Name:</strong> ${
+                                  order.user.firstName
+                                }  ${order.user.lastName}
+                              </p>
+                              <p>
                                 <strong>Order Status:</strong> ${
                                   order.orderStatus
                                 }
@@ -2223,6 +2257,14 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                                   <p>
                                     <strong>Price per Unit:</strong>
                                     ₦${item.product.unit_price}
+                                  </p>
+                                  <p>
+                                    <strong>Vendor Name:</strong>
+                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                  </p>
+                                  <p>
+                                    <strong>Supplya store address:</strong>
+                                    ${item.vendorDetails.storeUrl} 
                                   </p>
                                 </li>
                                 `
