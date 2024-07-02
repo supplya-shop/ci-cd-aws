@@ -1,6 +1,12 @@
 const Store = require("../models/Store");
 const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
+const Order = require("../models/Order");
+const {
+  sendCustomerOrderConfirmedMail,
+  sendCustomerOrderDeliveredMail,
+  sendVendorOrderDeliveredMail,
+} = require("../middleware/mailUtil");
 
 const createVendor = async (req, res) => {
   try {
@@ -170,6 +176,94 @@ const getVendorById = async (req, res) => {
   }
 };
 
+const updateOrderStatus = async (req, res) => {
+  const orderId = req.params.orderId;
+  const { orderStatus, deliveryDate, paymentStatus } = req.body;
+
+  const validStatuses = [
+    "new",
+    "confirmed",
+    "packaged",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+
+  if (!validStatuses.includes(orderStatus)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: `Invalid order status. Valid statuses are: ${validStatuses.join(
+        ", "
+      )}`,
+    });
+  }
+
+  try {
+    const updateFields = { orderStatus };
+
+    if (
+      deliveryDate &&
+      (orderStatus === "confirmed" || orderStatus === "delivered")
+    ) {
+      const parsedDeliveryDate = new Date(deliveryDate);
+      if (isNaN(parsedDeliveryDate.getTime())) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Invalid delivery date format.",
+        });
+      }
+      updateFields.deliveryDate = parsedDeliveryDate;
+    }
+
+    if (paymentStatus) {
+      updateFields.paymentStatus = paymentStatus;
+    }
+
+    const order = await Order.findOneAndUpdate(
+      {
+        orderId,
+        "orderItems.vendorDetails.email": req.user.email,
+      },
+      updateFields,
+      { new: true }
+    )
+      .populate("user")
+      .populate("orderItems.product");
+
+    if (!order) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message:
+          "Order not found or you are not authorized to update this order",
+      });
+    }
+
+    const emailPromises = [];
+    if (orderStatus === "confirmed" && deliveryDate) {
+      emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
+    } else if (orderStatus === "delivered") {
+      emailPromises.push(
+        sendCustomerOrderDeliveredMail(order, order.user),
+        sendVendorOrderDeliveredMail(order, order.user)
+      );
+    }
+
+    await Promise.all(emailPromises);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Order status updated successfully",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to update order status. " + error.message,
+    });
+  }
+};
+
 const deleteVendor = async () => {
   try {
     const vendor = await User.findByIdAndDelete(req.params.id);
@@ -195,5 +289,6 @@ module.exports = {
   createStore,
   getAllVendors,
   getVendorById,
+  updateOrderStatus,
   deleteVendor,
 };

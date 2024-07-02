@@ -20,17 +20,25 @@ const mongoose = require("mongoose");
 //   return totalStock;
 // };
 
-const generateUniqueOrderId = async () => {
-  try {
-    const lastOrder = await Order.findOne()
-      .sort({ orderId: -1 })
-      .limit(1)
-      .select("orderId");
-    const nextOrderId = lastOrder ? lastOrder.orderId + 1 : 1;
-    return nextOrderId;
-  } catch (error) {
-    throw new Error("Failed to generate unique order ID");
+const generateOrderId = async () => {
+  const currentTimestamp = Math.floor(Date.now() / 1000); // Get current timestamp in seconds
+  const shortTimestamp = currentTimestamp % 1000000; // Use the last 6 digits of the timestamp
+
+  // Fetch the last order to get the last counter value
+  const lastOrder = await Order.findOne().sort({ orderId: -1 });
+
+  // Extract the last part of the orderId and increment it
+  let counter = 0;
+  if (lastOrder && lastOrder.orderId) {
+    const lastOrderIdString = String(lastOrder.orderId);
+    const lastCounter = parseInt(lastOrderIdString.slice(-3), 10); // Adjust as needed
+    counter = (lastCounter + 1) % 1000; // Use a 3-digit counter
   }
+
+  // Combine the short timestamp and the counter to form a 9-digit order ID
+  const orderId = `${shortTimestamp}${counter.toString().padStart(3, "0")}`;
+
+  return orderId;
 };
 
 const createOrder = async (req, res) => {
@@ -56,7 +64,7 @@ const createOrder = async (req, res) => {
 
     const [user, orderId] = await Promise.all([
       User.findById(userId).select("firstName lastName email").session(session),
-      generateUniqueOrderId(),
+      generateOrderId(),
     ]);
 
     let totalPrice = 0;
@@ -89,10 +97,17 @@ const createOrder = async (req, res) => {
 
       item.vendorDetails = product.createdBy;
 
+      const newQuantity = product.quantity - item.quantity;
+
       productUpdates.push({
         updateOne: {
           filter: { _id: item.product },
-          update: { $inc: { quantity: -item.quantity } },
+          update: {
+            $inc: { quantity: -item.quantity },
+            $set: {
+              status: newQuantity <= product.moq ? "outOfStock" : "inStock",
+            },
+          },
         },
       });
     }
@@ -300,11 +315,17 @@ const getOrderById = async (req, res) => {
   }
 };
 
-const getOrderByOrderId = async (req, res) => {
+const getOrdersByOrderId = async (req, res) => {
   try {
     const orderId = req.params.orderId;
     const order = await Order.findOne({ orderId: orderId }).populate({
       path: "orderItems.product",
+      select:
+        "name unit_price discounted_price description status quantity category image",
+      populate: {
+        path: "category",
+        select: "name",
+      },
       populate: {
         path: "createdBy",
         select:
@@ -340,9 +361,10 @@ const getOrdersByStatus = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const validStatuses = [
-      "received",
-      "processing",
-      "dispatched",
+      "new",
+      "confirmed",
+      "packaged",
+      "shipped",
       "delivered",
       "cancelled",
     ];
@@ -562,6 +584,7 @@ module.exports = {
   getOrders,
   getOrderById,
   getOrdersByUserId,
+  getOrdersByOrderId,
   getOrdersByStatus,
   getLatestOrder,
   updateOrder,

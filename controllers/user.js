@@ -237,7 +237,7 @@ const getUserOrders = async (req, res) => {
         .limit(limit);
 
       const receivedOrdersCount = orders.filter(
-        (order) => order.orderStatus === "received"
+        (order) => order.orderStatus === "new"
       ).length;
       const deliveredOrdersCount = orders.filter(
         (order) => order.orderStatus === "delivered"
@@ -330,7 +330,7 @@ const getUserOrders = async (req, res) => {
       }
 
       const pendingOrdersCount = orders.filter(
-        (order) => order.orderStatus === "received"
+        (order) => order.orderStatus === "new"
       ).length;
       const deliveredOrdersCount = orders.filter(
         (order) => order.orderStatus === "delivered"

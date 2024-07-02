@@ -6,6 +6,7 @@ const {
   createStore,
   getAllVendors,
   getVendorById,
+  updateOrderStatus,
   deleteVendor,
 } = require("../controllers/vendor");
 
@@ -19,6 +20,7 @@ router.post("/create", authenticateUser, createVendor);
 router.get("/validate-store-name", checkStoreNameAvailability);
 router.get("/", authenticateUser, getAllVendors);
 router.get("/:id", authenticateUser, getVendorById);
+router.patch("/order/:orderId", authenticateUser, updateOrderStatus);
 router.delete("/:id", authenticateUser, deleteVendor);
 
 module.exports = router;

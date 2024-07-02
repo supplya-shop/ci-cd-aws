@@ -202,7 +202,7 @@ const getOrderDashboardStats = async (req, res) => {
       dateOrdered: { $gte: currentDayStart },
     });
     const totalPendingOrders = await Order.countDocuments({
-      orderStatus: "received",
+      orderStatus: "new",
     });
     const totalCancelledOrders = await Order.countDocuments({
       orderStatus: "cancelled",
@@ -214,11 +214,14 @@ const getOrderDashboardStats = async (req, res) => {
       .sort({ dateOrdered: -1 })
       .populate({
         path: "orderItems.product",
-        select: "name unit_price discounted_price description category image",
+        select:
+          "name unit_price discounted_price description status quantity category image",
         populate: {
           path: "category",
           select: "name",
         },
+      })
+      .populate({
         path: "user",
         select: "firstName lastName email phoneNumber",
       });
