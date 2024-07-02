@@ -61,6 +61,11 @@ const orderSchema = mongoose.Schema({
   paymentMethod: {
     type: String,
   },
+  paymentStatus: {
+    type: String,
+    enum: ["paid", "unpaid", "refunded"],
+    default: "unpaid",
+  },
   totalPrice: {
     type: Number,
     required: true,
@@ -71,8 +76,8 @@ const orderSchema = mongoose.Schema({
 
   orderStatus: {
     type: String,
-    enum: ["received", "processing", "dispatched", "delivered", "cancelled"],
-    default: "received",
+    enum: ["new", "confirmed", "packaged", "shipped", "delivered", "cancelled"],
+    default: "new",
   },
 
   dateOrdered: {

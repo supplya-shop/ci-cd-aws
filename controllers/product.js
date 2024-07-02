@@ -507,12 +507,19 @@ const updateProduct = async (req, res, next) => {
     const updates = req.body;
     const options = { new: true };
 
-    const result = await Product.findByIdAndUpdate(productId, updates, options);
-    if (!result) {
-      return res
-        .status(StatusCodes.OK)
-        .json({ status: false, message: "Product not found" });
+    if (updates.quantity !== undefined && updates.quantity > 0) {
+      updates.status = "inStock";
     }
+
+    const result = await Product.findByIdAndUpdate(productId, updates, options);
+
+    if (!result) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "Product not found",
+      });
+    }
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Product updated successfully",

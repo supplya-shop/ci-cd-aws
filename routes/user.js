@@ -33,6 +33,6 @@ router.delete(
   bulkdeleteUsers
 );
 router.delete("/:id", authenticateUser, deleteUser);
-router.delete("/:id", authenticateUser, deleteUserAccount);
+router.delete("/delete-user-account", authenticateUser, deleteUserAccount);
 
 module.exports = router;

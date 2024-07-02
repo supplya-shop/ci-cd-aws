@@ -13,13 +13,33 @@ const createInventory = async (req, res) => {
     for (const product of products) {
       const { quantity, productId } = product;
 
-      // Validate productId and quantity here
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        hasError = true;
+        errorProducts.push({ productId, error: "Invalid product ID" });
+        continue;
+      }
+
+      if (quantity <= 0) {
+        hasError = true;
+        errorProducts.push({
+          productId,
+          error: "Quantity must be greater than 0",
+        });
+        continue;
+      }
 
       try {
-        const existingInventory = await Product.findOne({ _id: productId });
-        if (existingInventory) {
-          existingInventory.quantity += quantity;
-          await existingInventory.save();
+        const existingProduct = await Product.findById(productId);
+        if (existingProduct) {
+          existingProduct.quantity += quantity;
+
+          if (existingProduct.quantity <= 0) {
+            existingProduct.status = "outOfStock";
+          } else {
+            existingProduct.status = "inStock";
+          }
+
+          await existingProduct.save();
         } else {
           throw new Error("Product does not exist, create product first");
         }
@@ -52,8 +72,8 @@ const createInventory = async (req, res) => {
 
 const getInventory = async (req, res) => {
   try {
-    const inventory = await Product.find({}, "_id name quantity");
-    if (!inventory) {
+    const inventory = await Product.find({}, "_id name quantity status");
+    if (!inventory.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "No Inventory found",
@@ -67,6 +87,7 @@ const getInventory = async (req, res) => {
         id: item._id,
         name: item.name,
         quantity: item.quantity,
+        status: item.status,
       })),
     });
   } catch (error) {
@@ -81,11 +102,16 @@ const getInventoryByProduct = async (req, res) => {
   try {
     const productId = req.params.productId;
 
-    // Optionally check if the product exists here
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "Invalid product ID",
+      });
+    }
 
-    const inventory = await Product.findOne(
-      { _id: productId },
-      "_id name quantity"
+    const inventory = await Product.findById(
+      productId,
+      "_id name quantity status"
     );
 
     if (!inventory) {
@@ -101,6 +127,7 @@ const getInventoryByProduct = async (req, res) => {
         id: inventory._id,
         name: inventory.name,
         quantity: inventory.quantity,
+        status: inventory.status,
       },
     });
   } catch (error) {
