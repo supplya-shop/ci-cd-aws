@@ -116,6 +116,54 @@ const submitProduct = async (req, res, next) => {
   }
 };
 
+const duplicateProduct = async (req, res) => {
+  const productId = req.params.productId;
+  const { userid } = req.user;
+
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "Product not found",
+      });
+    }
+
+    const newProduct = new Product({
+      name: `${product.name} (Copy)`,
+      description: product.description,
+      unit_price: product.unit_price,
+      discounted_price: product.discounted_price,
+      quantity: product.quantity,
+      category: product.category,
+      flashsale: product.flashale,
+      approved: product.approved,
+      brand: product.brand,
+      rating: product.rating,
+      moq: product.moq,
+      sku: product.sku,
+      image: product.image,
+      images: product.images,
+      createdBy: userid,
+    });
+
+    await newProduct.save();
+
+    return res.status(StatusCodes.CREATED).json({
+      status: true,
+      message: "Product duplicated successfully",
+      data: newProduct,
+    });
+  } catch (error) {
+    console.error("Error duplicating product:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to duplicate product. " + error.message,
+    });
+  }
+};
+
 const getAllProducts = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -707,6 +755,7 @@ const searchProducts = async (req, res) => {
 module.exports = {
   createProduct,
   submitProduct,
+  duplicateProduct,
   approveProduct,
   getAllProducts,
   getProductsByVendor,

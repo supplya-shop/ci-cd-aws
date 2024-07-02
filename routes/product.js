@@ -5,6 +5,7 @@ const path = require("path");
 const {
   createProduct,
   submitProduct,
+  duplicateProduct,
   approveProduct,
   getAllProducts,
   getProductById,
@@ -56,6 +57,12 @@ router.post(
   authenticateUser,
   rolesAllowed("vendor, admin"),
   submitProduct
+);
+router.post(
+  "/:productId/duplicate",
+  authenticateUser,
+  rolesAllowed("vendor, admin"),
+  duplicateProduct
 );
 router.patch(
   "/approve/:id",

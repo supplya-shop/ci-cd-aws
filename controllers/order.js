@@ -245,16 +245,40 @@ const getOrders = async (req, res) => {
 
 const getOrdersByUserId = async (req, res) => {
   const userId = req.params.id;
-  console.log(`Fetching orders for user ID: ${userId}`);
+  const user = await User.findById(userId);
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
   try {
-    let orders = await Order.find({
-      "orderItems.vendorDetails.vendorId": userId,
-    }).populate("user");
-    console.log(`Orders for vendor with user ID ${userId}:`, orders);
-    if (!orders || orders.length === 0) {
-      orders = await Order.find({ user: userId }).populate("user");
-      console.log(`Orders for customer with user ID ${userId}:`, orders);
+    let orders;
+    let totalOrdersCount;
+
+    if (user.role === "vendor") {
+      const vendorProducts = await Product.find({ createdBy: userId }).select(
+        "quantity"
+      );
+      const productIds = vendorProducts.map((product) => product._id);
+
+      totalOrdersCount = await Order.countDocuments({
+        "orderItems.product": { $in: productIds },
+      });
+
+      orders = await Order.find({
+        "orderItems.product": { $in: productIds },
+      })
+        .skip(skip)
+        .limit(limit)
+        .populate("user");
+    }
+
+    if (user.role === "customer") {
+      totalOrdersCount = await Order.countDocuments({ user: userId });
+
+      orders = await Order.find({ user: userId })
+        .skip(skip)
+        .limit(limit)
+        .populate("user");
     }
 
     if (!orders || orders.length === 0) {
@@ -269,6 +293,9 @@ const getOrdersByUserId = async (req, res) => {
       status: true,
       message: "Orders fetched successfully",
       data: orders,
+      totalOrders: totalOrdersCount,
+      totalPages: Math.ceil(totalOrdersCount / limit),
+      currentPage: page,
     });
   } catch (error) {
     console.error("Error fetching orders:", error);
