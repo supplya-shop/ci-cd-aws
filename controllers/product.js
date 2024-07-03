@@ -406,7 +406,12 @@ const getRelatedProducts = async (req, res) => {
       _id: { $ne: productId },
     })
       .limit(10)
-      .select("name unit_price discounted_price description image status");
+      .select("name unit_price discounted_price description image status")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      });
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -437,6 +442,11 @@ const getProductsByVendor = async (req, res) => {
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
       )
       .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
@@ -479,6 +489,12 @@ const getProductsByCategory = async (req, res) => {
       });
     }
     const products = await Product.find({ category: category._id })
+      .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
@@ -522,6 +538,11 @@ const getProductsByUserId = async (req, res) => {
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
       )
       .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
@@ -572,6 +593,7 @@ const getProductsByBrand = async (req, res) => {
         select:
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
       })
+      .populate("category", "name")
       .limit(limit)
       .skip(startIndex);
     if (products.length === 0) {
@@ -604,6 +626,12 @@ const getDiscountedProducts = async (req, res) => {
     const discountedProducts = await Product.find({
       discounted_price: { $gt: 0 },
     })
+      .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .sort({ dateCreated: -1 })
       .limit(limit);
 
@@ -634,6 +662,12 @@ const getFlashsaleProducts = async (req, res) => {
   const startIndex = (page - 1) * limit;
   try {
     const flashsaleProducts = await Product.find({ flashsale: true })
+      .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .sort({ dateCreated: -1 })
       .limit(limit);
 
@@ -663,6 +697,12 @@ const getNewlyArrivedBrands = async (req, res, next) => {
   const startIndex = (page - 1) * limit;
   try {
     const response = await Product.find({})
+      .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
