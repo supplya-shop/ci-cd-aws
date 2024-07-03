@@ -20,7 +20,7 @@ const {
 
 //user routes
 router.patch("/:id", authenticateUser, updateUser);
-router.post("/create", authenticateUser, createUser);
+router.post("/", authenticateUser, createUser);
 router.get("/", authenticateUser, getAllUsers);
 router.get("/orders", authenticateUser, getUserOrders);
 router.get("/admin", authenticateUser, getAdminUsers);

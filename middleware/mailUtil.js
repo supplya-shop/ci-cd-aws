@@ -1584,7 +1584,7 @@ const sendOrderSummaryMail = async (order) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: process.env.EMAIL_USERNAME,
-    subject: `Order Summary for order #${order.orderId}`,
+    subject: `Order Summary for Order #${order.orderId}`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
@@ -1840,7 +1840,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: email,
-    subject: `Order Summary for order #${order.orderId}`,
+    subject: `Order Summary for Order #${order.orderId}`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
@@ -2092,7 +2092,7 @@ const sendVendorOrderSummaryMail = async (order) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: order.orderItems[0].vendorDetails.email,
-    subject: `Order Summary for order #${order.orderId}`,
+    subject: `Order Summary for Order #${order.orderId}`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
@@ -2348,7 +2348,7 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: order.email,
-    subject: `Order status confirmed for [Order ID: ${order.orderId}]`,
+    subject: `Order #${order.orderId} has been confirmed`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
@@ -2451,9 +2451,11 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                             <td style="color: #153643">
                             <p>Hi ${user.firstName},</p>
                               <p>
-                                Your order has been ${
+                                Your supplya order has been marked as ${
                                   order.orderStatus
-                                }. View order details below:
+                                } by ${
+      order.orderItems[0].vendorDetails.firstName
+    }. View order details below:
                               </p>
                             </td>
                           </tr>
@@ -2612,7 +2614,7 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: order.email,
-    subject: `Your order #${order.orderId} has been delivered`,
+    subject: `Order #${order.orderId} has been delivered`,
     html: `
        <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">

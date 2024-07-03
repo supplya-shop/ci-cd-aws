@@ -7,6 +7,7 @@ const {
   getOrderDashboardStats,
   getCustomerStats,
   getVendorStats,
+  assignProductToVendor,
 } = require("../controllers/admin");
 const {
   authenticateUser,
@@ -43,5 +44,6 @@ router.get(
   rolesAllowed("admin"),
   getVendorStats
 );
+router.post("/assign-product", authenticateUser, assignProductToVendor);
 
 module.exports = router;

@@ -9,30 +9,50 @@ const {
   NotFoundError,
 } = require("../errors");
 const multer = require("../middleware/upload");
-// const logger = require("../middleware/logging/logger");
 
 const createUser = async (req, res) => {
-  const { error, value } = validateUser(req.body);
-  if (error) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      error: false,
-      message:
-        "Validation error. Please confirm that all required fields are entered and try again.",
-    });
-  }
-  const newUser = new User(value);
   try {
+    const { firstName, lastName, email, password, role } = req.body;
+
+    if (!firstName || !lastName || !email || !password || !role) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        error: false,
+        message:
+          "Please provide firstName, lastName, email, password, and role.",
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(StatusCodes.CONFLICT).json({
+        status: false,
+        message: "User with this email already exists.",
+      });
+    }
+
+    const newUser = new User({
+      firstName,
+      lastName,
+      email,
+      password,
+      role,
+    });
+
     await newUser.save();
+
     return res.status(StatusCodes.CREATED).json({
-      message: "User created successfully.",
       status: true,
+      message: "User created successfully.",
       data: newUser,
     });
-    // logger.info(`${newUser.email} created successfully.`);
   } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ message: "Failed to create user.", status: false });
+    console.error("Error creating user:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to create user.",
+      error: error.message,
+    });
   }
 };
 
@@ -217,8 +237,23 @@ const getUserOrders = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
+    let orders,
+      totalOrdersCount,
+      totalNewOrdersCount,
+      totalDeliveredOrdersCount,
+      totalOrders,
+      totalAmountSold,
+      totalStock,
+      dailySales,
+      monthlySales;
     const past24Hours = new Date();
     past24Hours.setDate(past24Hours.getDate() - 1);
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
     if (userRole === "vendor") {
       const vendorProducts = await Product.find({ createdBy: userId }).select(
@@ -226,36 +261,50 @@ const getUserOrders = async (req, res) => {
       );
       const productIds = vendorProducts.map((product) => product._id);
 
-      const totalOrdersCount = await Order.countDocuments({
+      totalOrdersCount = await Order.countDocuments({
         "orderItems.product": { $in: productIds },
       });
 
-      const orders = await Order.find({
-        "orderItems.product": { $in: productIds },
-      })
+      orders = await Order.find({ "orderItems.product": { $in: productIds } })
+        .populate("user")
+        .populate({
+          path: "orderItems.product",
+          populate: {
+            path: "category",
+            select: "name",
+          },
+        })
+        .populate({
+          path: "orderItems.product",
+          populate: {
+            path: "createdBy",
+            select:
+              "firstName lastName email phoneNumber storeName storeUrl address state country",
+          },
+        })
         .skip(skip)
         .limit(limit);
 
-      const receivedOrdersCount = orders.filter(
-        (order) => order.orderStatus === "new"
-      ).length;
-      const deliveredOrdersCount = orders.filter(
-        (order) => order.orderStatus === "delivered"
-      ).length;
-      const newOrdersCount = orders.filter(
-        (order) => new Date(order.dateOrdered) >= past24Hours
-      ).length;
-      const totalOrders = orders.length;
-      const totalStock = vendorProducts.reduce(
+      totalNewOrdersCount = await Order.countDocuments({
+        "orderItems.product": { $in: productIds },
+        dateOrdered: { $gte: startOfDay, $lte: endOfDay },
+      });
+
+      totalDeliveredOrdersCount = await Order.countDocuments({
+        "orderItems.product": { $in: productIds },
+        orderStatus: "delivered",
+      });
+
+      totalStock = vendorProducts.reduce(
         (acc, product) => acc + product.quantity,
         0
       );
-      const totalAmountSold = orders.reduce(
+      totalAmountSold = orders.reduce(
         (acc, order) => acc + parseFloat(order.totalPrice),
         0
       );
 
-      const dailySales = await Order.aggregate([
+      dailySales = await Order.aggregate([
         { $match: { "orderItems.product": { $in: productIds } } },
         {
           $group: {
@@ -271,7 +320,7 @@ const getUserOrders = async (req, res) => {
         { $sort: { "_id.year": -1, "_id.month": -1, "_id.day": -1 } },
       ]);
 
-      const monthlySales = await Order.aggregate([
+      monthlySales = await Order.aggregate([
         { $match: { "orderItems.product": { $in: productIds } } },
         {
           $group: {
@@ -286,6 +335,8 @@ const getUserOrders = async (req, res) => {
         { $sort: { "_id.year": -1, "_id.month": -1 } },
       ]);
 
+      totalOrders = orders.length;
+
       return res.status(StatusCodes.OK).json({
         status: true,
         message: "Orders fetched successfully",
@@ -296,18 +347,17 @@ const getUserOrders = async (req, res) => {
           dailySales,
           monthlySales,
           orders,
-          receivedOrdersCount,
-          deliveredOrdersCount,
-          newOrdersCount,
+          totalDeliveredOrdersCount,
+          totalNewOrdersCount,
           totalOrdersCount,
           totalPages: Math.ceil(totalOrdersCount / limit),
           currentPage: page,
         },
       });
     } else {
-      const totalOrdersCount = await Order.countDocuments({ user: userId });
+      totalOrdersCount = await Order.countDocuments({ user: userId });
 
-      const orders = await Order.find({ user: userId })
+      orders = await Order.find({ user: userId })
         .populate({
           path: "orderItems.product",
           populate: {
@@ -316,17 +366,17 @@ const getUserOrders = async (req, res) => {
               "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
           },
         })
-        .populate({
-          path: "user",
-          select: "firstName lastName email",
-        })
+        .populate({ path: "user", select: "firstName lastName email" })
+        .populate("category name")
         .skip(skip)
         .limit(limit);
 
       if (!orders) {
-        return res
-          .status(StatusCodes.OK)
-          .json({ status: false, message: "No orders found", data: orders });
+        return res.status(StatusCodes.OK).json({
+          status: false,
+          message: "No orders found",
+          data: orders,
+        });
       }
 
       const pendingOrdersCount = orders.filter(
@@ -338,7 +388,8 @@ const getUserOrders = async (req, res) => {
       const newOrdersCount = orders.filter(
         (order) => new Date(order.dateOrdered) >= past24Hours
       ).length;
-      const totalOrders = orders.length;
+
+      totalOrders = orders.length;
       const totalAmountSpent = orders.reduce(
         (acc, order) => acc + parseFloat(order.totalPrice),
         0
@@ -367,7 +418,7 @@ const getUserOrders = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to fetch orders: " + error.message,
     });

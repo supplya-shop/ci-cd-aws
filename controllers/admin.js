@@ -402,6 +402,50 @@ const createUser = async (req, res) => {
   }
 };
 
+const assignProductToVendor = async (req, res) => {
+  const { productId, vendorId } = req.body;
+
+  if (!productId || !vendorId) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Product ID and Vendor ID are required",
+    });
+  }
+
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Product not found",
+      });
+    }
+
+    const vendor = await User.findById(vendorId);
+    if (!vendor) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Vendor not found",
+      });
+    }
+
+    product.createdBy = vendorId;
+    await product.save();
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Product assigned to vendor successfully",
+      data: product,
+    });
+  } catch (error) {
+    console.error("Error assigning product to vendor:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to assign product to vendor. " + error.message,
+    });
+  }
+};
+
 const getAllUsers = async (req, res) => {
   try {
     const [users, totalCount] = await Promise.all([
@@ -756,6 +800,7 @@ module.exports = {
   getOrderDashboardStats,
   getCustomerStats,
   getVendorStats,
+  assignProductToVendor,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,
