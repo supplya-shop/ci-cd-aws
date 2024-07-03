@@ -5,6 +5,181 @@ const Category = require("../models/Category");
 // const userController = require("../controllers/user");
 // const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
+const fs = require("fs");
+const path = require("path");
+const csv = require("csv-parser");
+const xlsx = require("xlsx");
+
+const validateProductData = (product) => {
+  const { name, unit_price, description, quantity, category, createdBy, moq } =
+    product;
+  if (!name || typeof name !== "string") return "Invalid or missing name";
+  if (isNaN(unit_price) || unit_price < 0)
+    return "Invalid or missing unit_price";
+  if (!description || typeof description !== "string")
+    return "Invalid or missing description";
+  if (isNaN(quantity) || quantity < 0) return "Invalid or missing quantity";
+  if (!category || typeof category !== "string")
+    return "Invalid or missing category";
+  if (!createdBy || typeof createdBy !== "string")
+    return "Invalid or missing createdBy";
+  if (isNaN(moq) || moq < 1) return "Invalid or missing moq";
+  return null;
+};
+
+const importProducts = async (req, res) => {
+  const filePath = req.file.path;
+
+  const parseDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return isNaN(date) ? null : date;
+  };
+
+  const processProducts = (rows) => {
+    const products = [];
+    const errors = [];
+
+    rows.forEach((row, index) => {
+      const product = {
+        name: row.name,
+        unit_price: parseFloat(row.unit_price),
+        discounted_price: parseFloat(row.discounted_price) || 0,
+        description: row.description,
+        quantity: parseInt(row.quantity, 10),
+        category: row.category,
+        image: row.image || "",
+        images: row.images ? row.images.split(";") : [],
+        brand: row.brand || "",
+        createdBy: row.createdBy,
+        status: row.status || "inStock",
+        rating: row.rating || "",
+        isFeatured: row.isFeatured === "false",
+        flashsale: row.flashsale === "false",
+        salesCount: parseInt(row.salesCount, 10) || 0,
+        approved: row.approved === "true",
+        dateCreated: row.dateCreated ? parseDate(row.dateCreated) : new Date(),
+        dateModified: row.dateModified ? parseDate(row.dateModified) : null,
+        sku: row.sku || "",
+        moq: parseInt(row.moq, 10) || 1,
+      };
+
+      const error = validateProductData(product);
+      if (error) {
+        errors.push(`Row ${index + 1}: ${error}`);
+      } else {
+        products.push(product);
+      }
+    });
+
+    return { products, errors };
+  };
+
+  if (path.extname(filePath).toLowerCase() === ".csv") {
+    const products = [];
+    const errors = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (row) => {
+        const product = {
+          name: row.name,
+          unit_price: parseFloat(row.unit_price),
+          discounted_price: parseFloat(row.discounted_price) || 0,
+          description: row.description,
+          quantity: parseInt(row.quantity, 10),
+          category: row.category,
+          image: row.image || "",
+          images: row.images ? row.images.split(";") : [],
+          brand: row.brand || "",
+          createdBy: row.createdBy,
+          status: row.status || "inStock",
+          rating: row.rating || "",
+          isFeatured: row.isFeatured === "false",
+          flashsale: row.flashsale === "false",
+          salesCount: parseInt(row.salesCount, 10) || 0,
+          approved: row.approved === "true",
+          dateCreated: row.dateCreated
+            ? parseDate(row.dateCreated)
+            : new Date(),
+          dateModified: row.dateModified ? parseDate(row.dateModified) : null,
+          sku: row.sku || "",
+          moq: parseInt(row.moq, 10) || 5,
+        };
+
+        const error = validateProductData(product);
+        if (error) {
+          errors.push(`Row ${products.length + 1}: ${error}`);
+        } else {
+          products.push(product);
+        }
+      })
+      .on("end", async () => {
+        if (errors.length > 0) {
+          res.status(StatusCodes.BAD_REQUEST).json({
+            status: false,
+            message: "Validation errors occurred",
+            errors: errors,
+          });
+        } else {
+          try {
+            await Product.insertMany(products);
+            res.status(StatusCodes.OK).json({
+              status: true,
+              message: "Products imported successfully",
+            });
+          } catch (error) {
+            res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+              status: false,
+              message: "Failed to import products: " + error.message,
+            });
+          } finally {
+            fs.unlinkSync(filePath);
+          }
+        }
+      })
+      .on("error", (error) => {
+        console.log(error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+          status: false,
+          message: "Failed to parse CSV file: " + error.message,
+        });
+      });
+  } else if (path.extname(filePath).toLowerCase() === ".xlsx") {
+    try {
+      const workbook = xlsx.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = xlsx.utils.sheet_to_json(sheet);
+
+      const { products, errors } = processProducts(rows);
+
+      if (errors.length > 0) {
+        res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Validation errors occurred",
+          errors: errors,
+        });
+      } else {
+        await Product.insertMany(products);
+        res.status(StatusCodes.OK).json({
+          status: true,
+          message: "Products imported successfully",
+        });
+      }
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        status: false,
+        message: "Failed to import products: " + error.message,
+      });
+    } finally {
+      fs.unlinkSync(filePath);
+    }
+  } else {
+    res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Unsupported file format. Please upload a CSV or XLSX file.",
+    });
+  }
+};
 
 const createProduct = async (req, res, next) => {
   const userId = req.user.userid;
@@ -753,6 +928,7 @@ const searchProducts = async (req, res) => {
 };
 
 module.exports = {
+  importProducts,
   createProduct,
   submitProduct,
   duplicateProduct,

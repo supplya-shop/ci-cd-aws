@@ -21,21 +21,18 @@ const mongoose = require("mongoose");
 // };
 
 const generateOrderId = async () => {
-  const currentTimestamp = Math.floor(Date.now() / 1000); // Get current timestamp in seconds
-  const shortTimestamp = currentTimestamp % 1000000; // Use the last 6 digits of the timestamp
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+  const shortTimestamp = currentTimestamp % 1000000;
 
-  // Fetch the last order to get the last counter value
   const lastOrder = await Order.findOne().sort({ orderId: -1 });
 
-  // Extract the last part of the orderId and increment it
   let counter = 0;
   if (lastOrder && lastOrder.orderId) {
     const lastOrderIdString = String(lastOrder.orderId);
-    const lastCounter = parseInt(lastOrderIdString.slice(-3), 10); // Adjust as needed
-    counter = (lastCounter + 1) % 1000; // Use a 3-digit counter
+    const lastCounter = parseInt(lastOrderIdString.slice(-3), 10);
+    counter = (lastCounter + 1) % 1000;
   }
 
-  // Combine the short timestamp and the counter to form a 9-digit order ID
   const orderId = `${shortTimestamp}${counter.toString().padStart(3, "0")}`;
 
   return orderId;
@@ -269,7 +266,8 @@ const getOrdersByUserId = async (req, res) => {
       })
         .skip(skip)
         .limit(limit)
-        .populate("user");
+        .populate("user")
+        .populate("orderItems.product");
     }
 
     if (user.role === "customer") {
@@ -278,7 +276,15 @@ const getOrdersByUserId = async (req, res) => {
       orders = await Order.find({ user: userId })
         .skip(skip)
         .limit(limit)
-        .populate("user");
+        .populate("user")
+        .populate({
+          path: "orderItems.product",
+          populate: {
+            path: "createdBy",
+            select:
+              "firstName lastName email phoneNumber storeName storeUrl address city state country",
+          },
+        });
     }
 
     if (!orders || orders.length === 0) {
@@ -417,6 +423,7 @@ const getOrdersByStatus = async (req, res, next) => {
           path: "orderItems.product",
           match: { createdBy: userId },
         })
+        .populate("user")
         .skip(skip)
         .limit(limit);
 

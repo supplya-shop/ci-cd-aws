@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const {
+  importProducts,
   createProduct,
   submitProduct,
   duplicateProduct,
@@ -31,21 +32,58 @@ const {
 } = require("../middleware/authenticateUser");
 
 // image storage engine
+// const storage = multer.diskStorage({
+//   destination: "./assets/images",
+//   filename: (req, file, cb) => {
+//     return cb(
+//       null,
+//       `${file.fieldname}_${Date.now()}_${path.extname(file.originalname)}`
+//     );
+//   },
+// });
+
+// const upload = multer({
+//   storage: storage,
+// });
+
 const storage = multer.diskStorage({
-  destination: "./assets/images",
-  filename: (req, file, cb) => {
-    return cb(
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, "../uploads/products/"));
+  },
+  filename: function (req, file, cb) {
+    cb(
       null,
-      `${file.fieldname}_${Date.now()}_${path.extname(file.originalname)}`
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
     );
   },
 });
 
 const upload = multer({
   storage: storage,
+  limits: { fileSize: 3000000 }, // 1MB limit
+  fileFilter: function (req, file, cb) {
+    checkFileType(file, cb);
+  },
 });
 
+function checkFileType(file, cb) {
+  const filetypes = /csv|xlsx/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype =
+    file.mimetype === "text/csv" ||
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+  if (mimetype && extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error("CSV or XLSX Files Only!"));
+  }
+}
+
 //product routes
+router.post("/import", upload.single("file"), importProducts);
+
 router.post(
   "/create",
   authenticateUser,
@@ -86,12 +124,12 @@ router.get("/:id", getProductById);
 router.get("/user/:userId", getProductsByUserId);
 router.get("/brands/:brand", getProductsByBrand);
 router.get("/:id/get-related", getRelatedProducts);
-router.post(
-  "/images/upload",
-  upload.single("product"),
-  authenticateUser,
-  uploadProductImage
-);
+// router.post(
+//   "/images/upload",
+//   upload.single("product"),
+//   authenticateUser,
+//   uploadProductImage
+// );
 router.get("/images");
 router.patch(
   "/:id",
