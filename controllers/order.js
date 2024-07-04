@@ -212,7 +212,17 @@ const getOrders = async (req, res) => {
     const orders = await Order.find()
       .populate({
         path: "orderItems.product",
-        model: "Product",
+        populate: [
+          {
+            path: "createdBy",
+            select:
+              "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+          },
+          {
+            path: "category",
+            select: "name",
+          },
+        ],
       })
       .populate({
         path: "user",
@@ -264,26 +274,47 @@ const getOrdersByUserId = async (req, res) => {
       orders = await Order.find({
         "orderItems.product": { $in: productIds },
       })
+        .sort({ dateOrdered: -1 })
         .skip(skip)
         .limit(limit)
         .populate("user")
-        .populate("orderItems.product");
+        .populate({
+          path: "orderItems.product",
+          populate: [
+            {
+              path: "createdBy",
+              select:
+                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+            },
+            {
+              path: "category",
+              select: "name",
+            },
+          ],
+        });
     }
 
     if (user.role === "customer") {
       totalOrdersCount = await Order.countDocuments({ user: userId });
 
       orders = await Order.find({ user: userId })
+
         .skip(skip)
         .limit(limit)
         .populate("user")
         .populate({
           path: "orderItems.product",
-          populate: {
-            path: "createdBy",
-            select:
-              "firstName lastName email phoneNumber storeName storeUrl address city state country",
-          },
+          populate: [
+            {
+              path: "createdBy",
+              select:
+                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+            },
+            {
+              path: "category",
+              select: "name",
+            },
+          ],
         });
     }
 
@@ -314,15 +345,21 @@ const getOrdersByUserId = async (req, res) => {
 
 const getOrderById = async (req, res) => {
   try {
-    const orderId = req.params.orderId;
+    const orderId = req.params.id;
     const order = await Order.findById(orderId)
       .populate({
         path: "orderItems.product",
-        populate: {
-          path: "createdBy",
-          select:
-            "firstName lastName email country state city postalCode gender storeName storeUrl phoneNumber accountNumber bank role",
-        },
+        populate: [
+          {
+            path: "createdBy",
+            select:
+              "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+          },
+          {
+            path: "category",
+            select: "name",
+          },
+        ],
       })
       .populate({
         path: "user",
@@ -348,23 +385,28 @@ const getOrderById = async (req, res) => {
   }
 };
 
-const getOrdersByOrderId = async (req, res) => {
+const getOrderByOrderId = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
   try {
     const orderId = req.params.orderId;
-    const order = await Order.findOne({ orderId: orderId }).populate({
-      path: "orderItems.product",
-      select:
-        "name unit_price discounted_price description status quantity category image",
-      populate: {
-        path: "category",
-        select: "name",
-      },
-      populate: {
-        path: "createdBy",
-        select:
-          "firstName lastName email country state city postalCode gender storeName storeUrl phoneNumber accountNumber bank role",
-      },
-    });
+    const order = await Order.findOne({ orderId: orderId })
+      .populate({
+        path: "orderItems.product",
+        populate: [
+          {
+            path: "createdBy",
+            select:
+              "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+          },
+          {
+            path: "category",
+            select: "name",
+          },
+        ],
+      })
+      .populate("user");
 
     if (!order) {
       return res
@@ -421,9 +463,20 @@ const getOrdersByStatus = async (req, res, next) => {
       })
         .populate({
           path: "orderItems.product",
-          match: { createdBy: userId },
+          populate: [
+            {
+              path: "createdBy",
+              select:
+                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+            },
+            {
+              path: "category",
+              select: "name",
+            },
+          ],
         })
         .populate("user")
+        .sort({ dateOrdered: -1 })
         .skip(skip)
         .limit(limit);
 
@@ -440,7 +493,22 @@ const getOrdersByStatus = async (req, res, next) => {
         user: userId,
         orderStatus: orderStatus.toLowerCase(),
       })
-        .populate("orderItems.product")
+        .populate({
+          path: "orderItems.product",
+          populate: [
+            {
+              path: "createdBy",
+              select:
+                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+            },
+            {
+              path: "category",
+              select: "name",
+            },
+          ],
+        })
+        .populate("user")
+        .sort({ dateOrdered: -1 })
         .skip(skip)
         .limit(limit);
 
@@ -618,7 +686,7 @@ module.exports = {
   getOrders,
   getOrderById,
   getOrdersByUserId,
-  getOrdersByOrderId,
+  getOrderByOrderId,
   getOrdersByStatus,
   getLatestOrder,
   updateOrder,
