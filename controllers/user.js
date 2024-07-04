@@ -266,21 +266,21 @@ const getUserOrders = async (req, res) => {
       });
 
       orders = await Order.find({ "orderItems.product": { $in: productIds } })
+        .sort({ dateCreated: -1 })
         .populate("user")
         .populate({
           path: "orderItems.product",
-          populate: {
-            path: "category",
-            select: "name",
-          },
-        })
-        .populate({
-          path: "orderItems.product",
-          populate: {
-            path: "createdBy",
-            select:
-              "firstName lastName email phoneNumber storeName storeUrl address state country",
-          },
+          populate: [
+            {
+              path: "createdBy",
+              select:
+                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+            },
+            {
+              path: "category",
+              select: "name",
+            },
+          ],
         })
         .skip(skip)
         .limit(limit);
@@ -358,16 +358,22 @@ const getUserOrders = async (req, res) => {
       totalOrdersCount = await Order.countDocuments({ user: userId });
 
       orders = await Order.find({ user: userId })
+        .sort({ dateCreated: -1 })
         .populate({
           path: "orderItems.product",
-          populate: {
-            path: "createdBy",
-            select:
-              "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
-          },
+          populate: [
+            {
+              path: "createdBy",
+              select:
+                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
+            },
+            {
+              path: "category",
+              select: "name",
+            },
+          ],
         })
         .populate({ path: "user", select: "firstName lastName email" })
-        .populate("category name")
         .skip(skip)
         .limit(limit);
 
