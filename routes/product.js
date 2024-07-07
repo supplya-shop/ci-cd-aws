@@ -60,7 +60,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 3000000 }, // 1MB limit
+  limits: { fileSize: 3000000 }, // 3MB limit
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
@@ -77,7 +77,7 @@ function checkFileType(file, cb) {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb(new Error("CSV or XLSX Files Only!"));
+    cb(new Error(".csv or .xlsx files only!"));
   }
 }
 

@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const OtpLogs = require("../models/OtpLogs");
 const { getAllOtpLogs, bulkdeleteOtpLogs } = require("../controllers/otplogs");
 
 const {
@@ -8,8 +7,8 @@ const {
   rolesAllowed,
 } = require("../middleware/authenticateUser");
 
-//user routes
-router.get("/", getAllOtpLogs);
-router.delete("/", bulkdeleteOtpLogs);
+//otplog routes
+router.get("/", authenticateUser, rolesAllowed("admin"), getAllOtpLogs);
+router.delete("/", authenticateUser, rolesAllowed("admin"), bulkdeleteOtpLogs);
 
 module.exports = router;
