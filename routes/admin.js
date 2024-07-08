@@ -8,6 +8,7 @@ const {
   getCustomerStats,
   getVendorStats,
   assignProductToVendor,
+  getMostBoughtProducts,
 } = require("../controllers/admin");
 const {
   authenticateUser,
@@ -38,6 +39,7 @@ router.get(
   rolesAllowed("admin"),
   getCustomerStats
 );
+router.get("/product/popular", authenticateUser, getMostBoughtProducts);
 router.get(
   "/dashboard/vendor",
   authenticateUser,
