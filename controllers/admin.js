@@ -254,6 +254,7 @@ const getCustomerStats = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+
   try {
     const currentDate = new Date();
     const past7Days = new Date(currentDate);
@@ -290,9 +291,31 @@ const getCustomerStats = async (req, res) => {
       ],
     });
 
-    const costumers = await User.find({ role: "customer" })
+    const customers = await User.find({ role: "customer" })
       .skip(skip)
       .limit(limit);
+
+    const customerIds = customers.map((customer) => customer._id);
+
+    const orders = await Order.aggregate([
+      { $match: { user: { $in: customerIds } } },
+      {
+        $group: {
+          _id: "$user",
+          totalSpent: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
+
+    const customerStats = customers.map((customer) => {
+      const order = orders.find(
+        (order) => order._id.toString() === customer._id.toString()
+      );
+      return {
+        ...customer._doc,
+        totalSpent: order ? order.totalSpent : 0,
+      };
+    });
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -303,7 +326,7 @@ const getCustomerStats = async (req, res) => {
         newCustomersToday,
         activeCustomers,
         inactiveCustomers,
-        costumers,
+        customers: customerStats,
         totalPages: Math.ceil(totalCustomers / limit),
         currentPage: page,
       },
@@ -442,6 +465,96 @@ const assignProductToVendor = async (req, res) => {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to assign product to vendor. " + error.message,
+    });
+  }
+};
+
+const getMostBoughtProducts = async (req, res) => {
+  try {
+    const products = await Order.aggregate([
+      { $unwind: "$orderItems" },
+      {
+        $group: {
+          _id: "$orderItems.product",
+          purchaseCount: { $sum: "$orderItems.quantity" },
+        },
+      },
+      { $sort: { purchaseCount: -1 } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: "$product" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "product.createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
+      { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "product.category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: "$product._id",
+          name: "$product.name",
+          unit_price: "$product.unit_price",
+          description: "$product.description",
+          quantity: "$product.quantity",
+          category: {
+            _id: "$category._id",
+            name: "$category.name",
+          },
+          image: "$product.image",
+          images: "$product.images",
+          brand: "$product.brand",
+          createdBy: {
+            _id: "$createdBy._id",
+            firstName: "$createdBy.firstName",
+            lastName: "$createdBy.lastName",
+            email: "$createdBy.email",
+            country: "$createdBy.country",
+            state: "$createdBy.state",
+            city: "$createdBy.city",
+            phoneNumber: "$createdBy.phoneNumber",
+          },
+          status: "$product.status",
+          rating: "$product.rating",
+          isFeatured: "$product.isFeatured",
+          flashsale: "$product.flashsale",
+          salesCount: "$product.salesCount",
+          approved: "$product.approved",
+          dateCreated: "$product.dateCreated",
+          dateModified: "$product.dateModified",
+          sku: "$product.sku",
+          moq: "$product.moq",
+          purchaseCount: "$purchaseCount",
+        },
+      },
+    ]);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Products fetched successfully",
+      data: products,
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch products: " + error.message,
     });
   }
 };
@@ -801,6 +914,7 @@ module.exports = {
   getCustomerStats,
   getVendorStats,
   assignProductToVendor,
+  getMostBoughtProducts,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,
