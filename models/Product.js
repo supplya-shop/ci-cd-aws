@@ -63,6 +63,19 @@ const productSchema = new schema({
     type: Boolean,
     default: false,
   },
+  flashsaleStartDate: { type: Date },
+  flashsaleEndDate: { type: Date },
+  flashsaleOffers: [
+    {
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      offerPrice: { type: Number, required: true },
+      status: {
+        type: String,
+        enum: ["pending", "accepted", "rejected"],
+        default: "pending",
+      },
+    },
+  ],
   salesCount: {
     type: Number,
     default: 0,

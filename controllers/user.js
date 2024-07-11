@@ -138,7 +138,7 @@ const getUsersByRole = async (req, res) => {
   try {
     const users = await User.find({ role })
       .select(
-        "firstName lastName email phoneNumber role createdAt storeName blocked"
+        "firstName lastName email phoneNumber role createdAt storeName storeUrl blocked"
       )
       .sort({ createdAt: -1 });
 
