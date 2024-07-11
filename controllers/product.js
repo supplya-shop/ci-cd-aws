@@ -9,10 +9,22 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 const xlsx = require("xlsx");
+const cron = require("node-cron");
 
 const validateProductData = (product) => {
-  const { name, unit_price, description, quantity, category, createdBy, moq } =
-    product;
+  const {
+    name,
+    unit_price,
+    description,
+    quantity,
+    category,
+    createdBy,
+    moq,
+    flashsale,
+    flashsaleStartDate,
+    flashsaleEndDate,
+  } = product;
+
   if (!name || typeof name !== "string") return "Invalid or missing name";
   if (isNaN(unit_price) || unit_price < 0)
     return "Invalid or missing unit_price";
@@ -24,7 +36,66 @@ const validateProductData = (product) => {
   if (!createdBy || typeof createdBy !== "string")
     return "Invalid or missing createdBy";
   if (isNaN(moq) || moq < 1) return "Invalid or missing moq";
+
+  if (flashsale) {
+    if (!flashsaleStartDate) return "Missing flashsaleStartDate";
+    if (!flashsaleEndDate) return "Missing flashsaleEndDate";
+
+    const startDate = new Date(flashsaleStartDate);
+    const endDate = new Date(flashsaleEndDate);
+
+    if (isNaN(startDate)) return "Invalid flashsaleStartDate";
+    if (isNaN(endDate)) return "Invalid flashsaleEndDate";
+    if (startDate >= endDate)
+      return "flashsaleStartDate must be before flashsaleEndDate";
+  }
+
   return null;
+};
+
+const processProducts = (rows) => {
+  const products = [];
+  const errors = [];
+
+  rows.forEach((row, index) => {
+    const product = {
+      name: row.name,
+      unit_price: parseFloat(row.unit_price),
+      discounted_price: parseFloat(row.discounted_price) || 0,
+      description: row.description,
+      quantity: parseInt(row.quantity, 10),
+      category: row.category,
+      image: row.image || "",
+      images: row.images ? row.images.split(";") : [],
+      brand: row.brand || "",
+      createdBy: row.createdBy,
+      status: row.status || "inStock",
+      rating: row.rating || "",
+      isFeatured: row.isFeatured === "true",
+      flashsale: row.flashsale === "true",
+      flashsaleStartDate: row.flashsaleStartDate
+        ? parseDate(row.flashsaleStartDate)
+        : null,
+      flashsaleEndDate: row.flashsaleEndDate
+        ? parseDate(row.flashsaleEndDate)
+        : null,
+      salesCount: parseInt(row.salesCount, 10) || 0,
+      approved: row.approved === "true",
+      dateCreated: row.dateCreated ? parseDate(row.dateCreated) : new Date(),
+      dateModified: row.dateModified ? parseDate(row.dateModified) : null,
+      sku: row.sku || "",
+      moq: parseInt(row.moq, 10) || 1,
+    };
+
+    const error = validateProductData(product);
+    if (error) {
+      errors.push(`Row ${index + 1}: ${error}`);
+    } else {
+      products.push(product);
+    }
+  });
+
+  return { products, errors };
 };
 
 const importProducts = async (req, res) => {
@@ -33,45 +104,6 @@ const importProducts = async (req, res) => {
   const parseDate = (dateStr) => {
     const date = new Date(dateStr);
     return isNaN(date) ? null : date;
-  };
-
-  const processProducts = (rows) => {
-    const products = [];
-    const errors = [];
-
-    rows.forEach((row, index) => {
-      const product = {
-        name: row.name,
-        unit_price: parseFloat(row.unit_price),
-        discounted_price: parseFloat(row.discounted_price) || 0,
-        description: row.description,
-        quantity: parseInt(row.quantity, 10),
-        category: row.category,
-        image: row.image || "",
-        images: row.images ? row.images.split(";") : [],
-        brand: row.brand || "",
-        createdBy: row.createdBy,
-        status: row.status || "inStock",
-        rating: row.rating || "",
-        isFeatured: row.isFeatured === "false",
-        flashsale: row.flashsale === "false",
-        salesCount: parseInt(row.salesCount, 10) || 0,
-        approved: row.approved === "true",
-        dateCreated: row.dateCreated ? parseDate(row.dateCreated) : new Date(),
-        dateModified: row.dateModified ? parseDate(row.dateModified) : null,
-        sku: row.sku || "",
-        moq: parseInt(row.moq, 10) || 1,
-      };
-
-      const error = validateProductData(product);
-      if (error) {
-        errors.push(`Row ${index + 1}: ${error}`);
-      } else {
-        products.push(product);
-      }
-    });
-
-    return { products, errors };
   };
 
   if (path.extname(filePath).toLowerCase() === ".csv") {
@@ -93,8 +125,14 @@ const importProducts = async (req, res) => {
           createdBy: row.createdBy,
           status: row.status || "inStock",
           rating: row.rating || "",
-          isFeatured: row.isFeatured === "false",
-          flashsale: row.flashsale === "false",
+          isFeatured: row.isFeatured === "true",
+          flashsale: row.flashsale === "true",
+          flashsaleStartDate: row.flashsaleStartDate
+            ? parseDate(row.flashsaleStartDate)
+            : null,
+          flashsaleEndDate: row.flashsaleEndDate
+            ? parseDate(row.flashsaleEndDate)
+            : null,
           salesCount: parseInt(row.salesCount, 10) || 0,
           approved: row.approved === "true",
           dateCreated: row.dateCreated
@@ -102,7 +140,7 @@ const importProducts = async (req, res) => {
             : new Date(),
           dateModified: row.dateModified ? parseDate(row.dateModified) : null,
           sku: row.sku || "",
-          moq: parseInt(row.moq, 10) || 5,
+          moq: parseInt(row.moq, 10) || 1,
         };
 
         const error = validateProductData(product);
@@ -207,6 +245,26 @@ const createProduct = async (req, res, next) => {
       status: false,
       message: "Please enter all required fields",
     });
+  }
+
+  // Handle flash sale dates
+  if (product.flashsale) {
+    if (!product.flashsaleStartDate || !product.flashsaleEndDate) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "Flash sale start and end dates are required",
+      });
+    }
+
+    const startDate = new Date(product.flashsaleStartDate);
+    const endDate = new Date(product.flashsaleEndDate);
+
+    if (endDate <= startDate) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "Flash sale end date must be after the start date",
+      });
+    }
   }
 
   product.createdBy = userId;
@@ -343,7 +401,6 @@ const getAllProducts = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
-
     const startIndex = (page - 1) * limit;
     // const endIndex = page * limit;
 
@@ -392,6 +449,13 @@ const getAllProducts = async (req, res, next) => {
 const getRelatedProducts = async (req, res) => {
   try {
     const productId = req.params.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+
+    const totalProductsCount = await Product.countDocuments();
+    const totalPages = Math.ceil(totalProductsCount / limit);
     const currentProduct = await Product.findById(productId);
     if (!currentProduct) {
       return res.status(StatusCodes.OK).json({
@@ -405,18 +469,23 @@ const getRelatedProducts = async (req, res) => {
       category: currentProduct.category,
       _id: { $ne: productId },
     })
-      .limit(10)
       .select("name unit_price discounted_price description image status")
       .populate({
         path: "createdBy",
         select:
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
-      });
+      })
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Products fetched successfully",
       data: relatedProducts,
+      page: page,
+      totalPages: totalPages,
+      totalProducts: totalProductsCount,
     });
   } catch (error) {
     console.error("Error fetching related products:", error);
@@ -432,10 +501,11 @@ const getProductsByVendor = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
     const startIndex = (page - 1) * limit;
-    // const endIndex = page * limit;
 
-    const totalProducts = await Product.countDocuments({ createdBy: vendorId });
-    const totalPages = Math.ceil(totalProducts / limit);
+    const totalProductsCount = await Product.countDocuments({
+      createdBy: vendorId,
+    });
+    const totalPages = Math.ceil(totalProductsCount / limit);
 
     const products = await Product.find({ createdBy: vendorId })
       .select(
@@ -464,7 +534,7 @@ const getProductsByVendor = async (req, res) => {
       data: products,
       currentPage: page,
       totalPages: totalPages,
-      totalProducts: totalProducts,
+      totalProducts: totalProductsCount,
     });
   } catch (error) {
     console.error(error);
@@ -479,7 +549,7 @@ const getProductsByCategory = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
-  // const endIndex = page * limit;
+
   try {
     const category = await Category.findOne({ name: categoryName });
     if (!category) {
@@ -488,6 +558,11 @@ const getProductsByCategory = async (req, res) => {
         message: "Category not found",
       });
     }
+
+    const totalProductsCount = await Product.countDocuments({
+      category: category._id,
+    });
+
     const products = await Product.find({ category: category._id })
       .populate("category", "name")
       .populate({
@@ -499,7 +574,7 @@ const getProductsByCategory = async (req, res) => {
       .limit(limit)
       .skip(startIndex);
 
-    const totalPages = Math.ceil(products / limit);
+    const totalPages = Math.ceil(totalProductsCount / limit);
 
     if (!products.length) {
       return res.status(StatusCodes.OK).json({
@@ -515,6 +590,7 @@ const getProductsByCategory = async (req, res) => {
       data: products,
       currentPage: page,
       totalPages: totalPages,
+      totalProducts: totalProductsCount,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -530,9 +606,12 @@ const getProductsByUserId = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
-  // const endIndex = page * limit;
 
   try {
+    const totalProductsCount = await Product.countDocuments({
+      createdBy: userId,
+    });
+
     const products = await Product.find({ createdBy: userId })
       .select(
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
@@ -553,7 +632,8 @@ const getProductsByUserId = async (req, res) => {
         message: "No products found for this user",
       });
     }
-    const totalPages = Math.ceil(products / limit);
+
+    const totalPages = Math.ceil(totalProductsCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -579,12 +659,11 @@ const getProductsByBrand = async (req, res) => {
     const limit = parseInt(req.query.limit) || 15;
 
     const startIndex = (page - 1) * limit;
-    // const endIndex = page * limit;
 
-    const totalProducts = await Product.countDocuments({
+    const totalProductsCount = await Product.countDocuments({
       brand: { $regex: new RegExp(brand, "i") },
     });
-    const totalPages = Math.ceil(totalProducts / limit);
+    const totalPages = Math.ceil(totalProductsCount / limit);
     const products = await Product.find({
       brand: { $regex: new RegExp(brand, "i") },
     })
@@ -609,7 +688,7 @@ const getProductsByBrand = async (req, res) => {
       data: products,
       currentPage: page,
       totalPages: totalPages,
-      totalProducts: totalProducts,
+      totalProducts: totalProductsCount,
     });
   } catch (error) {
     return res
@@ -633,7 +712,13 @@ const getDiscountedProducts = async (req, res) => {
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
       })
       .sort({ dateCreated: -1 })
-      .limit(limit);
+      .limit(limit)
+      .skip(startIndex);
+
+    const totalProductsCount = await Product.countDocuments({
+      discounted_price: { $gt: 0 },
+    });
+    const totalPagesCount = Math.ceil(totalProductsCount / limit);
 
     if (!discountedProducts || discountedProducts.length === 0) {
       return res.status(StatusCodes.OK).json({
@@ -647,6 +732,7 @@ const getDiscountedProducts = async (req, res) => {
       message: "Products fetched successfully",
       data: discountedProducts,
       currentPage: page,
+      totalPages: totalPagesCount,
     });
   } catch (error) {
     console.log(error);
@@ -660,34 +746,53 @@ const getFlashsaleProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const now = new Date();
+
   try {
-    const flashsaleProducts = await Product.find({ flashsale: true })
+    const flashsaleProducts = await Product.find({
+      flashsale: true,
+      flashsaleStartDate: { $lte: now },
+      flashsaleEndDate: { $gte: now },
+    })
       .populate("category", "name")
       .populate({
         path: "createdBy",
         select:
-          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+          "firstName lastName email country state city postalCode gender storeName storeUrl phoneNumber accountNumber bank role",
       })
       .sort({ dateCreated: -1 })
-      .limit(limit);
+      .limit(limit)
+      .skip(startIndex);
 
-    if (!flashsaleProducts || flashsaleProducts.length === 0) {
+    const totalProductsCount = await Product.countDocuments({
+      flashsale: true,
+      flashsaleStartDate: { $lte: now },
+      flashsaleEndDate: { $gte: now },
+    });
+
+    const totalPages = Math.ceil(totalProductsCount / limit);
+
+    if (!flashsaleProducts.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "No products found",
-        data: flashsaleProducts,
+        data: [],
       });
     }
+
     return res.json({
       status: true,
       message: "Products fetched successfully",
       data: flashsaleProducts,
       currentPage: page,
+      totalPages: totalPages,
+      totalProducts: totalProductsCount,
     });
   } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: error.message,
+    });
   }
 };
 
@@ -769,6 +874,25 @@ const updateProduct = async (req, res, next) => {
     const productId = req.params.id;
     const updates = req.body;
     const options = { new: true };
+
+    if (updates.flashsale) {
+      if (!updates.flashsaleStartDate || !updates.flashsaleEndDate) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Flash sale start and end dates are required",
+        });
+      }
+
+      const startDate = new Date(updates.flashsaleStartDate);
+      const endDate = new Date(updates.flashsaleEndDate);
+
+      if (endDate <= startDate) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Flash sale end date must be after the start date",
+        });
+      }
+    }
 
     if (updates.quantity !== undefined && updates.quantity > 0) {
       updates.status = "inStock";
@@ -966,6 +1090,53 @@ const searchProducts = async (req, res) => {
       .json({ status: false, message: "Failed to search products" });
   }
 };
+
+const manageFlashSales = async () => {
+  try {
+    const now = new Date();
+    const flashsaleProducts = await Product.find({
+      flashsale: true,
+      flashsaleEndDate: { $gte: now },
+    });
+
+    const totalFlashsaleProducts = flashsaleProducts.length;
+    const batches = Math.ceil(totalFlashsaleProducts / 100);
+    const currentBatch = Math.floor((now.getDate() - 1) % batches);
+
+    const productsToDisplay = flashsaleProducts
+      .sort(
+        (a, b) =>
+          new Date(a.flashsaleStartDate) - new Date(b.flashsaleStartDate)
+      )
+      .slice(currentBatch * 100, (currentBatch + 1) * 100);
+
+    // Update products to be displayed
+    await Promise.all(
+      productsToDisplay.map(async (product) => {
+        product.unit_price = product.discounted_price;
+        await product.save();
+      })
+    );
+
+    // Reset products after flash sale ends
+    const expiredFlashsales = await Product.find({
+      flashsale: true,
+      flashsaleEndDate: { $lt: now },
+    });
+
+    await Promise.all(
+      expiredFlashsales.map(async (product) => {
+        product.flashsale = false;
+        product.discounted_price = product.unit_price;
+        await product.save();
+      })
+    );
+  } catch (error) {
+    console.error("Error managing flash sales:", error);
+  }
+};
+
+cron.schedule("0 0 * * *", manageFlashSales);
 
 module.exports = {
   importProducts,
