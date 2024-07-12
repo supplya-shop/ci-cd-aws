@@ -247,7 +247,6 @@ const createProduct = async (req, res, next) => {
     });
   }
 
-  // Handle flash sale dates
   if (product.flashsale) {
     if (!product.flashsaleStartDate || !product.flashsaleEndDate) {
       return res.status(StatusCodes.BAD_REQUEST).json({

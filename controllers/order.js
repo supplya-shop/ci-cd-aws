@@ -11,15 +11,6 @@ const {
 
 const mongoose = require("mongoose");
 
-// const calculateTotalStock = async (userId) => {
-//   const products = await Product.find({ createdBy: userId }).select("quantity");
-//   const totalStock = products.reduce(
-//     (acc, product) => acc + product.quantity,
-//     0
-//   );
-//   return totalStock;
-// };
-
 const generateOrderId = async () => {
   const currentTimestamp = Math.floor(Date.now() / 1000);
   const shortTimestamp = currentTimestamp % 1000000;
@@ -656,7 +647,7 @@ const cancelOrder = async (req, res) => {
 };
 
 const deleteOrder = async (req, res) => {
-  const { orderId } = req.params;
+  const orderId = req.params.orderId;
 
   try {
     const order = await Order.findByIdAndDelete(orderId);
