@@ -4,7 +4,7 @@ const { StatusCodes } = require("http-status-codes");
 
 const createCategory = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, image } = req.body;
 
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
@@ -13,7 +13,7 @@ const createCategory = async (req, res) => {
         .json({ status: false, message: "Category already exists" });
     }
 
-    const category = new Category({ name, description });
+    const category = new Category({ name, description, image });
     await category.save();
 
     return res.status(StatusCodes.CREATED).json({
@@ -24,7 +24,7 @@ const createCategory = async (req, res) => {
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to create category: " + error.message,
+      message: error.message,
     });
   }
 };
@@ -102,7 +102,6 @@ const deleteCategory = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
 
-    // Check for dependencies (e.g., products associated with this category)
     const dependentProducts = await Product.find({ category: categoryId });
     if (dependentProducts.length > 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
