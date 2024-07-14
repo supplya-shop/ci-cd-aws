@@ -413,7 +413,7 @@ const getAllProducts = async (req, res, next) => {
           "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
       })
       .select(
-        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
       )
       .populate("category", "name")
       .sort({ dateCreated: -1 })
@@ -443,6 +443,40 @@ const getAllProducts = async (req, res, next) => {
       message: "Failed to fetch products",
     });
   }
+};
+
+const getProductById = async (req, res, next) => {
+  const productId = req.params.id;
+  Product.findById(productId)
+    .populate({
+      path: "createdBy",
+      select:
+        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+    })
+    .select(
+      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
+    )
+    .populate("category", "name")
+    .then((product) => {
+      if (!product) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          status: false,
+          message: "No product found",
+        });
+      }
+      return res.status(StatusCodes.OK).json({
+        status: true,
+        message: "Product fetched successfully",
+        data: product,
+      });
+    })
+    .catch((error) => {
+      console.error(error.message);
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        status: false,
+        message: "Failed to fetch product",
+      });
+    });
 };
 
 const getRelatedProducts = async (req, res) => {
@@ -508,7 +542,7 @@ const getProductsByVendor = async (req, res) => {
 
     const products = await Product.find({ createdBy: vendorId })
       .select(
-        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
       )
       .populate("category", "name")
       .populate({
@@ -613,7 +647,7 @@ const getProductsByUserId = async (req, res) => {
 
     const products = await Product.find({ createdBy: userId })
       .select(
-        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
+        "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
       )
       .populate("category", "name")
       .populate({
@@ -740,6 +774,7 @@ const getDiscountedProducts = async (req, res) => {
       .json({ status: false, message: error.message });
   }
 };
+
 const getTrendingProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
@@ -784,6 +819,7 @@ const getTrendingProducts = async (req, res) => {
       .json({ status: false, message: error.message });
   }
 };
+
 const getDealsOfTheDay = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
@@ -920,40 +956,6 @@ const getNewlyArrivedBrands = async (req, res, next) => {
       message: error.message,
     });
   }
-};
-
-const getProductById = async (req, res, next) => {
-  const productId = req.params.id;
-  Product.findById(productId)
-    .populate({
-      path: "createdBy",
-      select:
-        "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
-    })
-    .select(
-      "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale saleCount dateCreated moq approved sku"
-    )
-    .populate("category", "name")
-    .then((product) => {
-      if (!product) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          status: false,
-          message: "No product found",
-        });
-      }
-      return res.status(StatusCodes.OK).json({
-        status: true,
-        message: "Product fetched successfully",
-        data: product,
-      });
-    })
-    .catch((error) => {
-      console.error(error.message);
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        status: false,
-        message: "Failed to fetch product",
-      });
-    });
 };
 
 const updateProduct = async (req, res, next) => {
