@@ -59,6 +59,14 @@ const productSchema = new schema({
     type: Boolean,
     default: false,
   },
+  isDealOfTheDay: {
+    type: Boolean,
+    default: false,
+  },
+  isTrending: {
+    type: Boolean,
+    default: false,
+  },
   flashsale: {
     type: Boolean,
     default: false,

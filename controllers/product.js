@@ -740,6 +740,94 @@ const getDiscountedProducts = async (req, res) => {
       .json({ status: false, message: error.message });
   }
 };
+const getTrendingProducts = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
+  try {
+    const trendingProducts = await Product.find({
+      isTrending: true,
+    })
+      .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
+    const totalProductsCount = await Product.countDocuments({
+      isTrending: true,
+    });
+    const totalPagesCount = Math.ceil(totalProductsCount / limit);
+
+    if (!trendingProducts || trendingProducts.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "No products found",
+        data: trendingProducts,
+      });
+    }
+    return res.json({
+      status: true,
+      message: "Products fetched successfully",
+      data: trendingProducts,
+      currentPage: page,
+      totalPages: totalPagesCount,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: false, message: error.message });
+  }
+};
+const getDealsOfTheDay = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
+  try {
+    const deals = await Product.find({
+      isDealOfTheDay: true,
+    })
+      .populate("category", "name")
+      .populate({
+        path: "createdBy",
+        select:
+          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
+      })
+      .sort({ dateCreated: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
+    const totalProductsCount = await Product.countDocuments({
+      isDealOfTheDay: true,
+    });
+    const totalPagesCount = Math.ceil(totalProductsCount / limit);
+
+    if (!deals || deals.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "No products found",
+        data: deals,
+      });
+    }
+    return res.json({
+      status: true,
+      message: "Products fetched successfully",
+      data: deals,
+      currentPage: page,
+      totalPages: totalPagesCount,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ status: false, message: error.message });
+  }
+};
 
 const getFlashsaleProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -1153,6 +1241,8 @@ module.exports = {
   getRelatedProducts,
   getFlashsaleProducts,
   getDiscountedProducts,
+  getDealsOfTheDay,
+  getTrendingProducts,
   updateProduct,
   uploadProductImage,
   deleteProductsWithoutVendor,
