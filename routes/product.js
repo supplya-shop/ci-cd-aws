@@ -116,8 +116,8 @@ router.delete(
   deleteProductsWithoutVendor
 );
 router.get("/discounted", getDiscountedProducts);
-router.get("/deals", getDiscountedProducts);
-router.get("/trending", getDiscountedProducts);
+router.get("/deals", getDealsOfTheDay);
+router.get("/trending", getTrendingProducts);
 router.get("/category/:category", getProductsByCategory);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/", getAllProducts);
