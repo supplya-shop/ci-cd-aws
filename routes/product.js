@@ -15,6 +15,8 @@ const {
   getProductsByBrand,
   getProductsByCategory,
   getNewlyArrivedBrands,
+  getDealsOfTheDay,
+  getTrendingProducts,
   getDiscountedProducts,
   getFlashsaleProducts,
   updateProduct,
@@ -113,7 +115,9 @@ router.delete(
   authenticateUser,
   deleteProductsWithoutVendor
 );
+router.get("/discounted", getDiscountedProducts);
 router.get("/deals", getDiscountedProducts);
+router.get("/trending", getDiscountedProducts);
 router.get("/category/:category", getProductsByCategory);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/", getAllProducts);
