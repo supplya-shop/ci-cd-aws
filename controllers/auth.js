@@ -410,6 +410,8 @@ const verifyOTP = async (req, res) => {
       resetPasswordExpires: { $gt: currentTime },
     });
 
+    console.error("User", user);
+
     if (!user) {
       const storedUser = await User.findOne({ email });
       if (storedUser) {
@@ -432,6 +434,7 @@ const verifyOTP = async (req, res) => {
     }
 
     req.session.resetUserId = user._id;
+    console.log("resetUserId: ", req.session.resetUserId);
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -472,6 +475,7 @@ const resetPassword = async (req, res) => {
     }
 
     const userId = req.session.resetUserId;
+    console.log("UserId", userId);
 
     if (!userId) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -481,6 +485,7 @@ const resetPassword = async (req, res) => {
     }
 
     const user = await User.findById(userId);
+    console.log("User", user);
 
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
