@@ -4,7 +4,15 @@ const { StatusCodes } = require("http-status-codes");
 
 const createCategory = async (req, res) => {
   try {
-    const { name, description, image } = req.body;
+    const {
+      name,
+      description,
+      image,
+      parentCategory,
+      status,
+      totalProduct,
+      homepageDisplay,
+    } = req.body;
 
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
@@ -13,7 +21,15 @@ const createCategory = async (req, res) => {
         .json({ status: false, message: "Category already exists" });
     }
 
-    const category = new Category({ name, description, image });
+    const category = new Category({
+      name,
+      description,
+      image,
+      parentCategory,
+      status,
+      totalProduct,
+      homepageDisplay,
+    });
     await category.save();
 
     return res.status(StatusCodes.CREATED).json({
@@ -31,23 +47,79 @@ const createCategory = async (req, res) => {
 
 const getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find();
+    const { page = 1, limit = 10 } = req.query;
+
+    const categories = await Category.aggregate([
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "category",
+          as: "products",
+        },
+      },
+      {
+        $addFields: {
+          totalProduct: { $size: "$products" },
+        },
+      },
+      {
+        $skip: (page - 1) * limit,
+      },
+      {
+        $limit: limit * 1,
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "parentCategory",
+          foreignField: "_id",
+          as: "parentCategory",
+        },
+      },
+      {
+        $unwind: {
+          path: "$parentCategory",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          description: 1,
+          image: 1,
+          parentCategory: { $ifNull: ["$parentCategory.name", "-"] },
+          status: 1,
+          totalProduct: 1,
+          homepageDisplay: 1,
+        },
+      },
+    ]);
+
+    const count = await Category.countDocuments();
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Categories fetched successfully",
       data: categories,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
     });
   } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: error.message,
+    });
   }
 };
 
 const getCategoryById = async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
-    const category = await Category.findById(categoryId);
+    const category = await Category.findById(categoryId).populate(
+      "parentCategory",
+      "name"
+    );
 
     if (!category) {
       return res
@@ -130,10 +202,38 @@ const deleteCategory = async (req, res) => {
   }
 };
 
+const getCategoryData = async (req, res) => {
+  try {
+    const totalCategories = await Category.countDocuments();
+    const activeCategories = await Category.countDocuments({
+      status: "active",
+    });
+    const inactiveCategories = await Category.countDocuments({
+      status: "inActive",
+    });
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Category data fetched successfully",
+      data: {
+        totalCategories,
+        activeCategories,
+        inactiveCategories,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCategory,
   getAllCategories,
   getCategoryById,
   updateCategory,
   deleteCategory,
+  getCategoryData,
 };

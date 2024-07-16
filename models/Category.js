@@ -17,6 +17,14 @@ const categorySchema = new mongoose.Schema({
     type: String,
     required: [true, "Category image is required"],
   },
+  parentCategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    default: null,
+  },
+  status: { type: String, enum: ["active", "inActive"], default: "active" },
+  totalProduct: { type: Number, default: 0 },
+  homepageDisplay: { type: Number, default: 0 },
   createdAt: {
     type: Date,
     default: Date.now,
