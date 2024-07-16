@@ -238,6 +238,14 @@ const createProduct = async (req, res, next) => {
     });
   }
 
+  if (!user.phoneNumber) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message:
+        "Please ensure that you have provided your phone number in your profile then continue to create product.",
+    });
+  }
+
   const product = req.body;
 
   if (!product) {
