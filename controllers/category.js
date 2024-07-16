@@ -211,13 +211,10 @@ const getCategoryData = async (req, res) => {
     const inactiveCategories = await Category.countDocuments({
       status: "inActive",
     });
-    const homepageDisplayCount = await Category.find()
-      .sort({ homepageDisplay: 1 })
-      .exec();
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Summary data fetched successfully",
+      message: "Category data fetched successfully",
       data: {
         totalCategories,
         activeCategories,
