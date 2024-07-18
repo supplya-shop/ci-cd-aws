@@ -87,11 +87,11 @@ const getAllCategories = async (req, res) => {
         $project: {
           name: 1,
           description: 1,
-          image: 1,
+          image: { $ifNull: ["$image", ""] },
           parentCategory: { $ifNull: ["$parentCategory.name", "-"] },
           status: 1,
           totalProduct: 1,
-          homepageDisplay: 1,
+          homepageDisplay: { $ifNull: ["$homepageDisplay", ""] },
         },
       },
     ]);
