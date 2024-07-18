@@ -16,6 +16,7 @@ const categorySchema = new mongoose.Schema({
   image: {
     type: String,
     required: [true, "Category image is required"],
+    default: "",
   },
   parentCategory: {
     type: mongoose.Schema.Types.ObjectId,
