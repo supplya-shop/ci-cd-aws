@@ -4,6 +4,7 @@ const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, NotFoundError } = require("../errors");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
+const bcrypt = require("bcryptjs");
 const {
   generateOTP,
   sendOTPMail,
@@ -358,19 +359,16 @@ const forgotPassword = async (req, res) => {
     if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ message: error.message, status: false });
+        .json({ message: "User not found.", status: false });
     }
 
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const resetPasswordExpires = Date.now() + 30 * 60 * 1000;
-
-    user.resetPasswordToken = resetCode;
-    user.resetPasswordExpires = resetPasswordExpires;
+    const { otp, expiration } = generateOTP();
+    user.resetPasswordToken = await bcrypt.hash(otp.toString(), 10);
+    user.resetPasswordExpires = expiration;
 
     await user.save();
 
-    await forgotPasswordMail(email, resetCode);
+    await forgotPasswordMail(email, otp.toString());
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -402,43 +400,40 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    const currentTime = Date.now();
-
-    const user = await User.findOne({
-      email,
-      resetPasswordToken: otp,
-      resetPasswordExpires: { $gt: currentTime },
-    });
-
-    console.error("User", user);
-
+    const user = await User.findOne({ email });
     if (!user) {
-      const storedUser = await User.findOne({ email });
-      if (storedUser) {
-        console.log(
-          `Stored resetPasswordToken: ${storedUser.resetPasswordToken}`
-        );
-        console.log(
-          `Stored resetPasswordExpires: ${storedUser.resetPasswordExpires}`
-        );
-      } else {
-        console.log("No user found with the provided email.");
-      }
-      console.error(
-        `Verification failed for email: ${email}, Current Time: ${currentTime}`
-      );
-      return res.status(StatusCodes.UNAUTHORIZED).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: "Invalid OTP or OTP expired.",
+        message: "User not found.",
       });
     }
 
-    req.session.resetUserId = user._id;
-    console.log("resetUserId: ", req.session.resetUserId);
+    if (user.resetPasswordExpires < Date.now()) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        status: false,
+        message: "OTP expired.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(
+      otp.toString(),
+      user.resetPasswordToken
+    );
+    if (!isMatch) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        status: false,
+        message: "Invalid OTP.",
+      });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "30m",
+    });
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "OTP verified successfully.",
+      token,
     });
   } catch (error) {
     console.error("Error verifying OTP:", error);
@@ -451,7 +446,7 @@ const verifyOTP = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { newPassword, confirmPassword } = req.body;
+    const { newPassword, confirmPassword, token } = req.body;
 
     if (!newPassword) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -474,19 +469,18 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    const userId = req.session.resetUserId;
-    console.log("UserId", userId);
-
-    if (!userId) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        message: "User not found",
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Invalid or expired token",
         status: false,
       });
     }
 
     const user = await User.findById(userId);
-    console.log("User", user);
-
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         message: "User not found",
@@ -500,8 +494,6 @@ const resetPassword = async (req, res) => {
 
     await user.save();
     await resetPasswordMail(user.email);
-
-    req.session.resetUserId = null;
 
     return res.status(StatusCodes.OK).json({
       status: true,

@@ -195,7 +195,7 @@ const getOrderDashboardStats = async (req, res) => {
       dateOrdered: { $gte: currentDayStart },
     });
     const totalDeliveredOrders = await Order.countDocuments({
-      orderStatus: "delivered",
+      orderStatus: "Delivered",
     });
     const totalDeliveredOrdersToday = await Order.countDocuments({
       orderStatus: "delivered",
