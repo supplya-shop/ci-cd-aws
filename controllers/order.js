@@ -8,8 +8,8 @@ const {
   sendCustomerOrderSummaryMail,
   sendVendorOrderSummaryMail,
 } = require("../middleware/mailUtil");
-
 const mongoose = require("mongoose");
+const termiiService = require("../service/TermiiService");
 
 const generateOrderId = async () => {
   const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -173,6 +173,11 @@ const createOrder = async (req, res) => {
       sendOrderSummaryMail(order),
       sendCustomerOrderSummaryMail(order, user, email),
       sendVendorOrderSummaryMail(order, user),
+      termiiService.sendWhatsAppOrderNotification(
+        order.orderItems[0].vendorDetails.phoneNumber,
+        order.orderItems[0].vendorDetails.firstName,
+        order.orderId
+      ),
     ]);
 
     return res.status(StatusCodes.CREATED).json({
