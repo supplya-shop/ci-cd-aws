@@ -1,6 +1,6 @@
 const {
   sendOtpViaTermii,
-  sendWhatsAppOrderNotification,
+  sendVendorWhatsAppOrderNotification,
   sendCustomerWhatsAppOrderNotification,
 } = require("../service/TermiiService");
 const express = require("express");
@@ -69,7 +69,41 @@ const handleSendOrderNotification = async (req, res) => {
   }
 };
 
+const handleSendVendorOrderNotification = async (req, res) => {
+  try {
+    const { phoneNumber, firstName, orderId, email, phone } = req.body;
+
+    if (!phoneNumber || !firstName || !orderId || !timeFrame) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Phone number, first name, order ID, and time frame are required.",
+      });
+    }
+
+    const response = await sendVendorWhatsAppOrderNotification(
+      phoneNumber,
+      firstName,
+      orderId,
+      phone,
+      email
+    );
+    res.status(200).json({
+      status: true,
+      message: "Custom message sent successfully.",
+      data: response,
+    });
+  } catch (error) {
+    console.log("error: ", error);
+    res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
 router.post("/sms/send", handleSendOtp);
 router.post("/send/template", handleSendOrderNotification);
+router.post("/send/template/vendor", handleSendVendorOrderNotification);
 
 module.exports = router;

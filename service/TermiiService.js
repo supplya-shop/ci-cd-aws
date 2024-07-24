@@ -28,36 +28,38 @@ const sendOtpViaTermii = async (phoneNumber, otp) => {
   }
 };
 
-// const sendVendorWhatsAppOrderNotification = async (
-//   phoneNumber,
-//   firstName,
-//   orderId,
-//   timeFrame
-// ) => {
-//   try {
-//     const requestBody = {
-//       phone_number: phoneNumber,
-//       device_id: this.deviceId,
-//       template_id: this.vendortemplateId,
-//       api_key: this.apiKey,
-//       data: {
-//         first_name: firstName,
-//         order_id: orderId,
-//         time_frame: "30 minutes",
-//       },
-//     };
+const sendVendorWhatsAppOrderNotification = async (
+  phoneNumber,
+  firstName,
+  orderId,
+  phonenumber,
+  email
+) => {
+  try {
+    const requestBody = {
+      phone_number: phoneNumber,
+      device_id: this.deviceId,
+      template_id: this.vendortemplateId,
+      api_key: this.apiKey,
+      data: {
+        vendor_firstname: firstName,
+        order_id: orderId,
+        phone_number: phonenumber,
+        email,
+      },
+    };
 
-//     const response = await axios.post(
-//       `${process.env.TERMII_BASE_URL}/send/template`,
-//       requestBody
-//     );
+    const response = await axios.post(
+      `${process.env.TERMII_BASE_URL}/send/template`,
+      requestBody
+    );
 
-//     return response.data;
-//   } catch (error) {
-//     console.error("Error sending message:", error);
-//     throw new Error("Failed to send custom message. Please try again later.");
-//   }
-// };
+    return response.data;
+  } catch (error) {
+    console.error("Error sending message:", error);
+    throw new Error("Failed to send custom message. Please try again later.");
+  }
+};
 
 const sendCustomerWhatsAppOrderNotification = async (
   phoneNumber,
@@ -92,6 +94,6 @@ const sendCustomerWhatsAppOrderNotification = async (
 
 module.exports = {
   sendOtpViaTermii,
-  //   sendVendorWhatsAppOrderNotification,
+  sendVendorWhatsAppOrderNotification,
   sendCustomerWhatsAppOrderNotification,
 };

@@ -187,14 +187,13 @@ const createOrder = async (req, res) => {
         order.orderId,
         "30 minutes"
       ),
-      // termiiService.sendVendorWhatsAppOrderNotification(
-      //   order.orderItems[0].vendorDetails.phoneNumber,
-      //   order.orderItems[0].vendorDetails.firstName,
-      //   order.orderId
-      //   // "30 minutes", // Assuming you want to set this as the default timeframe
-      //   // user.email,
-      //   // "vendor"
-      // ),
+      termiiService.sendVendorWhatsAppOrderNotification(
+        order.orderItems[0].vendorDetails.phoneNumber,
+        order.orderItems[0].vendorDetails.firstName,
+        order.orderId,
+        phone,
+        email
+      ),
     ]);
 
     return res.status(StatusCodes.CREATED).json({
