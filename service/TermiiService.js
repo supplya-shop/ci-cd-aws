@@ -4,7 +4,8 @@ const { StatusCodes } = require("http-status-codes");
 this.baseUrl = process.env.TERMII_BASE_URL;
 this.apiKey = process.env.TERMII_API_KEY;
 this.deviceId = process.env.TERMII_DEVICE_ID;
-this.templateId = process.env.TERMII_TEMPLATE_ID;
+this.customertemplateId = process.env.TERMII_CUSTOMER_TEMPLATE_ID;
+this.vendortemplateId = process.env.TERMII_VENDOR_TEMPLATE_ID;
 
 const sendOtpViaTermii = async (phoneNumber, otp) => {
   try {
@@ -27,7 +28,38 @@ const sendOtpViaTermii = async (phoneNumber, otp) => {
   }
 };
 
-const sendWhatsAppOrderNotification = async (
+// const sendVendorWhatsAppOrderNotification = async (
+//   phoneNumber,
+//   firstName,
+//   orderId,
+//   timeFrame
+// ) => {
+//   try {
+//     const requestBody = {
+//       phone_number: phoneNumber,
+//       device_id: this.deviceId,
+//       template_id: this.vendortemplateId,
+//       api_key: this.apiKey,
+//       data: {
+//         first_name: firstName,
+//         order_id: orderId,
+//         time_frame: "30 minutes",
+//       },
+//     };
+
+//     const response = await axios.post(
+//       `${process.env.TERMII_BASE_URL}/send/template`,
+//       requestBody
+//     );
+
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error sending message:", error);
+//     throw new Error("Failed to send custom message. Please try again later.");
+//   }
+// };
+
+const sendCustomerWhatsAppOrderNotification = async (
   phoneNumber,
   firstName,
   orderId,
@@ -37,7 +69,7 @@ const sendWhatsAppOrderNotification = async (
     const requestBody = {
       phone_number: phoneNumber,
       device_id: this.deviceId,
-      template_id: this.templateId,
+      template_id: this.customertemplateId,
       api_key: this.apiKey,
       data: {
         first_name: firstName,
@@ -58,4 +90,8 @@ const sendWhatsAppOrderNotification = async (
   }
 };
 
-module.exports = { sendOtpViaTermii, sendWhatsAppOrderNotification };
+module.exports = {
+  sendOtpViaTermii,
+  //   sendVendorWhatsAppOrderNotification,
+  sendCustomerWhatsAppOrderNotification,
+};

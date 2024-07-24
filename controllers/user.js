@@ -164,6 +164,7 @@ const getUsersByRole = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
+  const phonePattern = /^234\d{10}$/;
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -197,6 +198,12 @@ const updateUser = async (req, res) => {
           "-"
         )}`;
       }
+    }
+    if (!phonePattern.test(updates.phoneNumber)) {
+      return res.status(400).json({
+        status: false,
+        message: "Phone number must start with 234 followed by 10 digits.",
+      });
     }
 
     const updatedData = {};

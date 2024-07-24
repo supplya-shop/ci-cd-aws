@@ -1,6 +1,7 @@
 const {
   sendOtpViaTermii,
   sendWhatsAppOrderNotification,
+  sendCustomerWhatsAppOrderNotification,
 } = require("../service/TermiiService");
 const express = require("express");
 const router = express.Router();
@@ -48,7 +49,7 @@ const handleSendOrderNotification = async (req, res) => {
       });
     }
 
-    const response = await sendWhatsAppOrderNotification(
+    const response = await sendCustomerWhatsAppOrderNotification(
       phoneNumber,
       firstName,
       orderId,

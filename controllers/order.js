@@ -29,6 +29,7 @@ const generateOrderId = async () => {
   return orderId;
 };
 
+const phonePattern = /^234\d{10}$/;
 const createOrder = async (req, res) => {
   let session;
 
@@ -46,6 +47,13 @@ const createOrder = async (req, res) => {
       paymentRefId,
       paymentMethod,
     } = req.body;
+
+    if (!phonePattern.test(phone)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "Phone number must start with 234 followed by 10 digits.",
+      });
+    }
 
     session = await mongoose.startSession();
     session.startTransaction();
@@ -173,11 +181,20 @@ const createOrder = async (req, res) => {
       sendOrderSummaryMail(order),
       sendCustomerOrderSummaryMail(order, user, email),
       sendVendorOrderSummaryMail(order, user),
-      termiiService.sendWhatsAppOrderNotification(
-        order.orderItems[0].vendorDetails.phoneNumber,
-        order.orderItems[0].vendorDetails.firstName,
-        order.orderId
+      termiiService.sendCustomerWhatsAppOrderNotification(
+        phone,
+        user.firstName,
+        order.orderId,
+        "30 minutes"
       ),
+      // termiiService.sendVendorWhatsAppOrderNotification(
+      //   order.orderItems[0].vendorDetails.phoneNumber,
+      //   order.orderItems[0].vendorDetails.firstName,
+      //   order.orderId
+      //   // "30 minutes", // Assuming you want to set this as the default timeframe
+      //   // user.email,
+      //   // "vendor"
+      // ),
     ]);
 
     return res.status(StatusCodes.CREATED).json({
