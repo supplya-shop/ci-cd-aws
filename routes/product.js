@@ -18,6 +18,7 @@ const {
   getDealsOfTheDay,
   getTrendingProducts,
   getDiscountedProducts,
+  specialDeals,
   getFlashsaleProducts,
   updateProduct,
   uploadProductImage,
@@ -124,6 +125,7 @@ router.get("/", getAllProducts);
 router.get("/vendor", authenticateUser, getProductsByVendor);
 router.get("/search", searchProducts);
 router.get("/flashsale", getFlashsaleProducts);
+router.get("/special-deals", specialDeals);
 router.get("/:id", getProductById);
 router.get("/user/:userId", getProductsByUserId);
 router.get("/brands/:brand", getProductsByBrand);

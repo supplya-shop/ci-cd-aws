@@ -1,5 +1,6 @@
 const { StatusCodes } = require("http-status-codes");
 const Product = require("../models/Product");
+const RecentlyViewed = require("../models/RecentlyViewed");
 const User = require("../models/User");
 const Category = require("../models/Category");
 // const userController = require("../controllers/user");
@@ -873,6 +874,69 @@ const getDealsOfTheDay = async (req, res) => {
   }
 };
 
+const recentlyViewed = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const recentlyViewed = await RecentlyViewed.findOne({ user: userId })
+      .populate({
+        path: "products.product",
+        model: "Product",
+      })
+      .sort({ "products.viewedAt": -1 })
+      .exec();
+
+    if (!recentlyViewed) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No recently viewed products found.",
+      });
+    }
+
+    // Optional: Limit the number of recently viewed products returned
+    const recentProducts = recentlyViewed.products.slice(0, 10);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Recently viewed products fetched successfully.",
+      data: recentProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching recently viewed products:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch recently viewed products. " + error.message,
+    });
+  }
+};
+
+const specialDeals = async (req, res) => {
+  try {
+    const specialDeals = await Product.find({
+      $or: [{ specialDeal: true }, { discounted_price: { $exists: true } }],
+    });
+
+    if (specialDeals.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No special deals found.",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Special deals fetched successfully.",
+      data: specialDeals,
+    });
+  } catch (error) {
+    console.error("Error fetching special deals:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch special deals. " + error.message,
+    });
+  }
+};
+
 const getFlashsaleProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
@@ -1252,6 +1316,8 @@ module.exports = {
   getFlashsaleProducts,
   getDiscountedProducts,
   getDealsOfTheDay,
+  recentlyViewed,
+  specialDeals,
   getTrendingProducts,
   updateProduct,
   uploadProductImage,

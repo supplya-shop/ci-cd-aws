@@ -24,6 +24,10 @@ const productSchema = new schema({
     type: Number,
     required: true,
   },
+  size: {
+    type: String,
+    required: true,
+  },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
@@ -89,6 +93,10 @@ const productSchema = new schema({
     default: 0,
   },
   approved: {
+    type: Boolean,
+    default: false,
+  },
+  specialDeal: {
     type: Boolean,
     default: false,
   },

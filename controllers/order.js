@@ -177,24 +177,7 @@ const createOrder = async (req, res) => {
           "firstName lastName email phoneNumber address city state country",
       });
 
-    await Promise.all([
-      sendOrderSummaryMail(order),
-      sendCustomerOrderSummaryMail(order, user, email),
-      sendVendorOrderSummaryMail(order, user),
-      termiiService.sendCustomerWhatsAppOrderNotification(
-        phone,
-        user.firstName,
-        order.orderId,
-        "30 minutes"
-      ),
-      termiiService.sendVendorWhatsAppOrderNotification(
-        order.orderItems[0].vendorDetails.phoneNumber,
-        order.orderItems[0].vendorDetails.firstName,
-        order.orderId,
-        phone,
-        email
-      ),
-    ]);
+    await notifyUsers(order, user, email, phone);
 
     return res.status(StatusCodes.CREATED).json({
       status: true,
@@ -691,6 +674,38 @@ const deleteOrder = async (req, res) => {
       message: "Failed to delete order",
     });
   }
+};
+
+const notifyUsers = async (order, user, email, phone) => {
+  const customerNotifications = [];
+  const vendorNotifications = [];
+
+  customerNotifications.push(
+    sendOrderSummaryMail(order),
+    sendCustomerOrderSummaryMail(order, user, email),
+    termiiService.sendCustomerWhatsAppOrderNotification(
+      phone,
+      user.firstName,
+      order.orderId,
+      "30 minutes"
+    )
+  );
+
+  order.orderItems.forEach((item) => {
+    const vendor = item.vendorDetails;
+    vendorNotifications.push(
+      sendVendorOrderSummaryMail(order, user),
+      termiiService.sendVendorWhatsAppOrderNotification(
+        vendor.phoneNumber,
+        vendor.firstName,
+        order.orderId,
+        phone,
+        email
+      )
+    );
+  });
+
+  await Promise.all([...customerNotifications, ...vendorNotifications]);
 };
 
 module.exports = {
