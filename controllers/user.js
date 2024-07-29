@@ -199,8 +199,8 @@ const updateUser = async (req, res) => {
         )}`;
       }
     }
-    if (!phonePattern.test(updates.phoneNumber)) {
-      return res.status(400).json({
+    if (updates.phoneNumber && !phonePattern.test(updates.phoneNumber)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: "Phone number must start with 234 followed by 10 digits.",
       });
