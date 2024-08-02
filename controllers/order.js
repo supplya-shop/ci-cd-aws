@@ -48,12 +48,12 @@ const createOrder = async (req, res) => {
       paymentMethod,
     } = req.body;
 
-    if (!phonePattern.test(phone)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Phone number must start with 234 followed by 10 digits.",
-      });
-    }
+    // if (!phonePattern.test(phone)) {
+    //   return res.status(StatusCodes.BAD_REQUEST).json({
+    //     status: false,
+    //     message: "Phone number must start with 234 followed by 10 digits.",
+    //   });
+    // }
 
     session = await mongoose.startSession();
     session.startTransaction();
@@ -682,26 +682,26 @@ const notifyUsers = async (order, user, email, phone) => {
 
   customerNotifications.push(
     sendOrderSummaryMail(order),
-    sendCustomerOrderSummaryMail(order, user, email),
-    termiiService.sendCustomerWhatsAppOrderNotification(
-      phone,
-      user.firstName,
-      order.orderId,
-      "30 minutes"
-    )
+    sendCustomerOrderSummaryMail(order, user, email)
+    // termiiService.sendCustomerWhatsAppOrderNotification(
+    //   phone,
+    //   user.firstName,
+    //   order.orderId,
+    //   "30 minutes"
+    // )
   );
 
   order.orderItems.forEach((item) => {
     const vendor = item.vendorDetails;
     vendorNotifications.push(
-      sendVendorOrderSummaryMail(order, user),
-      termiiService.sendVendorWhatsAppOrderNotification(
-        vendor.phoneNumber,
-        vendor.firstName,
-        order.orderId,
-        phone,
-        email
-      )
+      sendVendorOrderSummaryMail(order, user)
+      // termiiService.sendVendorWhatsAppOrderNotification(
+      //   vendor.phoneNumber,
+      //   vendor.firstName,
+      //   order.orderId,
+      //   phone,
+      //   email
+      // )
     );
   });
 
