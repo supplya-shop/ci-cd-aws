@@ -243,16 +243,20 @@ const getUserOrders = async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
+  const excludedStatuses = ["delivered", "shipped", "cancelled"];
+
   try {
     let orders,
       totalOrdersCount,
       totalNewOrdersCount,
       totalDeliveredOrdersCount,
+      totalPendingOrdersCount,
       totalOrders,
       totalAmountSold,
       totalStock,
       dailySales,
       monthlySales;
+
     const past24Hours = new Date();
     past24Hours.setDate(past24Hours.getDate() - 1);
 
@@ -300,6 +304,11 @@ const getUserOrders = async (req, res) => {
       totalDeliveredOrdersCount = await Order.countDocuments({
         "orderItems.product": { $in: productIds },
         orderStatus: "delivered",
+      });
+
+      totalPendingOrdersCount = await Order.countDocuments({
+        "orderItems.product": { $in: productIds },
+        orderStatus: { $nin: excludedStatuses },
       });
 
       totalStock = vendorProducts.reduce(
@@ -355,6 +364,7 @@ const getUserOrders = async (req, res) => {
           monthlySales,
           orders,
           totalDeliveredOrdersCount,
+          totalPendingOrdersCount,
           totalNewOrdersCount,
           totalOrdersCount,
           totalPages: Math.ceil(totalOrdersCount / limit),
@@ -392,9 +402,10 @@ const getUserOrders = async (req, res) => {
         });
       }
 
-      const pendingOrdersCount = orders.filter(
-        (order) => order.orderStatus === "new"
-      ).length;
+      totalPendingOrdersCount = await Order.countDocuments({
+        user: userId,
+        orderStatus: { $nin: excludedStatuses },
+      });
       const deliveredOrdersCount = orders.filter(
         (order) => order.orderStatus === "delivered"
       ).length;
@@ -421,7 +432,7 @@ const getUserOrders = async (req, res) => {
           totalAmountSpent,
           totalProductsOrdered,
           orders,
-          pendingOrdersCount,
+          totalPendingOrdersCount,
           deliveredOrdersCount,
           newOrdersCount,
           totalOrdersCount,
