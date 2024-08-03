@@ -31,7 +31,6 @@ const orderSchema = mongoose.Schema({
   ],
   city: {
     type: String,
-    required: true,
   },
   zip: {
     type: String,
@@ -45,7 +44,6 @@ const orderSchema = mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
   },
   address: {
     type: String,

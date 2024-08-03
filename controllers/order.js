@@ -48,12 +48,19 @@ const createOrder = async (req, res) => {
       paymentMethod,
     } = req.body;
 
-    // if (!phonePattern.test(phone)) {
-    //   return res.status(StatusCodes.BAD_REQUEST).json({
-    //     status: false,
-    //     message: "Phone number must start with 234 followed by 10 digits.",
-    //   });
-    // }
+    let formattedPhone = phone;
+
+    // Validate and format the phone number if provided
+    if (phone) {
+      if (/^0\d{10}$/.test(phone)) {
+        formattedPhone = "234" + phone.slice(1);
+      } else if (!phonePattern.test(phone)) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Phone number must start with 234 followed by 10 digits.",
+        });
+      }
+    }
 
     session = await mongoose.startSession();
     session.startTransaction();
@@ -144,7 +151,7 @@ const createOrder = async (req, res) => {
           city,
           zip,
           country,
-          phone,
+          phone: formattedPhone,
           email,
           address,
           orderNote,
@@ -177,7 +184,9 @@ const createOrder = async (req, res) => {
           "firstName lastName email phoneNumber address city state country",
       });
 
-    await notifyUsers(order, user, email, phone);
+    if (formattedPhone) {
+      await notifyUsers(order, user, email, formattedPhone);
+    }
 
     return res.status(StatusCodes.CREATED).json({
       status: true,
@@ -682,26 +691,26 @@ const notifyUsers = async (order, user, email, phone) => {
 
   customerNotifications.push(
     sendOrderSummaryMail(order),
-    sendCustomerOrderSummaryMail(order, user, email)
-    // termiiService.sendCustomerWhatsAppOrderNotification(
-    //   phone,
-    //   user.firstName,
-    //   order.orderId,
-    //   "30 minutes"
-    // )
+    sendCustomerOrderSummaryMail(order, user, email),
+    termiiService.sendCustomerWhatsAppOrderNotification(
+      phone,
+      user.firstName,
+      order.orderId,
+      "30 minutes"
+    )
   );
 
   order.orderItems.forEach((item) => {
     const vendor = item.vendorDetails;
     vendorNotifications.push(
-      sendVendorOrderSummaryMail(order, user)
-      // termiiService.sendVendorWhatsAppOrderNotification(
-      //   vendor.phoneNumber,
-      //   vendor.firstName,
-      //   order.orderId,
-      //   phone,
-      //   email
-      // )
+      sendVendorOrderSummaryMail(order, user),
+      termiiService.sendVendorWhatsAppOrderNotification(
+        vendor.phoneNumber,
+        vendor.firstName,
+        order.orderId,
+        phone,
+        email
+      )
     );
   });
 
