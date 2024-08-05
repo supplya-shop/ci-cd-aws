@@ -26,7 +26,6 @@ const productSchema = new schema({
   },
   size: {
     type: String,
-    required: true,
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
