@@ -256,24 +256,24 @@ const createProduct = async (req, res, next) => {
     });
   }
 
-  if (product.flashsale) {
-    if (!product.flashsaleStartDate || !product.flashsaleEndDate) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Flash sale start and end dates are required",
-      });
-    }
+  // if (product.flashsale) {
+  //   if (!product.flashsaleStartDate || !product.flashsaleEndDate) {
+  //     return res.status(StatusCodes.BAD_REQUEST).json({
+  //       status: false,
+  //       message: "Flash sale start and end dates are required",
+  //     });
+  //   }
 
-    const startDate = new Date(product.flashsaleStartDate);
-    const endDate = new Date(product.flashsaleEndDate);
+  //   const startDate = new Date(product.flashsaleStartDate);
+  //   const endDate = new Date(product.flashsaleEndDate);
 
-    if (endDate <= startDate) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Flash sale end date must be after the start date",
-      });
-    }
-  }
+  //   if (endDate <= startDate) {
+  //     return res.status(StatusCodes.BAD_REQUEST).json({
+  //       status: false,
+  //       message: "Flash sale end date must be after the start date",
+  //     });
+  //   }
+  // }
 
   product.createdBy = userId;
   product.approved = true;
@@ -946,8 +946,8 @@ const getFlashsaleProducts = async (req, res) => {
   try {
     const flashsaleProducts = await Product.find({
       flashsale: true,
-      flashsaleStartDate: { $lte: now },
-      flashsaleEndDate: { $gte: now },
+      // flashsaleStartDate: { $lte: now },
+      // flashsaleEndDate: { $gte: now },
     })
       .populate("category", "name")
       .populate({
@@ -961,8 +961,8 @@ const getFlashsaleProducts = async (req, res) => {
 
     const totalProductsCount = await Product.countDocuments({
       flashsale: true,
-      flashsaleStartDate: { $lte: now },
-      flashsaleEndDate: { $gte: now },
+      // flashsaleStartDate: { $lte: now },
+      // flashsaleEndDate: { $gte: now },
     });
 
     const totalPages = Math.ceil(totalProductsCount / limit);
@@ -1036,24 +1036,24 @@ const updateProduct = async (req, res, next) => {
     const updates = req.body;
     const options = { new: true };
 
-    if (updates.flashsale) {
-      if (!updates.flashsaleStartDate || !updates.flashsaleEndDate) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Flash sale start and end dates are required",
-        });
-      }
+    // if (updates.flashsale) {
+    //   if (!updates.flashsaleStartDate || !updates.flashsaleEndDate) {
+    //     return res.status(StatusCodes.BAD_REQUEST).json({
+    //       status: false,
+    //       message: "Flash sale start and end dates are required",
+    //     });
+    //   }
 
-      const startDate = new Date(updates.flashsaleStartDate);
-      const endDate = new Date(updates.flashsaleEndDate);
+    //   const startDate = new Date(updates.flashsaleStartDate);
+    //   const endDate = new Date(updates.flashsaleEndDate);
 
-      if (endDate <= startDate) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Flash sale end date must be after the start date",
-        });
-      }
-    }
+    //   if (endDate <= startDate) {
+    //     return res.status(StatusCodes.BAD_REQUEST).json({
+    //       status: false,
+    //       message: "Flash sale end date must be after the start date",
+    //     });
+    //   }
+    // }
 
     if (updates.quantity !== undefined && updates.quantity > 0) {
       updates.status = "inStock";
@@ -1252,52 +1252,52 @@ const searchProducts = async (req, res) => {
   }
 };
 
-const manageFlashSales = async () => {
-  try {
-    const now = new Date();
-    const flashsaleProducts = await Product.find({
-      flashsale: true,
-      flashsaleEndDate: { $gte: now },
-    });
+// const manageFlashSales = async () => {
+//   try {
+//     const now = new Date();
+//     const flashsaleProducts = await Product.find({
+//       flashsale: true,
+//       flashsaleEndDate: { $gte: now },
+//     });
 
-    const totalFlashsaleProducts = flashsaleProducts.length;
-    const batches = Math.ceil(totalFlashsaleProducts / 100);
-    const currentBatch = Math.floor((now.getDate() - 1) % batches);
+//     const totalFlashsaleProducts = flashsaleProducts.length;
+//     const batches = Math.ceil(totalFlashsaleProducts / 100);
+//     const currentBatch = Math.floor((now.getDate() - 1) % batches);
 
-    const productsToDisplay = flashsaleProducts
-      .sort(
-        (a, b) =>
-          new Date(a.flashsaleStartDate) - new Date(b.flashsaleStartDate)
-      )
-      .slice(currentBatch * 100, (currentBatch + 1) * 100);
+//     const productsToDisplay = flashsaleProducts
+//       .sort(
+//         (a, b) =>
+//           new Date(a.flashsaleStartDate) - new Date(b.flashsaleStartDate)
+//       )
+//       .slice(currentBatch * 100, (currentBatch + 1) * 100);
 
-    // Update products to be displayed
-    await Promise.all(
-      productsToDisplay.map(async (product) => {
-        product.unit_price = product.discounted_price;
-        await product.save();
-      })
-    );
+//     // Update products to be displayed
+//     await Promise.all(
+//       productsToDisplay.map(async (product) => {
+//         product.unit_price = product.discounted_price;
+//         await product.save();
+//       })
+//     );
 
-    // Reset products after flash sale ends
-    const expiredFlashsales = await Product.find({
-      flashsale: true,
-      flashsaleEndDate: { $lt: now },
-    });
+//     // Reset products after flash sale ends
+//     const expiredFlashsales = await Product.find({
+//       flashsale: true,
+//       flashsaleEndDate: { $lt: now },
+//     });
 
-    await Promise.all(
-      expiredFlashsales.map(async (product) => {
-        product.flashsale = false;
-        product.discounted_price = product.unit_price;
-        await product.save();
-      })
-    );
-  } catch (error) {
-    console.error("Error managing flash sales:", error);
-  }
-};
+//     await Promise.all(
+//       expiredFlashsales.map(async (product) => {
+//         product.flashsale = false;
+//         product.discounted_price = product.unit_price;
+//         await product.save();
+//       })
+//     );
+//   } catch (error) {
+//     console.error("Error managing flash sales:", error);
+//   }
+// };
 
-cron.schedule("0 0 * * *", manageFlashSales);
+// cron.schedule("0 0 * * *", manageFlashSales);
 
 module.exports = {
   importProducts,
