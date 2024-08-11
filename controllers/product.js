@@ -707,7 +707,7 @@ const getProductsByStoreName = async (req, res) => {
     if (!vendor) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: `No vendor found with store name: ${storeName}`,
+        message: `No vendor found with this store name.`,
       });
     }
 
@@ -727,7 +727,7 @@ const getProductsByStoreName = async (req, res) => {
     if (products.length === 0) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: `No products found for store name: ${storeName}`,
+        message: `No products found.`,
         data: [],
       });
     }
