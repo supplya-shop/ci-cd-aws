@@ -124,7 +124,7 @@ router.get("/category/:category", getProductsByCategory);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/", getAllProducts);
 router.get("/vendor", authenticateUser, getProductsByVendor);
-router.get("/:storeName", getProductsByStoreName);
+router.get("/store/:storeName", getProductsByStoreName);
 router.get("/search", searchProducts);
 router.get("/flashsale", getFlashsaleProducts);
 router.get("/special-deals", specialDeals);
