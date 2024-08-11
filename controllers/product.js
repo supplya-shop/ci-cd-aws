@@ -693,6 +693,67 @@ const getProductsByUserId = async (req, res) => {
   }
 };
 
+const getProductsByStoreName = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const skip = (page - 1) * limit;
+
+  try {
+    const { storeName } = req.params;
+    const vendor = await User.findOne({ storeName: storeName }).select("_id");
+
+    if (!vendor) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: `No vendor found with store name: ${storeName}`,
+      });
+    }
+
+    const totalProductsCount = await Product.countDocuments({
+      createdBy: vendor._id,
+    });
+
+    const products = await Product.find({ createdBy: vendor._id })
+      .populate({
+        path: "category",
+        select: "name",
+      })
+      .select(
+        "name unit_price discounted_price description category image sku moq createdBy"
+      )
+      .populate({
+        path: "createdBy",
+      })
+      .skip(skip)
+      .limit(limit);
+
+    if (products.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: `No products found for store name: ${storeName}`,
+        data: [],
+      });
+    }
+
+    const totalPages = Math.ceil(totalProductsCount / limit);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Products fetched successfully",
+      data: products,
+      currentPage: page,
+      totalPages,
+      totalProducts: totalProductsCount,
+    });
+  } catch (error) {
+    console.error("Error fetching products by store name: ", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: `Failed to fetch products by store name: ${error.message}`,
+    });
+  }
+};
+
 const getProductsByBrand = async (req, res) => {
   try {
     let brand = req.params.brand;
@@ -1311,6 +1372,7 @@ module.exports = {
   getProductsByBrand,
   getProductsByCategory,
   getNewlyArrivedBrands,
+  getProductsByStoreName,
   getProductById,
   getRelatedProducts,
   getFlashsaleProducts,
