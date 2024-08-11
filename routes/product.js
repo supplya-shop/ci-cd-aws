@@ -10,6 +10,7 @@ const {
   approveProduct,
   getAllProducts,
   getProductById,
+  getProductsByStoreName,
   getProductsByUserId,
   getProductsByVendor,
   getProductsByBrand,
@@ -123,6 +124,7 @@ router.get("/category/:category", getProductsByCategory);
 router.get("/newly-arrived-brands", getNewlyArrivedBrands);
 router.get("/", getAllProducts);
 router.get("/vendor", authenticateUser, getProductsByVendor);
+router.get("/:storeName", getProductsByStoreName);
 router.get("/search", searchProducts);
 router.get("/flashsale", getFlashsaleProducts);
 router.get("/special-deals", specialDeals);
@@ -130,6 +132,7 @@ router.get("/:id", getProductById);
 router.get("/user/:userId", getProductsByUserId);
 router.get("/brands/:brand", getProductsByBrand);
 router.get("/:id/get-related", getRelatedProducts);
+
 // router.post(
 //   "/images/upload",
 //   upload.single("product"),
