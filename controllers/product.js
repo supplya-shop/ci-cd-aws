@@ -3,6 +3,7 @@ const Product = require("../models/Product");
 const RecentlyViewed = require("../models/RecentlyViewed");
 const User = require("../models/User");
 const Category = require("../models/Category");
+const Order = require("../models/Order");
 // const userController = require("../controllers/user");
 // const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
@@ -700,7 +701,8 @@ const getProductsByStoreName = async (req, res) => {
 
   try {
     const { storeName } = req.params;
-    const vendor = await User.findOne({ storeName: storeName }).select("_id");
+
+    const vendor = await User.findOne({ storeName }).select("_id");
 
     if (!vendor) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -709,7 +711,7 @@ const getProductsByStoreName = async (req, res) => {
       });
     }
 
-    const totalProductsCount = await Product.countDocuments({
+    const totalProducts = await Product.countDocuments({
       createdBy: vendor._id,
     });
 
@@ -718,12 +720,7 @@ const getProductsByStoreName = async (req, res) => {
         path: "category",
         select: "name",
       })
-      .select(
-        "name unit_price discounted_price description category image sku moq createdBy"
-      )
-      .populate({
-        path: "createdBy",
-      })
+      .select("name unit_price discounted_price description category image")
       .skip(skip)
       .limit(limit);
 
@@ -735,15 +732,54 @@ const getProductsByStoreName = async (req, res) => {
       });
     }
 
-    const totalPages = Math.ceil(totalProductsCount / limit);
+    const productOrderCounts = await Promise.all(
+      products.map(async (product) => {
+        const orderData = await Order.aggregate([
+          { $unwind: "$orderItems" },
+          { $match: { "orderItems.product": product._id } },
+          {
+            $group: {
+              _id: "$orderItems.product",
+              totalOrders: { $sum: "$orderItems.quantity" },
+              totalCustomers: { $addToSet: "$user" },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              totalOrders: 1,
+              totalCustomers: { $size: "$totalCustomers" },
+            },
+          },
+        ]);
+
+        return {
+          productId: product._id,
+          totalOrders: orderData[0]?.totalOrders || 0,
+          totalCustomers: orderData[0]?.totalCustomers || 0,
+        };
+      })
+    );
+
+    const productsWithOrderCounts = products.map((product) => {
+      const orderCountData = productOrderCounts.find((item) =>
+        item.productId.equals(product._id)
+      );
+      return {
+        ...product._doc,
+        totalCustomers: orderCountData.totalCustomers,
+        totalOrders: orderCountData.totalOrders,
+      };
+    });
+
+    const totalPages = Math.ceil(totalProducts / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Products fetched successfully",
-      data: products,
+      data: productsWithOrderCounts,
       currentPage: page,
       totalPages,
-      totalProducts: totalProductsCount,
     });
   } catch (error) {
     console.error("Error fetching products by store name: ", error);
