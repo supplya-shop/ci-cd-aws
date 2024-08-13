@@ -702,7 +702,9 @@ const getProductsByStoreName = async (req, res) => {
   try {
     const { storeName } = req.params;
 
-    const vendor = await User.findOne({ storeName }).select("_id");
+    const vendor = await User.findOne({ storeName }).select(
+      "firstName lastName email phoneNumber storeName storeUrl address city state country"
+    );
 
     if (!vendor) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -767,8 +769,8 @@ const getProductsByStoreName = async (req, res) => {
       );
       return {
         ...product._doc,
-        totalCustomers: orderCountData.totalCustomers,
-        totalOrders: orderCountData.totalOrders,
+        totalCustomers: orderCountData?.totalCustomers || 0,
+        totalOrders: orderCountData?.totalOrders || 0,
       };
     });
 
@@ -777,7 +779,21 @@ const getProductsByStoreName = async (req, res) => {
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Products fetched successfully",
-      data: productsWithOrderCounts,
+      data: {
+        vendorDetails: {
+          firstName: vendor.firstName,
+          lastName: vendor.lastName,
+          email: vendor.email,
+          phoneNumber: vendor.phoneNumber,
+          storeName: vendor.storeName,
+          storeUrl: vendor.storeUrl,
+          address: vendor.address,
+          city: vendor.city,
+          state: vendor.state,
+          country: vendor.country,
+        },
+        products: productsWithOrderCounts,
+      },
       currentPage: page,
       totalPages,
     });
