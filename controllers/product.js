@@ -722,7 +722,9 @@ const getProductsByStoreName = async (req, res) => {
         path: "category",
         select: "name",
       })
-      .select("name unit_price discounted_price description category image")
+      .select(
+        "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
+      )
       .skip(skip)
       .limit(limit);
 
