@@ -800,10 +800,10 @@ const getProductsByStoreName = async (req, res) => {
       totalPages,
     });
   } catch (error) {
-    console.error("Error fetching products by store name: ", error);
+    console.error("Error fetching products. ", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: `Failed to fetch products by store name: ${error.message}`,
+      message: `Failed to fetch products: ${error.message}`,
     });
   }
 };
