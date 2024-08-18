@@ -4,6 +4,7 @@ const {
   createVendor,
   checkStoreNameAvailability,
   createStore,
+  getVendorByStoreName,
   getAllVendors,
   getVendorById,
   updateOrderStatus,
@@ -19,6 +20,7 @@ const {
 router.post("/create", authenticateUser, createVendor);
 router.get("/validate-store-name", checkStoreNameAvailability);
 router.get("/", authenticateUser, getAllVendors);
+router.get("/:storeName", getVendorByStoreName);
 router.get("/:id", authenticateUser, getVendorById);
 router.patch("/order/:orderId", authenticateUser, updateOrderStatus);
 router.delete("/:id", authenticateUser, deleteVendor);

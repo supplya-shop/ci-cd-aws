@@ -3,6 +3,7 @@ const Product = require("../models/Product");
 const RecentlyViewed = require("../models/RecentlyViewed");
 const User = require("../models/User");
 const Category = require("../models/Category");
+const Order = require("../models/Order");
 // const userController = require("../controllers/user");
 // const notificationService = require("../middleware/notification");
 const { approveProductMail } = require("../middleware/mailUtil");
@@ -693,6 +694,120 @@ const getProductsByUserId = async (req, res) => {
   }
 };
 
+const getProductsByStoreName = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const skip = (page - 1) * limit;
+
+  try {
+    const { storeName } = req.params;
+
+    const vendor = await User.findOne({ storeName }).select(
+      "firstName lastName email phoneNumber storeName storeUrl address city state country"
+    );
+
+    if (!vendor) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: `No vendor found with this store name.`,
+      });
+    }
+
+    const totalProducts = await Product.countDocuments({
+      createdBy: vendor._id,
+    });
+
+    const products = await Product.find({ createdBy: vendor._id })
+      .populate({
+        path: "category",
+        select: "name",
+      })
+      .select(
+        "name unit_price discounted_price description quantity category image images brand status createdBy rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
+      )
+      .skip(skip)
+      .limit(limit);
+
+    if (products.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: `No products found.`,
+        data: [],
+      });
+    }
+
+    const productOrderCounts = await Promise.all(
+      products.map(async (product) => {
+        const orderData = await Order.aggregate([
+          { $unwind: "$orderItems" },
+          { $match: { "orderItems.product": product._id } },
+          {
+            $group: {
+              _id: "$orderItems.product",
+              totalOrders: { $sum: "$orderItems.quantity" },
+              totalCustomers: { $addToSet: "$user" },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              totalOrders: 1,
+              totalCustomers: { $size: "$totalCustomers" },
+            },
+          },
+        ]);
+
+        return {
+          productId: product._id,
+          totalOrders: orderData[0]?.totalOrders || 0,
+          totalCustomers: orderData[0]?.totalCustomers || 0,
+        };
+      })
+    );
+
+    const productsWithOrderCounts = products.map((product) => {
+      const orderCountData = productOrderCounts.find((item) =>
+        item.productId.equals(product._id)
+      );
+      return {
+        ...product._doc,
+        totalCustomers: orderCountData?.totalCustomers || 0,
+        totalOrders: orderCountData?.totalOrders || 0,
+      };
+    });
+
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Products fetched successfully",
+      data: {
+        vendorDetails: {
+          firstName: vendor.firstName,
+          lastName: vendor.lastName,
+          email: vendor.email,
+          phoneNumber: vendor.phoneNumber,
+          storeName: vendor.storeName,
+          storeUrl: vendor.storeUrl,
+          address: vendor.address,
+          city: vendor.city,
+          state: vendor.state,
+          country: vendor.country,
+        },
+        products: productsWithOrderCounts,
+      },
+      currentPage: page,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Error fetching products by store name: ", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: `Failed to fetch products by store name: ${error.message}`,
+    });
+  }
+};
+
 const getProductsByBrand = async (req, res) => {
   try {
     let brand = req.params.brand;
@@ -1311,6 +1426,7 @@ module.exports = {
   getProductsByBrand,
   getProductsByCategory,
   getNewlyArrivedBrands,
+  getProductsByStoreName,
   getProductById,
   getRelatedProducts,
   getFlashsaleProducts,

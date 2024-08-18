@@ -176,6 +176,40 @@ const getVendorById = async (req, res) => {
   }
 };
 
+const getVendorByStoreName = async (req, res) => {
+  try {
+    const { storeName } = req.params;
+
+    const vendor = await User.findOne({ storeName: storeName })
+      .select(
+        "firstName lastName email phoneNumber storeName storeUrl address city state country"
+      )
+      .populate(
+        "products",
+        "name unit_price discounted_price description category image"
+      );
+
+    if (!vendor) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: `No vendor found with this store name.`,
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Vendor fetched successfully",
+      data: vendor,
+    });
+  } catch (error) {
+    console.error("Error fetching vendor by store name: ", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: `Failed to fetch vendor by store name: ${error.message}`,
+    });
+  }
+};
+
 const updateOrderStatus = async (req, res) => {
   const orderId = req.params.orderId;
   const { orderStatus, deliveryDate, paymentStatus } = req.body;
@@ -289,6 +323,7 @@ module.exports = {
   createStore,
   getAllVendors,
   getVendorById,
+  getVendorByStoreName,
   updateOrderStatus,
   deleteVendor,
 };
