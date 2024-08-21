@@ -9,6 +9,7 @@ const {
   NotFoundError,
 } = require("../errors");
 const multer = require("../middleware/upload");
+const { contactMail } = require("../middleware/mailUtil");
 
 const createUser = async (req, res) => {
   try {
@@ -531,6 +532,31 @@ const deleteUserAccount = async (req, res) => {
   }
 };
 
+const contactUs = async (req, res) => {
+  const { name, email, phone, subject, message } = req.body;
+
+  try {
+    if (!name || !email || !subject || !message || !phone) {
+      return res.status(400).json({
+        status: StatusCodes.OK,
+        message: "All fields are required.",
+      });
+    }
+    await contactMail(name, email, phone, subject, message);
+    return res.status(200).json({
+      status: true,
+      message: "Message sent successfully!",
+    });
+  } catch (error) {
+    console.error("Error submitting the contact form:", error);
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "There was an error submitting your message. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAdminUsers,
@@ -542,4 +568,5 @@ module.exports = {
   deleteUser,
   bulkdeleteUsers,
   deleteUserAccount,
+  contactUs,
 };

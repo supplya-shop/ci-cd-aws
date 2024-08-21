@@ -1708,7 +1708,7 @@ const sendOrderSummaryMail = async (order) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.country}
                               </p>
                               
                               <p>
@@ -1963,7 +1963,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -2219,8 +2219,7 @@ const sendVendorOrderSummaryMail = async (order) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, 
-                                ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -2480,8 +2479,7 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, 
-                                ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -2744,8 +2742,7 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, 
-                                ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -3016,8 +3013,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                               <p>
                                 <strong>Shipping Address:</strong> ${
                                   order.address
-                                }, 
-                                ${order.city}, ${order.zip}, ${order.country}
+                                }, ${order.country}
                               </p>
                               <p>
                                 <strong>Phone Number:</strong> ${order.phone}
@@ -3319,6 +3315,173 @@ const approveProductMail = async (vendorName, productName) => {
   await transporter.sendMail(mailOptions);
 };
 
+const contactMail = async (name, email, phone, subject, message) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+  // const formattedDate = new Date(order.dateOrdered).toLocaleString();
+
+  const mailOptions = {
+    from: {
+      name,
+      address: process.env.EMAIL_USERNAME,
+    },
+    to: process.env.EMAIL_USERNAME,
+    subject: `Contact us: ${subject}`,
+    html: `
+       <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Contact Us</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <style>
+    a:hover {
+      background-color: #02555b;
+    }
+  </style>
+
+  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Admin Order Summary</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet"
+      />
+    </head>
+
+    <style>
+      a:hover {
+        background-color: #02555b;
+      }
+    </style>
+
+    <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
+      <table
+        style="padding: 10px 20px"
+        role="presentation"
+        border="0"
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        bgcolor="#FFFFFF"
+      >
+        <tr>
+          <td>
+            <div
+              align="center"
+              style="
+                margin-top: 30px;
+                margin-bottom: 30px;
+                display: flex;
+                margin: 0 auto;
+                background-color: #0199a4;
+                width: 70%;
+              "
+            >
+            <img src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png" alt="Supplya-Logo-on-GBG"
+            style="position: absolute; top: 30px; left: 110px; width: 90px"/>
+            </div>
+            <table
+              align="center"
+              bgcolor="#F4F6F8"
+              width="70%"
+              style="border-radius: 15px; padding: 0"
+            >
+              <tr>
+                <td>
+                  <table
+                    align="center"
+                    style="padding-left: 32px; padding-right: 32px"
+                    border="0"
+                    cellspacing="0"
+                    cellpadding="0"
+                    width="80%"
+                  >
+                    <tr>
+                      <td
+                        style="padding: 0; margin-top: 20px; text-align: left"
+                      >
+                        <table
+                          align="center"
+                          border="0"
+                          cellpadding="0"
+                          cellspacing="0"
+                          width="100%"
+                          style="border-collapse: collapse"
+                        >
+                          <tr>
+                            <td style="color: #153643">
+                            <p>Hi, </p>
+                              <p>
+                                ${name} has contacted you requesting some help. Please send a response to the email or phone number provided below:
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
+                              <p><strong>Name:</strong> ${name}</p>
+                              <p>
+                                <strong>Email:</strong> ${email}
+                              </p>
+                              <p>
+                                <strong>Phone Number:</strong> +${phone}
+                              </p>
+                              <p>
+                                <strong>Subject:</strong> ${subject}
+                              </p>
+                              <p>
+                                <strong>Message:</strong> ${message}
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <footer>
+              <p style="color: #131417; margin-top: 30px; font-size: 14px">
+                Copyright © 2024 Supplya
+              </p>
+            </footer>
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+</html>
+`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   generateOTP,
   sendOTPMail,
@@ -3335,4 +3498,5 @@ module.exports = {
   forgotPasswordMail,
   resetPasswordMail,
   approveProductMail,
+  contactMail,
 };

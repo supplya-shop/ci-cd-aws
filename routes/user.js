@@ -11,6 +11,7 @@ const {
   bulkdeleteUsers,
   deleteUser,
   deleteUserAccount,
+  contactUs,
 } = require("../controllers/user");
 
 const {
@@ -34,5 +35,6 @@ router.delete(
 );
 router.delete("/:id", authenticateUser, deleteUser);
 router.delete("/delete-user-account", authenticateUser, deleteUserAccount);
+router.post("/contact", contactUs);
 
 module.exports = router;
