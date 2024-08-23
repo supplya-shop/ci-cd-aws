@@ -702,16 +702,23 @@ const notifyUsers = async (order, user, email, phone) => {
 
   order.orderItems.forEach((item) => {
     const vendor = item.vendorDetails;
-    vendorNotifications.push(
-      sendVendorOrderSummaryMail(order, user),
-      termiiService.sendVendorWhatsAppOrderNotification(
-        vendor.phoneNumber,
-        vendor.firstName,
-        order.orderId,
-        phone,
-        email
-      )
-    );
+
+    if (vendor.phoneNumber) {
+      vendorNotifications.push(
+        sendVendorOrderSummaryMail(order, user),
+        termiiService.sendVendorWhatsAppOrderNotification(
+          vendor.phoneNumber,
+          vendor.firstName,
+          order.orderId,
+          phone,
+          email
+        )
+      );
+    } else {
+      console.warn(
+        `Vendor ${vendor.firstName} ${vendor.lastName} has no phone number.`
+      );
+    }
   });
 
   await Promise.all([...customerNotifications, ...vendorNotifications]);
