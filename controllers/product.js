@@ -1350,7 +1350,7 @@ const searchProducts = async (req, res) => {
     if (products.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: "No products found matching the search keyword",
+        message: "No products found. Please try a different search keyword.",
       });
     }
 

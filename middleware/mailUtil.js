@@ -7,9 +7,9 @@ const generateOTP = () => {
   return { otp, expiration };
 };
 
-const capitalizeFirstLetter = (string) => {
-  return string.charAt(0).toUpperCase() + string.slice(1);
-};
+// const capitalizeFirstLetter = (string) => {
+//   return string.charAt(0).toUpperCase() + string.slice(1);
+// };
 
 const sendOTPMail = async (email, otp) => {
   const transporter = nodemailer.createTransport({
@@ -1701,9 +1701,9 @@ const sendOrderSummaryMail = async (order) => {
                                 }  ${order.user.lastName}
                               </p>
                               <p>
-                                <strong>Order Status:</strong> ${capitalizeFirstLetter(
+                                <strong>Order Status:</strong> ${
                                   order.orderStatus
-                                )}
+                                }
                               </p>
                               <p>
                                 <strong>Shipping Address:</strong> ${
@@ -2467,9 +2467,9 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                                 }  ${user.lastName}
                               </p>
                               <p>
-                                <strong>Order Status:</strong> ${capitalizeFirstLetter(
+                                <strong>Order Status:</strong> ${
                                   order.orderStatus
-                                )}
+                                }
                               </p>
                               <p>
                                 <strong>Delivery Date:</strong> ${
@@ -2730,9 +2730,9 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
                                 }  ${order.user.lastName}
                               </p>
                               <p>
-                                <strong>Order Status:</strong> ${capitalizeFirstLetter(
+                                <strong>Order Status:</strong> ${
                                   order.orderStatus
-                                )}
+                                }
                               </p>
                               <p>
                                 <strong>Delivery Date:</strong> ${
@@ -3001,9 +3001,9 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                                 }  ${order.user.lastName}
                               </p>
                               <p>
-                                <strong>Order Status:</strong> ${capitalizeFirstLetter(
+                                <strong>Order Status:</strong> ${
                                   order.orderStatus
-                                )}
+                                }
                               </p>
                               <p>
                                 <strong>Delivery Date:</strong> ${
