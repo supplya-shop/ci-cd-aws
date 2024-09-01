@@ -12,6 +12,7 @@ const createPost = async (req, res) => {
       content,
       author,
       categories,
+      image,
       tags,
       dateCreated: new Date(),
     });
@@ -265,7 +266,7 @@ const getCategoryById = async (req, res) => {
 
     if (!category) {
       return res
-        .status(StatusCodes.NOT_FOUND)
+        .status(StatusCodes.OK)
         .json({ status: false, message: "Category not found" });
     }
 
@@ -343,13 +344,11 @@ const searchPosts = async (req, res) => {
     const { keyword } = req.query;
     let { page, limit } = req.query;
 
-    // Default values if page or limit are not specified
     page = parseInt(page, 10) || 1;
     limit = parseInt(limit, 10) || 10;
 
     const skip = (page - 1) * limit;
 
-    // Construct search criteria
     const searchCriteria = {
       $or: [
         { title: { $regex: keyword, $options: "i" } },
@@ -361,7 +360,6 @@ const searchPosts = async (req, res) => {
       ],
     };
 
-    // Aggregate query with pagination
     const posts = await Post.aggregate([
       { $match: searchCriteria },
       { $sort: { dateCreated: -1 } },
