@@ -11,9 +11,6 @@ const {
   updatePost,
   deletePost,
   addComment,
-  getAllCategories,
-  createCategory,
-  deleteCategory,
   searchPosts,
 } = require("../controllers/blog");
 
@@ -24,9 +21,6 @@ router.get("/posts/:id", getPostById);
 router.put("/posts/:id", authenticateUser, updatePost);
 router.delete("/posts/:id", authenticateUser, deletePost);
 router.post("/posts/:postId/comments", authenticateUser, addComment);
-router.get("/categories", getAllCategories);
-router.post("/categories", authenticateUser, createCategory);
-router.delete("/categories/:id", authenticateUser, deleteCategory);
 router.get("/search", searchPosts);
 
 module.exports = router;

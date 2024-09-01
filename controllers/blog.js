@@ -1,18 +1,17 @@
-const Category = require("../models/BlogCategory");
 const Post = require("../models/Post");
 const Comment = require("../models/Comment");
 const { StatusCodes } = require("http-status-codes");
 
 const createPost = async (req, res) => {
   try {
-    const { title, content, author, images, categories, tags } = req.body;
+    const { title, content, author, images, category, tags } = req.body;
 
     const newPost = new Post({
       title,
       content,
       author,
-      categories,
       images,
+      category,
       tags,
       dateCreated: new Date(),
     });
@@ -42,14 +41,6 @@ const getAllPosts = async (req, res) => {
     const posts = await Post.aggregate([
       { $skip: skip },
       { $limit: limit },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "categories",
-          foreignField: "_id",
-          as: "categories",
-        },
-      },
       {
         $lookup: {
           from: "users",
@@ -88,8 +79,6 @@ const getPostById = async (req, res) => {
 
     const post = await Post.findById(id)
       .populate("author", "firstName email")
-      .populate("categories", "name")
-      .populate("images")
       .populate({
         path: "comments",
         populate: { path: "author", select: "firstName email" },
@@ -119,11 +108,11 @@ const getPostById = async (req, res) => {
 const updatePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, categories, images, tags } = req.body;
+    const { title, content, category, images, tags } = req.body;
 
     const updatedPost = await Post.findByIdAndUpdate(
       id,
-      { title, content, categories, images, tags, dateModified: new Date() },
+      { title, content, category, images, tags, dateModified: new Date() },
       { new: true }
     );
 
@@ -214,132 +203,6 @@ const addComment = async (req, res) => {
   }
 };
 
-const createCategory = async (req, res) => {
-  try {
-    const { name } = req.body;
-
-    const newCategory = new Category({
-      name,
-      dateCreated: new Date(),
-    });
-
-    const savedCategory = await newCategory.save();
-
-    return res.status(201).json({
-      status: true,
-      message: "Category created successfully",
-      data: savedCategory,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: false,
-      message: "Failed to create category",
-    });
-  }
-};
-
-const getAllCategories = async (req, res) => {
-  try {
-    const categories = await Category.find({});
-
-    return res.status(200).json({
-      status: true,
-      message: "Categories fetched successfully",
-      data: categories,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: false,
-      message: "Failed to fetch categories",
-    });
-  }
-};
-
-const getCategoryById = async (req, res) => {
-  try {
-    const categoryId = req.params.categoryId;
-    const category = await Category.findById(categoryId).populate(
-      "parentCategory",
-      "name"
-    );
-
-    if (!category) {
-      return res
-        .status(StatusCodes.OK)
-        .json({ status: false, message: "Category not found" });
-    }
-
-    return res.status(StatusCodes.OK).json({
-      status: true,
-      message: "Category fetched successfully",
-      data: category,
-    });
-  } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
-  }
-};
-
-const updateCategory = async (req, res) => {
-  try {
-    const categoryId = req.params.categoryId;
-    const updates = req.body;
-
-    const categoryExists = await Category.findById(categoryId);
-    if (!categoryExists) {
-      return res
-        .status(StatusCodes.OK)
-        .json({ status: false, message: "Category not found" });
-    }
-
-    const updatedCategory = await Category.findByIdAndUpdate(
-      categoryId,
-      updates,
-      { new: true }
-    );
-
-    return res.status(StatusCodes.OK).json({
-      status: true,
-      message: "Category fetched successfully",
-      data: updatedCategory,
-    });
-  } catch (error) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: false,
-      message: "Failed to update category: " + error.message,
-    });
-  }
-};
-
-const deleteCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const deletedCategory = await Category.findByIdAndDelete(id);
-
-    if (!deletedCategory) {
-      return res.status(404).json({
-        status: false,
-        message: "Category not found",
-      });
-    }
-
-    return res.status(200).json({
-      status: true,
-      message: "Category deleted successfully",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      status: false,
-      message: "Failed to delete category",
-    });
-  }
-};
-
 const searchPosts = async (req, res) => {
   try {
     const { keyword } = req.query;
@@ -355,7 +218,7 @@ const searchPosts = async (req, res) => {
         { title: { $regex: keyword, $options: "i" } },
         { content: { $regex: keyword, $options: "i" } },
         { tags: { $regex: keyword, $options: "i" } },
-        { "categories.name": { $regex: keyword, $options: "i" } },
+        { category: { $regex: keyword, $options: "i" } },
         { "author.firstName": { $regex: keyword, $options: "i" } },
         { "author.lastName": { $regex: keyword, $options: "i" } },
       ],
@@ -404,11 +267,6 @@ const searchPosts = async (req, res) => {
 };
 
 module.exports = {
-  createCategory,
-  getAllCategories,
-  getCategoryById,
-  updateCategory,
-  deleteCategory,
   createPost,
   getAllPosts,
   getPostById,

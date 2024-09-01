@@ -17,12 +17,10 @@ const postSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  categories: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "BlogCategory",
-    },
-  ],
+  category: {
+    type: String,
+    required: true,
+  },
   images: [
     {
       type: String,
