@@ -23,6 +23,11 @@ const postSchema = new mongoose.Schema({
       ref: "BlogCategory",
     },
   ],
+  images: [
+    {
+      type: String,
+    },
+  ],
   tags: [
     {
       type: String,
