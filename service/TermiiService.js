@@ -12,12 +12,11 @@ const sendOtpViaTermii = async (phoneNumber, otp) => {
   try {
     const requestBody = {
       to: phoneNumber,
-      from: "Supplya",
+      from: "N-Alert",
       sms: otp,
       type: "plain",
-      channel: "whatsapp_otp",
+      channel: "whatsapp",
       api_key: termiiConfig.apiKey,
-      time_in_minutes: "30 minutes",
     };
 
     const response = await axios.post(

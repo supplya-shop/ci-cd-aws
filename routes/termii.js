@@ -5,12 +5,9 @@ const {
 } = require("../service/TermiiService");
 const express = require("express");
 const router = express.Router();
+const { StatusCodes } = require("http-status-codes");
 
 router.use(express.json());
-// router.use((req, res, next) => {
-//   console.log("Incoming request body:", req.body);
-//   next();
-// });
 
 const handleSendOtp = async (req, res) => {
   try {

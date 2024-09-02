@@ -504,6 +504,7 @@ const deleteUser = async (req, res, next) => {
 
 const deleteUserAccount = async (req, res) => {
   const userId = req.user.userid;
+  console.log("userId: ", userId);
 
   try {
     const user = await User.findById(userId);
