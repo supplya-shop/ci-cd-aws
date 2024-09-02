@@ -5,12 +5,12 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: [true, "title is required"],
     trim: true,
-    maxlength: [50, "title cannot exceed 50 characters"],
+    maxlength: [100, "title cannot exceed 100 characters"],
   },
   content: {
     type: String,
     required: [true, "content is required"],
-    maxlength: [1000, "content cannot exceed 1000 characters"],
+    maxlength: [5000, "content cannot exceed 5000 characters"],
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
