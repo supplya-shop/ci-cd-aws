@@ -4,7 +4,7 @@ const { StatusCodes } = require("http-status-codes");
 
 const createPost = async (req, res) => {
   try {
-    const { title, content, author, images, category, tags } = req.body;
+    const { title, content, author, images, category, status, tags } = req.body;
 
     const newPost = new Post({
       title,
@@ -12,6 +12,7 @@ const createPost = async (req, res) => {
       author,
       images,
       category,
+      status,
       tags,
       dateCreated: new Date(),
     });
@@ -78,10 +79,10 @@ const getPostById = async (req, res) => {
     const { id } = req.params;
 
     const post = await Post.findById(id)
-      .populate("author", "firstName email")
+      .populate("author", "firstName lastName email")
       .populate({
         path: "comments",
-        populate: { path: "author", select: "firstName email" },
+        populate: { path: "author", select: "firstName lastName email" },
       });
 
     if (!post) {
