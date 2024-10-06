@@ -15,7 +15,7 @@ const getDashboardStats = async (req, res) => {
   try {
     const today = moment().startOf("day").toDate();
     const yesterday = moment().subtract(1, "day").startOf("day").toDate();
-    const lastWeek = moment().subtract(7, "days").startOf("day").toDate();
+    const lastWeek = moment().subtract(10, "days").startOf("day").toDate();
     const lastMonth = moment().subtract(30, "days").startOf("day").toDate();
 
     const page = parseInt(req.query.page) || 1;
@@ -23,6 +23,7 @@ const getDashboardStats = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const totalRevenue = await Order.aggregate([
+      { $match: { orderStatus: "Delivered" } },
       { $group: { _id: null, total: { $sum: { $toDouble: "$totalPrice" } } } },
     ]);
 
@@ -48,6 +49,7 @@ const getDashboardStats = async (req, res) => {
 
     const topSellingProducts = await Order.aggregate([
       { $unwind: "$orderItems" },
+      { $match: { orderStatus: "Delivered" } },
       {
         $group: {
           _id: "$orderItems.product",
@@ -89,6 +91,7 @@ const getDashboardStats = async (req, res) => {
 
     const totalTopSellingProducts = await Order.aggregate([
       { $unwind: "$orderItems" },
+      { $match: { orderStatus: "Delivered" } },
       { $group: { _id: "$orderItems.product" } },
       { $count: "total" },
     ]);
@@ -133,22 +136,37 @@ const getDashboardStats = async (req, res) => {
 const getProductDashboardStats = async (req, res) => {
   try {
     const today = moment().startOf("day").toDate();
+    const endOfToday = moment().endOf("day").toDate();
     const startOfMonth = moment().startOf("month").toDate();
-    const startOfWeek = moment().startOf("week").toDate();
+    const startOfWeek = moment().startOf("isoWeek").toDate();
 
     const totalProducts = await Product.countDocuments();
+
     const totalProductsAddedLastMonth = await Product.countDocuments({
-      createdAt: { $gte: startOfMonth },
+      createdAt: {
+        $gte: startOfMonth,
+        $lt: endOfToday,
+      },
     });
+
     const totalProductsAddedLastWeek = await Product.countDocuments({
-      createdAt: { $gte: startOfWeek },
+      createdAt: {
+        $gte: startOfWeek,
+        $lt: endOfToday,
+      },
     });
+
     const newProductsAddedToday = await Product.countDocuments({
-      createdAt: { $gte: today },
+      createdAt: {
+        $gte: today,
+        $lt: endOfToday,
+      },
     });
+
     const totalProductsInStock = await Product.countDocuments({
       quantity: { $gt: 0 },
     });
+
     const totalProductsOutOfStock = await Product.countDocuments({
       quantity: { $lte: 0 },
     });
@@ -168,7 +186,7 @@ const getProductDashboardStats = async (req, res) => {
   } catch (error) {
     console.error("Error fetching product statistics: ", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: fasle,
+      status: false,
       message: "Server error",
       error: error.message,
     });
@@ -195,10 +213,10 @@ const getOrderDashboardStats = async (req, res) => {
       dateOrdered: { $gte: currentDayStart },
     });
     const totalDeliveredOrders = await Order.countDocuments({
-      orderStatus: "delivered",
+      orderStatus: "Delivered",
     });
     const totalDeliveredOrdersToday = await Order.countDocuments({
-      orderStatus: "delivered",
+      orderStatus: "Delivered",
       dateOrdered: { $gte: currentDayStart },
     });
     const totalPendingOrders = await Order.countDocuments({

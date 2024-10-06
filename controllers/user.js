@@ -182,7 +182,7 @@ const updateUser = async (req, res) => {
     }
 
     if (updates.storeName) {
-      updates.storeName = updates.storeName.toLowerCase();
+      // updates.storeName = updates.storeName.toLowerCase();
 
       if (updates.storeName !== existingUser.storeName) {
         const storeNameExists = await User.findOne({
@@ -244,7 +244,7 @@ const getUserOrders = async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const excludedStatuses = ["delivered", "shipped", "cancelled"];
+  const excludedStatuses = ["Delivered", "shipped", "cancelled"];
 
   try {
     let orders,
@@ -304,7 +304,7 @@ const getUserOrders = async (req, res) => {
 
       totalDeliveredOrdersCount = await Order.countDocuments({
         "orderItems.product": { $in: productIds },
-        orderStatus: "delivered",
+        orderStatus: "Delivered",
       });
 
       totalPendingOrdersCount = await Order.countDocuments({
