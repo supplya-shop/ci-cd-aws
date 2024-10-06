@@ -1,7 +1,7 @@
 const Review = require("../models/Review");
 const { StatusCodes } = require("http-status-codes");
 
-const addReview = async (req, res) => {
+const createReview = async (req, res) => {
   try {
     const { product, rating, comment } = req.body;
     const userId = req.user.userid;
@@ -29,7 +29,7 @@ const addReview = async (req, res) => {
   }
 };
 
-const editReview = async (req, res) => {
+const updateReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { rating, comment } = req.body;
@@ -116,8 +116,8 @@ const deleteReview = async (req, res) => {
 };
 
 module.exports = {
-  addReview,
-  editReview,
+  createReview,
+  updateReview,
   fetchReviewByProductId,
   deleteReview,
 };

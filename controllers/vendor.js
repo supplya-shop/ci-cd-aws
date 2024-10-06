@@ -237,7 +237,7 @@ const updateOrderStatus = async (req, res) => {
 
     if (
       deliveryDate &&
-      (orderStatus === "confirmed" || orderStatus === "delivered")
+      (orderStatus === "confirmed" || orderStatus === "Delivered")
     ) {
       const parsedDeliveryDate = new Date(deliveryDate);
       if (isNaN(parsedDeliveryDate.getTime())) {
@@ -275,7 +275,7 @@ const updateOrderStatus = async (req, res) => {
     const emailPromises = [];
     if (orderStatus === "confirmed" && deliveryDate) {
       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
-    } else if (orderStatus === "delivered") {
+    } else if (orderStatus === "Delivered") {
       emailPromises.push(
         sendCustomerOrderDeliveredMail(order, order.user),
         sendVendorOrderDeliveredMail(order, order.user)
