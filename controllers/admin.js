@@ -136,36 +136,32 @@ const getDashboardStats = async (req, res) => {
 const getProductDashboardStats = async (req, res) => {
   try {
     const today = moment().startOf("day").toDate();
-    const endOfToday = moment().endOf("day").toDate();
     const startOfMonth = moment().startOf("month").toDate();
-    const startOfWeek = moment().startOf("isoWeek").toDate();
+    const startOfWeek = moment().startOf("week").toDate();
 
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.aggregate([
+      { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
+    ]);
 
-    const totalProductsAddedLastMonth = await Product.countDocuments({
-      createdAt: {
-        $gte: startOfMonth,
-        $lt: endOfToday,
-      },
-    });
+    const totalProductsAddedLastMonth = await Product.aggregate([
+      { $match: { createdAt: { $gte: startOfMonth } } },
+      { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
+    ]);
 
-    const totalProductsAddedLastWeek = await Product.countDocuments({
-      createdAt: {
-        $gte: startOfWeek,
-        $lt: endOfToday,
-      },
-    });
+    const totalProductsAddedLastWeek = await Product.aggregate([
+      { $match: { createdAt: { $gte: startOfWeek } } },
+      { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
+    ]);
 
-    const newProductsAddedToday = await Product.countDocuments({
-      createdAt: {
-        $gte: today,
-        $lt: endOfToday,
-      },
-    });
+    const newProductsAddedToday = await Product.aggregate([
+      { $match: { createdAt: { $gte: today } } },
+      { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
+    ]);
 
-    const totalProductsInStock = await Product.countDocuments({
-      quantity: { $gt: 0 },
-    });
+    const totalProductsInStock = await Product.aggregate([
+      { $match: { quantity: { $gt: 0 } } },
+      { $group: { _id: null, totalQuantity: { $sum: "$quantity" } } },
+    ]);
 
     const totalProductsOutOfStock = await Product.countDocuments({
       quantity: { $lte: 0 },
@@ -175,11 +171,13 @@ const getProductDashboardStats = async (req, res) => {
       status: true,
       message: "Product data fetched successfully",
       data: {
-        totalProducts,
-        totalProductsAddedLastMonth,
-        totalProductsAddedLastWeek,
-        newProductsAddedToday,
-        totalProductsInStock,
+        totalProducts: totalProducts[0]?.totalQuantity || 0,
+        totalProductsAddedLastMonth:
+          totalProductsAddedLastMonth[0]?.totalQuantity || 0,
+        totalProductsAddedLastWeek:
+          totalProductsAddedLastWeek[0]?.totalQuantity || 0,
+        newProductsAddedToday: newProductsAddedToday[0]?.totalQuantity || 0,
+        totalProductsInStock: totalProductsInStock[0]?.totalQuantity || 0,
         totalProductsOutOfStock,
       },
     });
@@ -285,22 +283,18 @@ const getCustomerStats = async (req, res) => {
     startOfDay.setHours(0, 0, 0, 0);
 
     const totalCustomers = await User.countDocuments({ role: "customer" });
-
     const newCustomersLast7Days = await User.countDocuments({
       role: "customer",
       createdAt: { $gte: past7Days },
     });
-
     const newCustomersToday = await User.countDocuments({
       role: "customer",
       createdAt: { $gte: startOfDay },
     });
-
     const activeCustomers = await User.countDocuments({
       role: "customer",
       lastLogin: { $gte: past90Days },
     });
-
     const inactiveCustomers = await User.countDocuments({
       role: "customer",
       $or: [
@@ -361,6 +355,7 @@ const getVendorStats = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+
   try {
     const currentDate = new Date();
     const past7Days = new Date(currentDate);
@@ -373,22 +368,18 @@ const getVendorStats = async (req, res) => {
     startOfDay.setHours(0, 0, 0, 0);
 
     const totalVendors = await User.countDocuments({ role: "vendor" });
-
     const newVendorsLast7Days = await User.countDocuments({
       role: "vendor",
       createdAt: { $gte: past7Days },
     });
-
     const newVendorsToday = await User.countDocuments({
       role: "vendor",
       createdAt: { $gte: startOfDay },
     });
-
     const activeVendors = await User.countDocuments({
       role: "vendor",
       lastLogin: { $gte: past90Days },
     });
-
     const inactiveVendors = await User.countDocuments({
       role: "vendor",
       $or: [
@@ -399,6 +390,28 @@ const getVendorStats = async (req, res) => {
 
     const vendors = await User.find({ role: "vendor" }).skip(skip).limit(limit);
 
+    const vendorIds = vendors.map((vendor) => vendor._id);
+
+    const orders = await Order.aggregate([
+      { $match: { vendor: { $in: vendorIds } } },
+      {
+        $group: {
+          _id: "$vendor",
+          totalRevenue: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
+
+    const vendorStats = vendors.map((vendor) => {
+      const order = orders.find(
+        (order) => order._id.toString() === vendor._id.toString()
+      );
+      return {
+        ...vendor._doc,
+        totalRevenue: order ? order.totalRevenue : 0,
+      };
+    });
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Vendor data fetched successfully",
@@ -408,7 +421,7 @@ const getVendorStats = async (req, res) => {
         newVendorsToday,
         activeVendors,
         inactiveVendors,
-        vendors,
+        vendors: vendorStats,
         totalPages: Math.ceil(totalVendors / limit),
         currentPage: page,
       },
@@ -417,6 +430,104 @@ const getVendorStats = async (req, res) => {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to fetch vendor statistics: " + error.message,
+    });
+  }
+};
+
+const getUserSignupStats = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+
+    const signups = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return res.status(200).json({
+      status: true,
+      message: "Stats fetched successfully",
+      data: signups,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: "Failed to fetch sign-up statistics: " + error.message,
+    });
+  }
+};
+
+const getOrderStats = async (req, res) => {
+  const { period } = req.query;
+  let groupBy;
+
+  switch (period) {
+    case "daily":
+      groupBy = {
+        year: { $year: "$dateOrdered" },
+        month: { $month: "$dateOrdered" },
+        day: { $dayOfMonth: "$dateOrdered" },
+      };
+      break;
+    case "weekly":
+      groupBy = {
+        year: { $year: "$dateOrdered" },
+        week: { $week: "$dateOrdered" },
+      };
+      break;
+    case "monthly":
+      groupBy = {
+        year: { $year: "$dateOrdered" },
+        month: { $month: "$dateOrdered" },
+      };
+      break;
+    default:
+      groupBy = {
+        year: { $year: "$dateOrdered" },
+        month: { $month: "$dateOrdered" },
+        day: { $dayOfMonth: "$dateOrdered" },
+      };
+  }
+
+  try {
+    const salesStats = await Order.aggregate([
+      {
+        $match: { orderStatus: "Delivered" },
+      },
+      {
+        $group: {
+          _id: groupBy,
+          totalSales: { $sum: "$totalPrice" },
+          totalOrders: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 },
+      },
+    ]);
+
+    return res.status(200).json({
+      status: true,
+      message: "Sales statistics fetched successfully",
+      data: salesStats,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: `Failed to fetch sales statistics: ${error.message}`,
     });
   }
 };
@@ -933,6 +1044,8 @@ module.exports = {
   getVendorStats,
   assignProductToVendor,
   getMostBoughtProducts,
+  getUserSignupStats,
+  getOrderStats,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,

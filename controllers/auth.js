@@ -314,11 +314,11 @@ const resendOTP = async (req, res) => {
 
 const login = async (req, res, next) => {
   try {
-    const { password, email, storeName } = req.body;
+    const { password, email, storeName, phoneNumber } = req.body;
 
-    if ((!email || !password) && !storeName) {
+    if ((!email || !password) && !storeName && !phoneNumber) {
       throw new BadRequestError(
-        "Please provide your email and password or storeName and password."
+        "Please provide either one of your email, phone number or store name and password to proceed."
       );
     }
 
@@ -326,6 +326,8 @@ const login = async (req, res, next) => {
 
     if (storeName) {
       user = await User.findOne({ storeName });
+    } else if (phoneNumber) {
+      user = await User.findOne({ phoneNumber });
     } else {
       user = await User.findOne({ email });
     }
@@ -345,6 +347,13 @@ const login = async (req, res, next) => {
     user.lastLogin = Date.now();
     user.save();
 
+    const notification = new Notification({
+      title: "Login notification",
+      message: `You have successfully logged in at ${new Date().toLocaleString()}`,
+      recipient: user._id,
+    });
+
+    await notification.save();
     // logger.info(user.role + " " + user.email + " just logged in.");
 
     return res.status(StatusCodes.OK).json({

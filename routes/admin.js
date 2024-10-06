@@ -9,6 +9,8 @@ const {
   getVendorStats,
   assignProductToVendor,
   getMostBoughtProducts,
+  getUserSignupStats,
+  getOrderStats,
 } = require("../controllers/admin");
 const {
   authenticateUser,
@@ -45,6 +47,18 @@ router.get(
   authenticateUser,
   rolesAllowed("admin"),
   getVendorStats
+);
+router.get(
+  "/dashboard/graph",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getUserSignupStats
+);
+router.get(
+  "/dashboard/sales-graph",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getOrderStats
 );
 router.post("/assign-product", authenticateUser, assignProductToVendor);
 
