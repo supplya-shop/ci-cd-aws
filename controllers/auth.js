@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const OtpLogs = require("../models/OtpLogs");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, NotFoundError } = require("../errors");
