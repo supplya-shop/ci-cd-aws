@@ -3,6 +3,7 @@ const User = require("../models/User");
 const Product = require("../models/Product");
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError } = require("../errors");
+const Notification = require("../models/Notification");
 const {
   sendOrderSummaryMail,
   sendCustomerOrderSummaryMail,
@@ -50,7 +51,6 @@ const createOrder = async (req, res) => {
 
     let formattedPhone = phone;
 
-    // Validate and format the phone number if provided
     if (phone) {
       if (/^0\d{10}$/.test(phone)) {
         formattedPhone = "234" + phone.slice(1);
@@ -690,6 +690,11 @@ const notifyUsers = async (order, user, email, phone) => {
   const vendorNotifications = [];
 
   customerNotifications.push(
+    Notification.create({
+      userId: order.user._id,
+      message: `Your order with Order ID: ${order.orderId} has been created.`,
+      type: "order",
+    }),
     sendOrderSummaryMail(order),
     sendCustomerOrderSummaryMail(order, user, email),
     termiiService.sendCustomerWhatsAppOrderNotification(
@@ -703,8 +708,13 @@ const notifyUsers = async (order, user, email, phone) => {
   order.orderItems.forEach((item) => {
     const vendor = item.vendorDetails;
 
-    if (vendor.phoneNumber) {
+    if (vendor && vendor._id) {
       vendorNotifications.push(
+        Notification.create({
+          userId: vendor._id,
+          message: `A new order with Order ID: ${order.orderId} has been placed.`,
+          type: "order",
+        }),
         sendVendorOrderSummaryMail(order, user),
         termiiService.sendVendorWhatsAppOrderNotification(
           vendor.phoneNumber,
@@ -716,7 +726,7 @@ const notifyUsers = async (order, user, email, phone) => {
       );
     } else {
       console.warn(
-        `Vendor ${vendor.firstName} ${vendor.lastName} has no phone number.`
+        `Vendor ${vendor.firstName} ${vendor.lastName} has no valid details.`
       );
     }
   });

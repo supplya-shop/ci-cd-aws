@@ -351,11 +351,10 @@ const login = async (req, res, next) => {
     const notification = new Notification({
       title: "Login notification",
       message: `You have successfully logged in at ${new Date().toLocaleString()}`,
-      recipient: user._id,
+      userId: user._id,
     });
 
     await notification.save();
-    // logger.info(user.role + " " + user.email + " just logged in.");
 
     return res.status(StatusCodes.OK).json({
       status: true,

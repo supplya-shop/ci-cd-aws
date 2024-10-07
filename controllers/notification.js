@@ -4,12 +4,12 @@ const { StatusCodes } = require("http-status-codes");
 
 const createNotification = async (req, res) => {
   try {
-    const { title, message, recipientId } = req.body;
+    const { title, message, userId } = req.body;
 
     const notification = new Notification({
       title,
       message,
-      recipient: recipientId,
+      userId: userId,
     });
 
     await notification.save();
@@ -26,7 +26,7 @@ const createNotification = async (req, res) => {
 const getNotifications = async (req, res) => {
   try {
     const userId = req.user.userid;
-    const notifications = await Notification.find({ recipient: userId });
+    const notifications = await Notification.find({ userId: userId });
 
     res.status(200).json({ status: true, notifications });
   } catch (error) {
@@ -76,7 +76,7 @@ const deleteNotification = async (req, res) => {
   }
 };
 
-const sendNotificationToAllUsers = async (req, res) => {
+const notifyAllUsers = async (req, res) => {
   try {
     const { title, message } = req.body;
     const users = await User.find();
@@ -84,7 +84,7 @@ const sendNotificationToAllUsers = async (req, res) => {
     const notifications = users.map((user) => ({
       title,
       message,
-      recipient: user._id,
+      userId: user._id,
     }));
 
     await Notification.insertMany(notifications);
@@ -99,7 +99,7 @@ const sendNotificationToAllUsers = async (req, res) => {
   }
 };
 
-const sendNotificationToAllVendors = async (req, res) => {
+const notifyAllVendors = async (req, res) => {
   try {
     const { title, message } = req.body;
     const vendors = await User.find({ role: "vendor" });
@@ -107,7 +107,7 @@ const sendNotificationToAllVendors = async (req, res) => {
     const notifications = vendors.map((vendor) => ({
       title,
       message,
-      recipient: vendor._id,
+      userId: vendor._id,
     }));
 
     await Notification.insertMany(notifications);
@@ -127,7 +127,7 @@ const markAllAsRead = async (req, res) => {
     const userId = req.user.userid;
 
     await Notification.updateMany(
-      { recipient: userId, read: false },
+      { userId: userId, read: false },
       { read: true }
     );
 
@@ -149,6 +149,6 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   deleteNotification,
-  sendNotificationToAllUsers,
-  sendNotificationToAllVendors,
+  notifyAllUsers,
+  notifyAllVendors,
 };

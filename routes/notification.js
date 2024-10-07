@@ -10,14 +10,13 @@ const {
   markAsRead,
   markAllAsRead,
   deleteNotification,
-  sendNotificationToAllUsers,
-  sendNotificationToAllVendors,
+  notifyAllUsers,
+  notifyAllVendors,
 } = require("../controllers/notification");
 
-// blog routes
 router.post("/", authenticateUser, createNotification);
-router.post("/users", authenticateUser, sendNotificationToAllUsers);
-router.post("/vendors", authenticateUser, sendNotificationToAllVendors);
+router.post("/users", authenticateUser, notifyAllUsers);
+router.post("/vendors", authenticateUser, notifyAllVendors);
 router.get("/", getNotifications);
 router.put("/mark-as-read", authenticateUser, markAsRead);
 router.put("/mark-all-read", authenticateUser, markAllAsRead);
