@@ -616,8 +616,12 @@ const cancelOrder = async (req, res) => {
     }
 
     // Check if the order can be cancelled
-    if (order.orderStatus === "completed") {
-      throw new Error("Completed orders cannot be cancelled");
+    if (
+      order.orderStatus === "confirmed" ||
+      order.orderStatus === "shipped" ||
+      order.orderStatus === "Delivered"
+    ) {
+      throw new Error("Confirmed orders cannot be cancelled");
     }
 
     // Update the order status
