@@ -692,8 +692,8 @@ const notifyUsers = async (order, user, email, phone) => {
   customerNotifications.push(
     Notification.create({
       userId: order.user._id,
-      message: `Your order with Order ID: ${order.orderId} has been created.`,
-      type: "order",
+      message: `Your order with ID: ${order.orderId} has been created successfully.`,
+      title: "Order successful!",
     }),
     sendOrderSummaryMail(order),
     sendCustomerOrderSummaryMail(order, user, email),
@@ -712,8 +712,8 @@ const notifyUsers = async (order, user, email, phone) => {
       vendorNotifications.push(
         Notification.create({
           userId: vendor._id,
-          message: `A new order with Order ID: ${order.orderId} has been placed.`,
-          type: "order",
+          message: `A new order with ID: ${order.orderId} has been placed. Please contact the customer and update the order status once delivered.`,
+          title: "Order notification",
         }),
         sendVendorOrderSummaryMail(order, user),
         termiiService.sendVendorWhatsAppOrderNotification(
