@@ -49,13 +49,13 @@ router.get(
   getVendorStats
 );
 router.get(
-  "/dashboard/graph",
+  "/dashboard/signup-stats",
   authenticateUser,
   rolesAllowed("admin"),
   getUserSignupStats
 );
 router.get(
-  "/dashboard/sales-graph",
+  "/dashboard/sales-stats",
   authenticateUser,
   rolesAllowed("admin"),
   getOrderStats
