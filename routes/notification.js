@@ -12,11 +12,13 @@ const {
   deleteNotification,
   notifyAllUsers,
   notifyAllVendors,
+  notifyAllCustomers,
 } = require("../controllers/notification");
 
 router.post("/", authenticateUser, createNotification);
 router.post("/users", authenticateUser, notifyAllUsers);
 router.post("/vendors", authenticateUser, notifyAllVendors);
+router.post("/customers", authenticateUser, notifyAllCustomers);
 router.get("/", getNotifications);
 router.put("/mark-as-read", authenticateUser, markAsRead);
 router.put("/mark-all-read", authenticateUser, markAllAsRead);
