@@ -122,6 +122,29 @@ const notifyAllVendors = async (req, res) => {
   }
 };
 
+const notifyAllCustomers = async (req, res) => {
+  try {
+    const { title, message } = req.body;
+    const customers = await User.find({ role: "customer" });
+
+    const notifications = customers.map((customer) => ({
+      title,
+      message,
+      userId: customer._id,
+    }));
+
+    await Notification.insertMany(notifications);
+
+    res
+      .status(201)
+      .json({ status: true, message: "Notifications sent to all customers" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ status: false, message: "Failed to send notifications", error });
+  }
+};
+
 const markAllAsRead = async (req, res) => {
   try {
     const userId = req.user.userid;
@@ -145,10 +168,11 @@ const markAllAsRead = async (req, res) => {
 
 module.exports = {
   createNotification,
-  getNotifications,
   markAsRead,
+  getNotifications,
   markAllAsRead,
   deleteNotification,
   notifyAllUsers,
   notifyAllVendors,
+  notifyAllCustomers,
 };
