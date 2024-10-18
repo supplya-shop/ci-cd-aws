@@ -7,6 +7,7 @@ const {
   getOrderDashboardStats,
   getCustomerStats,
   getVendorStats,
+  getAdminStats,
   assignProductToVendor,
   getMostBoughtProducts,
   getUserSignupStats,
@@ -47,6 +48,12 @@ router.get(
   authenticateUser,
   rolesAllowed("admin"),
   getVendorStats
+);
+router.get(
+  "/dashboard/admin",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getAdminStats
 );
 router.get(
   "/dashboard/signup-stats",

@@ -434,6 +434,67 @@ const getVendorStats = async (req, res) => {
   }
 };
 
+const getAdminStats = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  try {
+    const currentDate = new Date();
+    const past7Days = new Date(currentDate);
+    past7Days.setDate(currentDate.getDate() - 7);
+
+    const past90Days = new Date(currentDate);
+    past90Days.setDate(currentDate.getDate() - 90);
+
+    const startOfDay = new Date(currentDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const totalAdmins = await User.countDocuments({ role: "admin" });
+    const newAdminsLast7Days = await User.countDocuments({
+      role: "admin",
+      createdAt: { $gte: past7Days },
+    });
+    const newAdminsToday = await User.countDocuments({
+      role: "admin",
+      createdAt: { $gte: startOfDay },
+    });
+    const activeAdmins = await User.countDocuments({
+      role: "admin",
+      lastLogin: { $gte: past90Days },
+    });
+    const inactiveAdmins = await User.countDocuments({
+      role: "admin",
+      $or: [
+        { lastLogin: { $lt: past90Days } },
+        { lastLogin: { $exists: false } },
+      ],
+    });
+
+    const admins = await User.find({ role: "admin" }).skip(skip).limit(limit);
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Admin data fetched successfully",
+      data: {
+        totalAdmins,
+        newAdminsLast7Days,
+        newAdminsToday,
+        activeAdmins,
+        inactiveAdmins,
+        admins,
+        totalPages: Math.ceil(totalAdmins / limit),
+        currentPage: page,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch admin statistics: " + error.message,
+    });
+  }
+};
+
 const getUserSignupStats = async (req, res) => {
   try {
     const { days = 30 } = req.query;
@@ -1042,6 +1103,7 @@ module.exports = {
   getOrderDashboardStats,
   getCustomerStats,
   getVendorStats,
+  getAdminStats,
   assignProductToVendor,
   getMostBoughtProducts,
   getUserSignupStats,
