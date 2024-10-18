@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const Notification = require("../models/Notification");
+// const Notification = require("../models/Notification");
 const OtpLogs = require("../models/OtpLogs");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, NotFoundError } = require("../errors");
@@ -36,7 +36,6 @@ const signUp = async (req, res) => {
       phoneNumber,
     } = req.body;
 
-    // Require email for signup
     if (!email) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
@@ -91,7 +90,7 @@ const signUp = async (req, res) => {
       lastName,
       role: role || "customer",
       email,
-      phoneNumber, // phoneNumber is optional
+      phoneNumber,
     };
 
     let storeUrl;
@@ -347,14 +346,6 @@ const login = async (req, res, next) => {
     const refreshToken = user.createRefreshToken();
     user.lastLogin = Date.now();
     user.save();
-
-    const notification = new Notification({
-      title: "Login notification",
-      message: `You have successfully logged in at ${new Date().toLocaleString()}`,
-      userId: user._id,
-    });
-
-    await notification.save();
 
     return res.status(StatusCodes.OK).json({
       status: true,

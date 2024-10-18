@@ -23,9 +23,9 @@ const createNotification = async (req, res) => {
   }
 };
 
-const getNotifications = async (req, res) => {
+const getUserNotifications = async (req, res) => {
+  const userId = req.user.userid;
   try {
-    const userId = req.user.userid;
     const notifications = await Notification.find({ userId: userId });
 
     res.status(200).json({ status: true, notifications });
@@ -34,6 +34,66 @@ const getNotifications = async (req, res) => {
       status: false,
       message: "Failed to retrieve notifications",
       error,
+    });
+  }
+};
+
+const getNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.find({});
+
+    res.status(200).json({ status: true, notifications });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: "Failed to retrieve notifications",
+      error,
+    });
+  }
+};
+
+const getNotificationsByRole = async (req, res) => {
+  try {
+    const { role } = req.query;
+
+    if (!role) {
+      return res.status(400).json({
+        status: false,
+        message: "Role is required to filter notifications",
+      });
+    }
+
+    const usersWithRole = await User.find({ role }).select("_id");
+
+    if (!usersWithRole || usersWithRole.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: `No users found for role: ${role}`,
+      });
+    }
+
+    const userIds = usersWithRole.map((user) => user._id);
+
+    const notifications = await Notification.find({ userId: { $in: userIds } });
+
+    if (!notifications || notifications.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: `No notifications found for users with role: ${role}`,
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      message: `Notifications for ${role} retrieved successfully`,
+      notifications,
+    });
+  } catch (error) {
+    console.error("Error fetching notifications by role:", error);
+    res.status(500).json({
+      status: false,
+      message: "Failed to retrieve notifications",
+      error: error.message,
     });
   }
 };
@@ -62,20 +122,6 @@ const markAsRead = async (req, res) => {
   }
 };
 
-const deleteNotification = async (req, res) => {
-  try {
-    const notificationId = req.params.id;
-
-    await Notification.findByIdAndDelete(notificationId);
-
-    res.status(200).json({ status: true, message: "Notification deleted" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ status: false, message: "Failed to delete notification", error });
-  }
-};
-
 const notifyAllUsers = async (req, res) => {
   try {
     const { title, message } = req.body;
@@ -99,49 +145,45 @@ const notifyAllUsers = async (req, res) => {
   }
 };
 
-const notifyAllVendors = async (req, res) => {
+const notifyUsersByRole = async (req, res) => {
   try {
-    const { title, message } = req.body;
-    const vendors = await User.find({ role: "vendor" });
+    const { title, message, role } = req.body;
 
-    const notifications = vendors.map((vendor) => ({
+    if (!role || !["vendor", "customer", "admin"].includes(role)) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Invalid or missing role. Allowed roles are 'vendor', 'customer', 'admin'.",
+      });
+    }
+
+    const users = await User.find({ role });
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: `No users found for the role: ${role}`,
+      });
+    }
+
+    const notifications = users.map((user) => ({
       title,
       message,
-      userId: vendor._id,
+      userId: user._id,
     }));
 
     await Notification.insertMany(notifications);
 
-    res
-      .status(201)
-      .json({ status: true, message: "Notifications sent to all vendors" });
+    res.status(201).json({
+      status: true,
+      message: `Notifications sent to all ${role}s`,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: false, message: "Failed to send notifications", error });
-  }
-};
-
-const notifyAllCustomers = async (req, res) => {
-  try {
-    const { title, message } = req.body;
-    const customers = await User.find({ role: "customer" });
-
-    const notifications = customers.map((customer) => ({
-      title,
-      message,
-      userId: customer._id,
-    }));
-
-    await Notification.insertMany(notifications);
-
-    res
-      .status(201)
-      .json({ status: true, message: "Notifications sent to all customers" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ status: false, message: "Failed to send notifications", error });
+    res.status(500).json({
+      status: false,
+      message: "Failed to send notifications",
+      error: error.message,
+    });
   }
 };
 
@@ -166,13 +208,28 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
+const deleteNotification = async (req, res) => {
+  try {
+    const notificationId = req.params.id;
+
+    await Notification.findByIdAndDelete(notificationId);
+
+    res.status(200).json({ status: true, message: "Notification deleted" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ status: false, message: "Failed to delete notification", error });
+  }
+};
+
 module.exports = {
   createNotification,
   markAsRead,
   getNotifications,
+  getUserNotifications,
+  getNotificationsByRole,
   markAllAsRead,
   deleteNotification,
   notifyAllUsers,
-  notifyAllVendors,
-  notifyAllCustomers,
+  notifyUsersByRole,
 };
