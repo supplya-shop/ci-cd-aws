@@ -488,11 +488,10 @@ const deleteUser = async (req, res, next) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ status: false, message: "User not found" });
     }
-    await user.remove();
+    await user.deleteOne();
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "User deleted successfully",
-      data: user,
     });
   } catch (error) {
     console.error("Error in delete user api:", error);

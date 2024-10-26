@@ -87,7 +87,6 @@ function checkFileType(file, cb) {
 
 //product routes
 router.post("/import", upload.single("file"), importProducts);
-
 router.post(
   "/create",
   authenticateUser,
