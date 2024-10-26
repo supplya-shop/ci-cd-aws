@@ -1,6 +1,7 @@
 const Notification = require("../models/Notification");
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
+const cron = require("node-cron");
 
 const createNotification = async (req, res) => {
   try {
@@ -98,30 +99,6 @@ const getNotificationsByRole = async (req, res) => {
   }
 };
 
-const markAsRead = async (req, res) => {
-  try {
-    const notificationId = req.params.id;
-
-    const notification = await Notification.findById(notificationId);
-    if (!notification) {
-      return res
-        .status(404)
-        .json({ status: false, message: "Notification not found" });
-    }
-
-    notification.read = true;
-    await notification.save();
-
-    res
-      .status(200)
-      .json({ status: true, message: "Notification marked as read" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ status: false, message: "Failed to update notification", error });
-  }
-};
-
 const notifyAllUsers = async (req, res) => {
   try {
     const { title, message } = req.body;
@@ -187,6 +164,30 @@ const notifyUsersByRole = async (req, res) => {
   }
 };
 
+const markAsRead = async (req, res) => {
+  try {
+    const notificationId = req.params.id;
+
+    const notification = await Notification.findById(notificationId);
+    if (!notification) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Notification not found" });
+    }
+
+    notification.read = true;
+    await notification.save();
+
+    res
+      .status(200)
+      .json({ status: true, message: "Notification marked as read" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ status: false, message: "Failed to update notification", error });
+  }
+};
+
 const markAllAsRead = async (req, res) => {
   try {
     const userId = req.user.userid;
@@ -222,6 +223,47 @@ const deleteNotification = async (req, res) => {
   }
 };
 
+const sendBirthdayNotifications = async () => {
+  try {
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1;
+    const currentDay = today.getDate();
+
+    const usersWithBirthdayToday = await User.find({
+      $expr: {
+        $and: [
+          { $eq: [{ $dayOfMonth: "$dob" }, currentDay] },
+          { $eq: [{ $month: "$dob" }, currentMonth] },
+        ],
+      },
+    });
+
+    if (usersWithBirthdayToday.length === 0) {
+      console.log("No users have a birthday today.");
+      return;
+    }
+
+    const notifications = usersWithBirthdayToday.map((user) => ({
+      title: "Happy Birthday!",
+      message: `Happy Birthday, ${user.firstName}! 🥳🥳🥳\n Wishing you a fantastic year ahead. Thank you for being part of our journey. 💙`,
+      userId: user._id,
+    }));
+
+    await Notification.insertMany(notifications);
+
+    console.log(
+      `Birthday notifications sent to ${usersWithBirthdayToday.length} user(s).`
+    );
+  } catch (error) {
+    console.error("Error sending birthday notifications:", error);
+  }
+};
+
+cron.schedule("0 9 * * *", () => {
+  console.log("Running daily birthday notification task...");
+  sendBirthdayNotifications();
+});
+
 module.exports = {
   createNotification,
   markAsRead,
@@ -229,6 +271,7 @@ module.exports = {
   getUserNotifications,
   getNotificationsByRole,
   markAllAsRead,
+  sendBirthdayNotifications,
   deleteNotification,
   notifyAllUsers,
   notifyUsersByRole,

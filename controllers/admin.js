@@ -1,15 +1,25 @@
+const fs = require("fs");
+const path = require("path");
+const xlsx = require("xlsx");
+const csv = require("csv-parser");
+const moment = require("moment");
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
-const validateUser = require("../middleware/validation/userDTO");
+const {
+  validateWithJoi,
+  validateUserData,
+  processUsers,
+  generatePassword,
+  existingUserCheck,
+} = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
 const {
   BadRequestError,
   UnauthenticatedError,
   NotFoundError,
 } = require("../errors");
-const multer = require("../middleware/upload");
-const moment = require("moment");
+const { sendMigratedCustomersMail } = require("../middleware/mailUtil");
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -594,7 +604,7 @@ const getOrderStats = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const { error, value } = validateUser(req.body);
+  const { error, value } = validateWithJoi(req.body);
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       error: false,
@@ -1068,6 +1078,154 @@ const getUserOrders = async (req, res) => {
   }
 };
 
+const bulkUploadUsers = async (req, res) => {
+  const filePath = req.file.path;
+
+  const deleteFile = () => {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error(`Error deleting file: ${err.message}`);
+    }
+  };
+
+  if (path.extname(filePath).toLowerCase() === ".csv") {
+    const users = [];
+    const errors = [];
+
+    const csvStream = fs.createReadStream(filePath).pipe(csv());
+
+    csvStream.on("data", async (row) => {
+      const password = row.password || generatePassword();
+
+      const user = {
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        password,
+        phoneNumber: row.phoneNumber,
+        role: row.role || "customer",
+        dob: row.dob ? new Date(row.dob) : null,
+        storeName: row.storeName || "",
+      };
+
+      const duplicateUser = await existingUserCheck(
+        user.email,
+        user.phoneNumber
+      );
+      if (duplicateUser) {
+        errors.push(
+          `Row ${
+            users.length + 1
+          }: Duplicate user (email/phone number already exists)`
+        );
+        return;
+      }
+
+      const validationError = validateUserData(user);
+      if (validationError) {
+        errors.push(`Row ${users.length + 1}: ${validationError}`);
+      } else {
+        users.push(user);
+      }
+    });
+
+    csvStream.on("end", async () => {
+      if (errors.length > 0) {
+        deleteFile();
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Validation errors occurred",
+          errors,
+        });
+      }
+
+      try {
+        await User.create(users);
+        const emailsToSend = users
+          .filter((user) => user.email)
+          .map(({ firstName, lastName, email, password }) => ({
+            firstName,
+            lastName,
+            email,
+            password,
+          }));
+
+        await Promise.all(
+          emailsToSend.map(({ firstName, lastName, email, password }) =>
+            sendMigratedCustomersMail(firstName, lastName, email, password)
+          )
+        );
+
+        res.status(StatusCodes.OK).json({
+          status: true,
+          message: "Users imported successfully",
+        });
+      } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+          status: false,
+          message: `Failed to import users: ${error.message}`,
+        });
+      } finally {
+        deleteFile();
+      }
+    });
+
+    csvStream.on("error", (error) => {
+      console.error("CSV Parsing Error:", error);
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        status: false,
+        message: `Failed to parse CSV file: ${error.message}`,
+      });
+      deleteFile();
+    });
+  } else if (path.extname(filePath).toLowerCase() === ".xlsx") {
+    try {
+      const workbook = xlsx.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = xlsx.utils.sheet_to_json(sheet);
+
+      const { users, errors, emailsToSend } = await processUsers(rows);
+
+      if (errors.length > 0) {
+        deleteFile();
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Validation errors occurred",
+          errors,
+        });
+      }
+
+      await User.create(users);
+
+      await Promise.all(
+        emailsToSend.map(({ firstName, lastName, email, password }) =>
+          sendMigratedCustomersMail(firstName, lastName, email, password)
+        )
+      );
+
+      res.status(StatusCodes.OK).json({
+        status: true,
+        message: "Users imported successfully",
+      });
+    } catch (error) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        status: false,
+        message: `Failed to import users: ${error.message}`,
+      });
+    } finally {
+      deleteFile();
+    }
+  } else {
+    deleteFile();
+    res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Unsupported file format. Please upload a CSV or XLSX file.",
+    });
+  }
+};
+
 const bulkdeleteUsers = async (req, res) => {
   try {
     const { ids } = req.body;
@@ -1108,6 +1266,7 @@ module.exports = {
   getMostBoughtProducts,
   getUserSignupStats,
   getOrderStats,
+  bulkUploadUsers,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,

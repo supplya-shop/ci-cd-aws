@@ -3,7 +3,6 @@ const User = require("../models/User");
 const OtpLogs = require("../models/OtpLogs");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, NotFoundError } = require("../errors");
-const nodemailer = require("nodemailer");
 const passport = require("passport");
 const bcrypt = require("bcryptjs");
 const {
