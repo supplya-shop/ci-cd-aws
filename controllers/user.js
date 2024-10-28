@@ -181,39 +181,44 @@ const updateUser = async (req, res) => {
       });
     }
 
-    if (updates.storeName) {
-      // updates.storeName = updates.storeName.toLowerCase();
-
-      if (updates.storeName !== existingUser.storeName) {
-        const storeNameExists = await User.findOne({
-          storeName: updates.storeName,
-        });
-        if (storeNameExists) {
-          return res.status(StatusCodes.CONFLICT).json({
-            status: false,
-            message: "This store name is already taken",
-          });
-        }
-        updates.storeUrl = `https://supplya.shop/store/${updates.storeName.replace(
-          /\s+/g,
-          "-"
-        )}`;
-      }
-    }
-    if (updates.phoneNumber && !phonePattern.test(updates.phoneNumber)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Phone number must start with 234 followed by 10 digits.",
+    if (updates.storeName && updates.storeName !== existingUser.storeName) {
+      const storeNameExists = await User.findOne({
+        storeName: updates.storeName,
       });
+      if (storeNameExists) {
+        return res.status(StatusCodes.CONFLICT).json({
+          status: false,
+          message: "This store name is already taken",
+        });
+      }
+      updates.storeUrl = `https://supplya.shop/store/${updates.storeName.replace(
+        /\s+/g,
+        "-"
+      )}`;
     }
 
-    const updatedData = {};
-    for (const key in updates) {
-      if (updates[key] !== undefined) {
-        updatedData[key] = updates[key];
+    if (updates.phoneNumber) {
+      if (!phonePattern.test(updates.phoneNumber)) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Phone number must start with 234 followed by 10 digits.",
+        });
+      }
+
+      const phoneNumberExists = await User.findOne({
+        phoneNumber: updates.phoneNumber,
+        _id: { $ne: id },
+      });
+      if (phoneNumberExists) {
+        return res.status(StatusCodes.CONFLICT).json({
+          status: false,
+          message:
+            "Phone number already in use. Please use a different number.",
+        });
       }
     }
 
+    const updatedData = { ...updates, updatedAt: new Date() };
     const updatedUser = await User.findByIdAndUpdate(
       id,
       { $set: updatedData },
