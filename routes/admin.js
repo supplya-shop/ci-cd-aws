@@ -13,6 +13,7 @@ const {
   getUserSignupStats,
   getOrderStats,
   bulkUploadUsers,
+  searchUsers,
 } = require("../controllers/admin");
 const multer = require("multer");
 const path = require("path");
@@ -63,6 +64,12 @@ router.get(
   authenticateUser,
   rolesAllowed("admin"),
   getDashboardStats
+);
+router.get(
+  "/dashboard/users/search",
+  authenticateUser,
+  rolesAllowed("admin"),
+  searchUsers
 );
 router.get(
   "/dashboard/product",

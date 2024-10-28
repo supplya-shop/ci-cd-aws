@@ -35,10 +35,10 @@ const signUp = async (req, res) => {
       phoneNumber,
     } = req.body;
 
-    if (!email) {
+    if (!email && !phoneNumber) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Please enter your email",
+        message: "Please enter either an email or phone number.",
       });
     }
 
@@ -64,11 +64,7 @@ const signUp = async (req, res) => {
     }
 
     let existingUser = null;
-    if (email && phoneNumber) {
-      existingUser = await User.findOne({
-        $or: [{ email }, { phoneNumber }],
-      });
-    } else if (email) {
+    if (email) {
       existingUser = await User.findOne({ email });
     } else if (phoneNumber) {
       existingUser = await User.findOne({ phoneNumber });
@@ -118,7 +114,10 @@ const signUp = async (req, res) => {
       otp,
     });
 
-    const sendOtpPromises = [sendOTPMail(email, otp)];
+    const sendOtpPromises = [];
+    if (email) {
+      sendOtpPromises.push(sendOTPMail(email, otp));
+    }
     if (phoneNumber) {
       sendOtpPromises.push(sendOtpViaTermii(phoneNumber, otp));
     }
@@ -149,13 +148,6 @@ const signUp = async (req, res) => {
 const signUpComplete = async (req, res, next) => {
   try {
     const { email, phoneNumber, otp } = req.body;
-
-    if (!email) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Please enter your email.",
-      });
-    }
 
     if (!otp) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -199,12 +191,14 @@ const signUpComplete = async (req, res, next) => {
 
     await newUser.save();
 
-    await sendConfirmationMail(email);
+    if (email) {
+      await sendConfirmationMail(email);
 
-    if (userData.role === "vendor") {
-      await newVendorSignUpMail(email);
-    } else {
-      await newUserSignUpMail(email);
+      if (userData.role === "vendor") {
+        await newVendorSignUpMail(email);
+      } else {
+        await newUserSignUpMail(email);
+      }
     }
 
     await OtpLogs.findOneAndDelete({ $or: [{ email }, { phoneNumber }], otp });
