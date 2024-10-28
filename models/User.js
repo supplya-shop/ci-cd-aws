@@ -7,19 +7,18 @@ require("dotenv");
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    required: [true, "Please provide your firstName"],
-    minlength: [2, "Name too short"],
+    // required: [true, "Please provide your firstName"],
+    // minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
   },
   lastName: {
     type: String,
-    required: [true, "Please provide your lastName"],
-    minlength: [2, "Name too short"],
+    // required: [true, "Please provide your lastName"],
+    // minlength: [2, "Name too short"],
     maxLength: [50, "Name too long"],
   },
   email: {
     type: String,
-    required: [true, "Please provide your email"],
     match: [
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
       "Please provide a valid email",
@@ -32,6 +31,7 @@ const userSchema = new mongoose.Schema({
   },
   phoneNumber: {
     type: String,
+    unique: true,
     default: "",
   },
   uniqueKey: {
@@ -78,6 +78,9 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now(),
+  },
+  updatedAt: {
+    type: Date,
   },
   otp: {
     type: Number,
@@ -152,6 +155,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
   },
 });
+
+userSchema.index(
+  { phoneNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { phoneNumber: { $type: "string", $ne: "" } },
+  }
+);
 
 userSchema.pre("save", async function (next) {
   try {

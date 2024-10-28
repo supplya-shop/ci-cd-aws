@@ -20,6 +20,7 @@ const {
   NotFoundError,
 } = require("../errors");
 const { sendMigratedCustomersMail } = require("../middleware/mailUtil");
+const { isNull } = require("util");
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -1089,6 +1090,23 @@ const bulkUploadUsers = async (req, res) => {
     }
   };
 
+  const handleValidationErrors = (errors, message) => {
+    deleteFile();
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message,
+      errors,
+    });
+  };
+
+  const handleSuccessResponse = (userCount) => {
+    deleteFile();
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: `${userCount} user(s) imported successfully`,
+    });
+  };
+
   if (path.extname(filePath).toLowerCase() === ".csv") {
     const users = [];
     const errors = [];
@@ -1096,52 +1114,50 @@ const bulkUploadUsers = async (req, res) => {
     const csvStream = fs.createReadStream(filePath).pipe(csv());
 
     csvStream.on("data", async (row) => {
-      const password = row.password || generatePassword();
-
       const user = {
-        firstName: row.firstName,
-        lastName: row.lastName,
-        email: row.email,
-        password,
-        phoneNumber: row.phoneNumber,
+        firstName: row.firstName || null,
+        lastName: row.lastName || null,
+        email: row.email || null,
+        password: row.password || generatePassword(),
+        phoneNumber: row.phoneNumber || null,
         role: row.role || "customer",
-        dob: row.dob ? new Date(row.dob) : null,
+        displayName: row.displayName || "",
+        createdAt: row.createdAt ? new Date(row.createdAt) : null,
+        updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
         storeName: row.storeName || "",
       };
 
-      const duplicateUser = await existingUserCheck(
-        user.email,
-        user.phoneNumber
-      );
-      if (duplicateUser) {
-        errors.push(
-          `Row ${
-            users.length + 1
-          }: Duplicate user (email/phone number already exists)`
-        );
-        return;
-      }
+      try {
+        const isDuplicate = await existingUserCheck(user);
+        if (isDuplicate) {
+          errors.push(
+            `Row ${
+              users.length + 1
+            }: Duplicate user (email/phone number already exists)`
+          );
+          return;
+        }
 
-      const validationError = validateUserData(user);
-      if (validationError) {
-        errors.push(`Row ${users.length + 1}: ${validationError}`);
-      } else {
-        users.push(user);
+        const validationError = validateUserData(user);
+        if (validationError) {
+          errors.push(`Row ${users.length + 1}: ${validationError}`);
+        } else {
+          users.push(user);
+        }
+      } catch (error) {
+        console.error("Error processing row:", error);
+        errors.push(`Row ${users.length + 1}: Error processing data`);
       }
     });
 
     csvStream.on("end", async () => {
       if (errors.length > 0) {
-        deleteFile();
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Validation errors occurred",
-          errors,
-        });
+        return handleValidationErrors(errors, "Validation errors occurred");
       }
 
       try {
         await User.create(users);
+
         const emailsToSend = users
           .filter((user) => user.email)
           .map(({ firstName, lastName, email, password }) => ({
@@ -1157,11 +1173,9 @@ const bulkUploadUsers = async (req, res) => {
           )
         );
 
-        res.status(StatusCodes.OK).json({
-          status: true,
-          message: "Users imported successfully",
-        });
+        return handleSuccessResponse(users.length);
       } catch (error) {
+        console.error("Error creating users:", error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
           status: false,
           message: `Failed to import users: ${error.message}`,
@@ -1182,19 +1196,13 @@ const bulkUploadUsers = async (req, res) => {
   } else if (path.extname(filePath).toLowerCase() === ".xlsx") {
     try {
       const workbook = xlsx.readFile(filePath);
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = xlsx.utils.sheet_to_json(sheet);
 
       const { users, errors, emailsToSend } = await processUsers(rows);
 
       if (errors.length > 0) {
-        deleteFile();
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Validation errors occurred",
-          errors,
-        });
+        return handleValidationErrors(errors, "Validation errors occurred");
       }
 
       await User.create(users);
@@ -1205,11 +1213,9 @@ const bulkUploadUsers = async (req, res) => {
         )
       );
 
-      res.status(StatusCodes.OK).json({
-        status: true,
-        message: "Users imported successfully",
-      });
+      return handleSuccessResponse(users.length);
     } catch (error) {
+      console.error("Error importing XLSX file:", error);
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         status: false,
         message: `Failed to import users: ${error.message}`,
@@ -1222,6 +1228,50 @@ const bulkUploadUsers = async (req, res) => {
     res.status(StatusCodes.BAD_REQUEST).json({
       status: false,
       message: "Unsupported file format. Please upload a CSV or XLSX file.",
+    });
+  }
+};
+
+const searchUsers = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: false,
+      message: "Please provide a search query",
+    });
+  }
+
+  try {
+    const user = await User.findOne({
+      $or: [
+        { firstName: new RegExp(query, "i") },
+        { lastName: new RegExp(query, "i") },
+        { email: new RegExp(`^${query}$`, "i") },
+        { phoneNumber: new RegExp(`^${query}$`, "i") },
+      ],
+    });
+
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    const response = user.toObject();
+    delete response.password;
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "User found",
+      data: response,
+    });
+  } catch (error) {
+    console.error("Error finding user:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Internal server error",
     });
   }
 };
@@ -1267,6 +1317,7 @@ module.exports = {
   getUserSignupStats,
   getOrderStats,
   bulkUploadUsers,
+  searchUsers,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,

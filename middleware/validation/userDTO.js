@@ -36,27 +36,25 @@ const generatePassword = () => {
 // });
 
 const validateUserData = (user) => {
-  const { firstName, lastName, email, password, phoneNumber, dob, role } = user;
+  const { email, password, phoneNumber } = user;
 
-  if (!firstName || typeof firstName !== "string")
-    return "Invalid or missing firstName";
-  if (!lastName || typeof lastName !== "string")
-    return "Invalid or missing lastName";
   if (!email || !email.includes("@")) return "Invalid or missing email";
   if (!password || typeof password !== "string")
     return "Invalid or missing password";
-  if (!phonePattern.test(phoneNumber))
-    return "Phone number must start with 234 followed by 10 digits";
-  if (!dob || isNaN(new Date(dob))) return "Invalid or missing dob";
-  if (!role || typeof role !== "string") return "Invalid or missing role";
-
   return null;
 };
 
-const existingUserCheck = async (email, phoneNumber) => {
-  return await User.findOne({
-    $or: [{ email }, { phoneNumber }],
-  });
+const existingUserCheck = async ({ email = null, phoneNumber = null } = {}) => {
+  const query = {};
+  if (email) query.email = email;
+  if (phoneNumber) query.phoneNumber = phoneNumber;
+
+  if (Object.keys(query).length === 0) {
+    return false;
+  }
+
+  const existingUser = await User.findOne(query);
+  return Boolean(existingUser);
 };
 
 const processUsers = async (rows) => {
@@ -67,13 +65,15 @@ const processUsers = async (rows) => {
   for (const [index, row] of rows.entries()) {
     const password = generatePassword();
     const user = {
-      firstName: row.firstName,
-      lastName: row.lastName,
+      firstName: row.firstName || "",
+      lastName: row.lastName || "",
       email: row.email,
       password,
       phoneNumber: row.phoneNumber,
       role: row.role || "customer",
-      dob: row.dob ? new Date(row.dob) : null,
+      displayName: row.displayName || "",
+      createdAt: row.createdAt ? new Date(row.createdAt) : null,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
       storeName: row.storeName || "",
     };
 
