@@ -6,6 +6,7 @@ const termiiConfig = {
   deviceId: process.env.TERMII_DEVICE_ID,
   customerTemplateId: process.env.TERMII_CUSTOMER_TEMPLATE_ID,
   vendorTemplateId: process.env.TERMII_VENDOR_TEMPLATE_ID,
+  migrationTemplateId: process.env.TERMII_MIGRATION_TEMPLATE_ID,
 };
 
 const sendOtpViaTermii = async (phoneNumber, otp) => {
@@ -93,8 +94,28 @@ const sendCustomerWhatsAppOrderNotification = async (
   );
 };
 
+const sendMigrationNotification = async (
+  firstName,
+  phoneNumber,
+  websiteUrl = `https://supplya.shop`,
+  password
+) => {
+  const data = {
+    user_firstname: firstName,
+    website_url: websiteUrl,
+    user_phoneno: phoneNumber,
+    user_pass: password,
+  };
+  return sendWhatsAppNotification(
+    phoneNumber,
+    termiiConfig.migrationTemplateId,
+    data
+  );
+};
+
 module.exports = {
   sendOtpViaTermii,
   sendVendorWhatsAppOrderNotification,
   sendCustomerWhatsAppOrderNotification,
+  sendMigrationNotification,
 };

@@ -20,6 +20,8 @@ const {
   NotFoundError,
 } = require("../errors");
 const { sendMigratedCustomersMail } = require("../middleware/mailUtil");
+const termiiService = require("../service/TermiiService");
+
 const { isNull } = require("util");
 
 const getDashboardStats = async (req, res) => {
@@ -1107,99 +1109,99 @@ const bulkUploadUsers = async (req, res) => {
     });
   };
 
-  if (path.extname(filePath).toLowerCase() === ".csv") {
-    const users = [];
-    const errors = [];
-
-    const csvStream = fs.createReadStream(filePath).pipe(csv());
-
-    csvStream.on("data", async (row) => {
-      const user = {
-        firstName: row.firstName || null,
-        lastName: row.lastName || null,
-        email: row.email || null,
-        password: row.password || generatePassword(),
-        phoneNumber: row.phoneNumber || null,
-        role: row.role || "customer",
-        displayName: row.displayName || "",
-        createdAt: row.createdAt ? new Date(row.createdAt) : null,
-        updatedAt: row.updatedAt ? new Date(row.updatedAt) : null,
-        storeName: row.storeName || "",
-      };
-
-      try {
-        const isDuplicate = await existingUserCheck(user);
-        if (isDuplicate) {
-          errors.push(
-            `Row ${
-              users.length + 1
-            }: Duplicate user (email/phone number already exists)`
-          );
-          return;
-        }
-
-        const validationError = validateUserData(user);
-        if (validationError) {
-          errors.push(`Row ${users.length + 1}: ${validationError}`);
-        } else {
-          users.push(user);
-        }
-      } catch (error) {
-        console.error("Error processing row:", error);
-        errors.push(`Row ${users.length + 1}: Error processing data`);
-      }
-    });
-
-    csvStream.on("end", async () => {
-      if (errors.length > 0) {
-        return handleValidationErrors(errors, "Validation errors occurred");
-      }
-
-      try {
-        await User.create(users);
-
-        const emailsToSend = users
-          .filter((user) => user.email)
-          .map(({ firstName, lastName, email, password }) => ({
-            firstName,
-            lastName,
-            email,
-            password,
-          }));
-
-        await Promise.all(
-          emailsToSend.map(({ firstName, lastName, email, password }) =>
-            sendMigratedCustomersMail(firstName, lastName, email, password)
-          )
-        );
-
-        return handleSuccessResponse(users.length);
-      } catch (error) {
-        console.error("Error creating users:", error);
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-          status: false,
-          message: `Failed to import users: ${error.message}`,
-        });
-      } finally {
-        deleteFile();
-      }
-    });
-
-    csvStream.on("error", (error) => {
-      console.error("CSV Parsing Error:", error);
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        status: false,
-        message: `Failed to parse CSV file: ${error.message}`,
-      });
-      deleteFile();
-    });
-  } else if (path.extname(filePath).toLowerCase() === ".xlsx") {
+  if (path.extname(filePath).toLowerCase() === ".xlsx") {
     try {
       const workbook = xlsx.readFile(filePath);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = xlsx.utils.sheet_to_json(sheet);
 
-      const { users, errors, emailsToSend } = await processUsers(rows);
+      const users = [];
+      const errors = [];
+      const notifications = [];
+
+      for (const [index, row] of rows.entries()) {
+        const phoneNumber = row.phoneNumber
+          ? String(row.phoneNumber)
+              .replace(/\.\d+$/, "")
+              .trim()
+          : null;
+        const email = row.email ? row.email.trim() : null;
+
+        const user = {
+          firstName: row.firstName || "User",
+          lastName: row.lastName || null,
+          email,
+          phoneNumber,
+          password: generatePassword(),
+          role: row.role || "customer",
+          displayName: row.displayName || "",
+          storeName: row.storeName || "",
+        };
+
+        if (!user.email && !user.phoneNumber) {
+          errors.push(
+            `Row ${index + 1}: Either email or phone number is required`
+          );
+          continue;
+        }
+
+        if (user.phoneNumber && !/^234\d{10}$/.test(user.phoneNumber)) {
+          errors.push(`Row ${index + 1}: Invalid phone number format`);
+          continue;
+        }
+
+        if (user.storeName) {
+          const storeNameExists = await User.findOne({
+            storeName: user.storeName,
+          });
+          if (storeNameExists) {
+            errors.push(
+              `Row ${index + 1}: Store name "${
+                user.storeName
+              }" is already taken.`
+            );
+            continue;
+          }
+        }
+
+        // Skip duplicate check if email or phoneNumber is blank or whitespace
+        if (
+          (user.email && user.email !== "") ||
+          (user.phoneNumber && user.phoneNumber !== "")
+        ) {
+          const isDuplicate = await User.findOne({
+            $or: [
+              { email: user.email || { $exists: false } },
+              { phoneNumber: user.phoneNumber || { $exists: false } },
+            ],
+          });
+          if (isDuplicate) {
+            errors.push(`Row ${index + 1}: Duplicate user found`);
+            continue;
+          }
+        }
+
+        users.push(user);
+
+        const notificationData = {
+          firstName: user.firstName,
+          phoneNumber: user.phoneNumber,
+          password: user.password,
+          websiteUrl: "https://supplya.shop",
+        };
+
+        if (user.email) {
+          notifications.push({
+            method: "email",
+            data: { email: user.email, ...notificationData },
+          });
+        } else if (user.phoneNumber) {
+          notifications.push({
+            method: "whatsapp",
+            data: notificationData,
+          });
+        }
+      }
 
       if (errors.length > 0) {
         return handleValidationErrors(errors, "Validation errors occurred");
@@ -1208,9 +1210,23 @@ const bulkUploadUsers = async (req, res) => {
       await User.create(users);
 
       await Promise.all(
-        emailsToSend.map(({ firstName, lastName, email, password }) =>
-          sendMigratedCustomersMail(firstName, lastName, email, password)
-        )
+        notifications.map(async ({ method, data }) => {
+          if (method === "email") {
+            return sendMigratedCustomersMail(
+              data.firstName,
+              data.phoneNumber,
+              data.email,
+              data.password
+            );
+          } else {
+            return termiiService.sendMigrationNotification(
+              data.firstName,
+              data.phoneNumber,
+              data.websiteUrl,
+              data.password
+            );
+          }
+        })
       );
 
       return handleSuccessResponse(users.length);
@@ -1227,7 +1243,7 @@ const bulkUploadUsers = async (req, res) => {
     deleteFile();
     res.status(StatusCodes.BAD_REQUEST).json({
       status: false,
-      message: "Unsupported file format. Please upload a CSV or XLSX file.",
+      message: "Unsupported file format. Please upload an XLSX file.",
     });
   }
 };

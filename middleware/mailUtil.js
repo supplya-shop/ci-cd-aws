@@ -3317,7 +3317,7 @@ const approveProductMail = async (vendorName, productName) => {
 
 const sendMigratedCustomersMail = async (
   firstName,
-  lastName,
+  phoneNumber,
   email,
   password
 ) => {
@@ -3421,22 +3421,22 @@ const sendMigratedCustomersMail = async (
                             >
                               Migration notification
                             </p>
-                            <p>Hello, ${firstName},</p>
+                            <p>Hello ${firstName},</p>
                             <p>
-                              We are pleased to announce that we have
-                              successfully migrated our platform to
+                              We're pleased to announce that we have
+                              successfully migrated you to our new and improved web app
                               <a
                                 style="cursor: pointer"
                                 href="https://supplya.shop"
                                 >supplya.shop</a
                               >
-                              so your Supplya account has been re-created.
-                              <p>Here is your temporary password: ${password}
+                              🥳.
+                              <p>You may sign in with your email or phone number ${phoneNumber} and temporary password: ${password}
                               <br />
                             </p>
 
                             <p>
-                              Please sign in to your account and reset your
+                              Please ensure you reset your
                               password using the following link
                               <a
                                 href="https://supplya.shop/#/auth/forget-password"
