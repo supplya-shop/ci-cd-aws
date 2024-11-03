@@ -154,6 +154,7 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
   },
+  products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
 });
 
 userSchema.index(
