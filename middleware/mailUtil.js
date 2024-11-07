@@ -2074,7 +2074,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
   transporter.sendMail(mailOptions);
 };
 
-const sendVendorOrderSummaryMail = async (order) => {
+const sendVendorOrderSummaryMail = async (order, user) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,

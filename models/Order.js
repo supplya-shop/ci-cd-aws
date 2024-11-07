@@ -71,6 +71,12 @@ const orderSchema = mongoose.Schema({
   orderNote: {
     type: String,
   },
+  discount: {
+    type: String,
+  },
+  promoCode: {
+    type: String,
+  },
 
   orderStatus: {
     type: String,
