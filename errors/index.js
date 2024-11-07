@@ -4,6 +4,7 @@ const NotFoundError = require("./not-found");
 const BadRequestError = require("./bad-request");
 const ForbiddenError = require("./forbidden");
 const NoContentError = require("./no-content");
+const InvalidPhoneFormatError = require("./invalid-phone");
 
 module.exports = {
   CustomAPIError,
@@ -12,4 +13,5 @@ module.exports = {
   BadRequestError,
   ForbiddenError,
   NoContentError,
+  InvalidPhoneFormatError,
 };

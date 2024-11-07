@@ -1,8 +1,9 @@
 const Order = require("../models/Order");
 const User = require("../models/User");
 const Product = require("../models/Product");
+const PromoCode = require("../models/PromoCode");
 const { StatusCodes } = require("http-status-codes");
-const { NotFoundError } = require("../errors");
+const { NotFoundError, InvalidPhoneFormatError } = require("../errors");
 const Notification = require("../models/Notification");
 const {
   sendOrderSummaryMail,
@@ -11,6 +12,8 @@ const {
 } = require("../middleware/mailUtil");
 const mongoose = require("mongoose");
 const termiiService = require("../service/TermiiService");
+
+const phonePattern = /^234\d{10}$/;
 
 const generateOrderId = async () => {
   const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -30,15 +33,13 @@ const generateOrderId = async () => {
   return orderId;
 };
 
-const phonePattern = /^234\d{10}$/;
 const createOrder = async (req, res) => {
   let session;
-
   try {
     const userId = req.user.userid;
-    const email = req.user.email;
     const {
       orderItems,
+      promoCode,
       city,
       zip,
       country,
@@ -48,19 +49,7 @@ const createOrder = async (req, res) => {
       paymentRefId,
       paymentMethod,
     } = req.body;
-
-    let formattedPhone = phone;
-
-    if (phone) {
-      if (/^0\d{10}$/.test(phone)) {
-        formattedPhone = "234" + phone.slice(1);
-      } else if (!phonePattern.test(phone)) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Phone number must start with 234 followed by 10 digits.",
-        });
-      }
-    }
+    const formattedPhone = formatPhoneNumber(phone);
 
     session = await mongoose.startSession();
     session.startTransaction();
@@ -70,92 +59,40 @@ const createOrder = async (req, res) => {
       generateOrderId(),
     ]);
 
-    let totalPrice = 0;
-    const productUpdates = [];
-    const insufficientStockProducts = [];
-    const moqProducts = [];
-
-    for (const item of orderItems) {
-      const product = await Product.findById(item.product)
-        .populate("createdBy")
-        .session(session);
-
-      if (!product) {
-        await session.abortTransaction();
-        return res.status(StatusCodes.NOT_FOUND).json({
-          status: false,
-          message: `Product not found: ${item.product}`,
-        });
-      }
-      if (item.quantity < product.moq) {
-        moqProducts.push(product.name);
-      }
-      const price = product.discounted_price || product.unit_price;
-
-      totalPrice += item.quantity * price;
-
-      if (product.quantity < item.quantity) {
-        insufficientStockProducts.push(product.name);
-      }
-
-      item.vendorDetails = product.createdBy;
-
-      const newQuantity = product.quantity - item.quantity;
-
-      productUpdates.push({
-        updateOne: {
-          filter: { _id: item.product },
-          update: {
-            $inc: { quantity: -item.quantity },
-            $set: {
-              status: newQuantity <= product.moq ? "outOfStock" : "inStock",
-            },
-          },
-        },
-      });
-    }
-
-    if (insufficientStockProducts.length > 0) {
-      await session.abortTransaction();
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: `Insufficient stock for products: ${insufficientStockProducts.join(
-          ", "
-        )}`,
-      });
-    }
-
-    if (moqProducts.length > 0) {
-      await session.abortTransaction();
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: `Your order quantity does not meet the minimum order quantity (MOQ) for products: ${moqProducts.join(
-          ", "
-        )}`,
-      });
-    }
+    const {
+      totalPrice,
+      productUpdates,
+      orderItems: populatedItems,
+    } = await populateOrderItems(orderItems, session);
+    const { discount, updatedTotal } = await applyPromoCode(
+      promoCode,
+      totalPrice,
+      session
+    );
 
     await Product.bulkWrite(productUpdates, { session });
 
-    const createdOrders = await Order.create(
+    const createdOrder = await Order.create(
       [
         {
-          orderId: orderId,
+          orderId,
           user: {
             _id: userId,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
           },
-          orderItems,
+          orderItems: populatedItems,
           city,
           zip,
           country,
-          phone: formattedPhone,
-          email,
+          phone: formattedPhone || user.phoneNumber,
+          email: req.user.email,
           address,
           orderNote,
-          totalPrice,
+          totalPrice: updatedTotal,
+          discount,
+          promoCode,
           paymentRefId,
           paymentMethod,
         },
@@ -166,11 +103,8 @@ const createOrder = async (req, res) => {
     await session.commitTransaction();
     session.endSession();
 
-    const order = await Order.findById(createdOrders[0]._id)
-      .populate({
-        path: "orderItems.product",
-        model: "Product",
-      })
+    const order = await Order.findById(createdOrder[0]._id)
+      .populate({ path: "orderItems.product", model: "Product" })
       .populate({
         path: "orderItems.product.createdBy",
         model: "User",
@@ -184,9 +118,8 @@ const createOrder = async (req, res) => {
           "firstName lastName email phoneNumber address city state country",
       });
 
-    if (formattedPhone) {
-      await notifyUsers(order, user, email, formattedPhone);
-    }
+    if (formattedPhone)
+      await notifyUsers(order, user, req.user.email, formattedPhone);
 
     return res.status(StatusCodes.CREATED).json({
       status: true,
@@ -195,14 +128,11 @@ const createOrder = async (req, res) => {
     });
   } catch (error) {
     if (session && session.inTransaction()) await session.abortTransaction();
-
-    console.error("Error creating order: ", error);
-    return res
-      .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({
-        status: false,
-        message: "Failed to create order. " + error.message,
-      });
+    console.error("Error creating order:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: `Failed to create order. ${error.message}`,
+    });
   } finally {
     if (session) session.endSession();
   }
@@ -689,6 +619,83 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+// helper functions
+const formatPhoneNumber = (phone) => {
+  if (!phone) return null;
+  if (/^0\d{10}$/.test(phone)) return "234" + phone.slice(1);
+  if (!phonePattern.test(phone)) throw new Error("Invalid phone format.");
+  return phone;
+};
+
+const applyPromoCode = async (promoCode, totalPrice, session) => {
+  if (!promoCode) return { discount: 0, updatedTotal: totalPrice };
+
+  const promo = await PromoCode.findOne({
+    code: promoCode,
+    isActive: true,
+  }).session(session);
+  if (!promo || promo.expirationDate < new Date())
+    throw new Error("Invalid or expired promo code.");
+  if (totalPrice < promo.minimumOrderAmount)
+    throw new Error(
+      `Minimum order amount for this promo code is ₦${promo.minimumOrderAmount}.`
+    );
+
+  const discount = Math.min(
+    (totalPrice * promo.discountPercentage) / 100,
+    promo.maxDiscountAmount
+  );
+  promo.usedCount += 1;
+  await promo.save({ session });
+
+  return { discount, updatedTotal: totalPrice - discount };
+};
+
+const populateOrderItems = async (orderItems, session) => {
+  let totalPrice = 0;
+  const productUpdates = [];
+  const insufficientStock = [];
+  const moqFailures = [];
+
+  await Promise.all(
+    orderItems.map(async (item) => {
+      const product = await Product.findById(item.product)
+        .populate("createdBy")
+        .session(session);
+      if (!product) throw new Error(`Product not found: ${item.product}`);
+
+      const { moq, unit_price, discounted_price, createdBy, quantity } =
+        product;
+      if (item.quantity < moq) moqFailures.push(product.name);
+      const price = discounted_price || unit_price;
+      totalPrice += item.quantity * price;
+
+      if (quantity < item.quantity) insufficientStock.push(product.name);
+      else {
+        item.vendorDetails = {
+          vendorId: createdBy._id,
+          ...createdBy.toObject(),
+        };
+        productUpdates.push({
+          updateOne: {
+            filter: { _id: item.product },
+            update: { $inc: { quantity: -item.quantity } },
+          },
+        });
+      }
+    })
+  );
+
+  if (insufficientStock.length > 0)
+    throw new Error(
+      `Insufficient stock for products: ${insufficientStock.join(", ")}`
+    );
+  if (moqFailures.length > 0)
+    throw new Error(`MOQ not met for products: ${moqFailures.join(", ")}`);
+
+  return { totalPrice, productUpdates, orderItems };
+};
+
 const notifyUsers = async (order, user, email, phone) => {
   const customerNotifications = [];
   const vendorNotifications = [];
@@ -709,34 +716,277 @@ const notifyUsers = async (order, user, email, phone) => {
     )
   );
 
-  order.orderItems.forEach((item) => {
+  for (const item of order.orderItems) {
     const vendor = item.vendorDetails;
 
-    if (vendor && vendor._id) {
-      vendorNotifications.push(
-        Notification.create({
-          userId: vendor._id,
-          message: `A new order with ID: ${order.orderId} has been placed. Please contact the customer and update the order status once delivered.`,
-          title: "Order notification",
-        }),
-        sendVendorOrderSummaryMail(order, user),
-        termiiService.sendVendorWhatsAppOrderNotification(
-          vendor.phoneNumber,
-          vendor.firstName,
-          order.orderId,
-          phone,
-          email
-        )
-      );
-    } else {
-      console.warn(
-        `Vendor ${vendor.firstName} ${vendor.lastName} has no valid details.`
-      );
-    }
-  });
+    vendorNotifications.push(
+      sendVendorOrderSummaryMail(order, vendor),
+      Notification.create({
+        userId: vendor.vendorId,
+        message: `A new order with ID: ${order.orderId} has been placed. Please contact the customer and update the order status once delivered.`,
+        title: "Order notification",
+      }),
+      termiiService.sendVendorWhatsAppOrderNotification(
+        vendor.phoneNumber,
+        vendor.firstName,
+        order.orderId,
+        phone,
+        email
+      )
+    );
+  }
 
   await Promise.all([...customerNotifications, ...vendorNotifications]);
 };
+
+// const createOrder = async (req, res) => {
+//   let session;
+
+//   try {
+//     const userId = req.user.userid;
+//     const email = req.user.email;
+//     const {
+//       orderItems,
+//       city,
+//       zip,
+//       country,
+//       phone,
+//       address,
+//       orderNote,
+//       paymentRefId,
+//       paymentMethod,
+//       promoCode, // Extract promoCode from the request
+//     } = req.body;
+
+//     let formattedPhone = phone;
+
+//     if (phone) {
+//       if (/^0\d{10}$/.test(phone)) {
+//         formattedPhone = "234" + phone.slice(1);
+//       } else if (!phonePattern.test(phone)) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: "Phone number must start with 234 followed by 10 digits.",
+//         });
+//       }
+//     }
+
+//     session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     const [user, orderId] = await Promise.all([
+//       User.findById(userId).select("firstName lastName email").session(session),
+//       generateOrderId(),
+//     ]);
+
+//     let totalPrice = 0;
+//     const productUpdates = [];
+//     const insufficientStockProducts = [];
+//     const moqProducts = [];
+
+//     for (const item of orderItems) {
+//       const product = await Product.findById(item.product)
+//         .populate("createdBy")
+//         .session(session);
+
+//       if (!product) {
+//         await session.abortTransaction();
+//         return res.status(StatusCodes.NOT_FOUND).json({
+//           status: false,
+//           message: `Product not found: ${item.product}`,
+//         });
+//       }
+//       if (item.quantity < product.moq) {
+//         moqProducts.push(product.name);
+//       }
+//       const price = product.discounted_price || product.unit_price;
+
+//       totalPrice += item.quantity * price;
+
+//       if (product.quantity < item.quantity) {
+//         insufficientStockProducts.push(product.name);
+//       }
+
+//       item.vendorDetails = product.createdBy._id;
+
+//       const newQuantity = product.quantity - item.quantity;
+
+//       productUpdates.push({
+//         updateOne: {
+//           filter: { _id: item.product },
+//           update: {
+//             $inc: { quantity: -item.quantity },
+//             $set: {
+//               status: newQuantity <= product.moq ? "outOfStock" : "inStock",
+//             },
+//           },
+//         },
+//       });
+//     }
+
+//     if (insufficientStockProducts.length > 0) {
+//       await session.abortTransaction();
+//       return res.status(StatusCodes.BAD_REQUEST).json({
+//         status: false,
+//         message: `Insufficient stock for products: ${insufficientStockProducts.join(
+//           ", "
+//         )}`,
+//       });
+//     }
+
+//     if (moqProducts.length > 0) {
+//       await session.abortTransaction();
+//       return res.status(StatusCodes.BAD_REQUEST).json({
+//         status: false,
+//         message: `Your order quantity does not meet the minimum order quantity (MOQ) for products: ${moqProducts.join(
+//           ", "
+//         )}`,
+//       });
+//     }
+
+//     // Promo Code Handling
+//     let discount = 0;
+//     if (promoCode) {
+//       const promo = await PromoCode.findOne({
+//         code: promoCode,
+//         isActive: true,
+//       });
+
+//       if (!promo) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: "Invalid or expired promo code.",
+//         });
+//       }
+//       if (promo.expirationDate < new Date()) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: "This promo code has expired.",
+//         });
+//       }
+//       if (totalPrice < promo.minimumOrderAmount) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: `Minimum order amount for this promo code is ₦${promo.minimumOrderAmount}.`,
+//         });
+//       }
+
+//       // Calculate and cap discount
+//       discount = Math.min(
+//         (totalPrice * promo.discountPercentage) / 100,
+//         promo.maxDiscountAmount
+//       );
+
+//       // Update the total price
+//       totalPrice -= discount;
+
+//       // Update used count
+//       promo.usedCount += 1;
+//       await promo.save({ session });
+//     }
+
+//     // Bulk update product stock
+//     await Product.bulkWrite(productUpdates, { session });
+
+//     for (const item of orderItems) {
+//       const product = await Product.findById(item.product)
+//         .populate({
+//           path: "createdBy", // Populate createdBy to get vendor details
+//           select: "firstName lastName email storeName storeUrl phoneNumber _id",
+//         })
+//         .session(session);
+
+//       if (product && product.createdBy) {
+//         item.vendorDetails = {
+//           vendorId: product.createdBy._id,
+//           firstName: product.createdBy.firstName,
+//           lastName: product.createdBy.lastName,
+//           storeName: product.createdBy.storeName,
+//           storeUrl: product.createdBy.storeUrl,
+//           phoneNumber: product.createdBy.phoneNumber,
+//           email: product.createdBy.email,
+//         };
+//       } else {
+//         console.warn(
+//           `Product or vendor not found for item with ID ${item.product}`
+//         );
+//       }
+//     }
+
+//     // Create the order with the populated orderItems
+//     const createdOrders = await Order.create(
+//       [
+//         {
+//           orderId: orderId,
+//           user: {
+//             _id: userId,
+//             firstName: user.firstName,
+//             lastName: user.lastName,
+//             email: user.email,
+//           },
+//           orderItems, // Use modified orderItems with populated vendorDetails
+//           city,
+//           zip,
+//           country,
+//           phone: formattedPhone || user.phoneNumber,
+//           email,
+//           address,
+//           orderNote,
+//           totalPrice,
+//           discount, // Add discount to the order data
+//           promoCode, // Reference promoCode on the order
+//           paymentRefId,
+//           paymentMethod,
+//         },
+//       ],
+//       { session }
+//     );
+
+//     // Commit the transaction and end the session
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     const order = await Order.findById(createdOrders[0]._id)
+//       .populate({
+//         path: "orderItems.product",
+//         model: "Product",
+//       })
+//       .populate({
+//         path: "orderItems.product.createdBy",
+//         model: "User",
+//         select:
+//           "firstName lastName email storeName storeUrl phoneNumber country state city role",
+//       })
+//       .populate({
+//         path: "user",
+//         model: "User",
+//         select:
+//           "firstName lastName email phoneNumber address city state country",
+//       });
+
+//     if (formattedPhone) {
+//       await notifyUsers(order, user, email, formattedPhone);
+//     }
+
+//     return res.status(StatusCodes.CREATED).json({
+//       status: true,
+//       message: "Order created successfully",
+//       data: order,
+//     });
+//   } catch (error) {
+//     if (session && session.inTransaction()) await session.abortTransaction();
+
+//     console.error("Error creating order: ", error);
+//     return res
+//       .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
+//       .json({
+//         status: false,
+//         message: "Failed to create order. " + error.message,
+//       });
+//   } finally {
+//     if (session) session.endSession();
+//   }
+// };
 
 module.exports = {
   createOrder,
