@@ -1713,7 +1713,7 @@ const sendOrderSummaryMail = async (order) => {
                               
                               <p>
                                 <strong>Customer Phone Number:</strong> ${
-                                  order.phone
+                                  order.phone ?? ""
                                 }
                               </p>
                               <p>
@@ -1721,7 +1721,9 @@ const sendOrderSummaryMail = async (order) => {
                               </p>
                              
                               <p>
-                                <strong>Order Note:</strong> ${order.orderNote}
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Total Price:</strong> ₦${
@@ -1755,11 +1757,13 @@ const sendOrderSummaryMail = async (order) => {
                                   </p>
                                   <p>
                                     <strong>Vendor Name:</strong>
-                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
                                   </p>
                                   <p>
                                     <strong>Supplya store address:</strong>
-                                    ${item.vendorDetails.storeUrl} 
+                                    ${item.vendorDetails.storeUrl ?? ""} 
                                   </p>
                                 </li>
                                 `
@@ -1966,14 +1970,18 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                                 }, ${order.country}
                               </p>
                               <p>
-                                <strong>Phone Number:</strong> ${order.phone}
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Email:</strong> ${order.email}
                               </p>
                              
                               <p>
-                                <strong>Order Note:</strong> ${order.orderNote}
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Total Price:</strong> ₦${
@@ -2007,11 +2015,13 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                                   </p>
                                   <p>
                                     <strong>Vendor Name:</strong>
-                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
                                   </p>
                                   <p>
                                     <strong>Supplya store address:</strong>
-                                    ${item.vendorDetails.storeUrl} 
+                                    ${item.vendorDetails.storeUrl ?? ""} 
                                   </p>
                                 </li>
                                 `
@@ -2222,14 +2232,18 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                                 }, ${order.country}
                               </p>
                               <p>
-                                <strong>Phone Number:</strong> ${order.phone}
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Email:</strong> ${order.email}
                               </p>
                              
                               <p>
-                                <strong>Order Note:</strong> ${order.orderNote}
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Total Price:</strong> ₦${
@@ -2263,11 +2277,13 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                                   </p>
                                   <p>
                                     <strong>Vendor Name:</strong>
-                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
                                   </p>
                                   <p>
                                     <strong>Supplya store address:</strong>
-                                    ${item.vendorDetails.storeUrl} 
+                                    ${item.vendorDetails.storeUrl ?? ""} 
                                   </p>
                                 </li>
                                 `
@@ -2482,14 +2498,18 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                                 }, ${order.country}
                               </p>
                               <p>
-                                <strong>Phone Number:</strong> ${order.phone}
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Email:</strong> ${order.email}
                               </p>
                              
                               <p>
-                                <strong>Order Note:</strong> ${order.orderNote}
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Total Price:</strong> ₦${
@@ -2528,11 +2548,13 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                                   </p>
                                   <p>
                                     <strong>Vendor Name:</strong>
-                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
                                   </p>
                                   <p>
                                     <strong>Supplya store address:</strong>
-                                    ${item.vendorDetails.storeUrl} 
+                                    ${item.vendorDetails.storeUrl ?? ""} 
                                   </p>
                                 </li>
                                 `
@@ -2736,7 +2758,7 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
                               </p>
                               <p>
                                 <strong>Delivery Date:</strong> ${
-                                  order.deliveryDate
+                                  order.deliveryDate ?? ""
                                 }
                               </p>
                               <p>
@@ -2745,14 +2767,18 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
                                 }, ${order.country}
                               </p>
                               <p>
-                                <strong>Phone Number:</strong> ${order.phone}
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Email:</strong> ${order.email}
                               </p>
                              
                               <p>
-                                <strong>Order Note:</strong> ${order.orderNote}
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Total Price:</strong> ₦${
@@ -2791,11 +2817,13 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
                                   </p>
                                   <p>
                                     <strong>Vendor Name:</strong>
-                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
                                   </p>
                                   <p>
                                     <strong>Supplya store address:</strong>
-                                    ${item.vendorDetails.storeUrl} 
+                                    ${item.vendorDetails.storeUrl ?? ""} 
                                   </p>
                                 </li>
                                 `
@@ -3007,7 +3035,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                               </p>
                               <p>
                                 <strong>Delivery Date:</strong> ${
-                                  order.deliveryDate
+                                  order.deliveryDate ?? ""
                                 }
                               </p>
                               <p>
@@ -3016,14 +3044,18 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                                 }, ${order.country}
                               </p>
                               <p>
-                                <strong>Phone Number:</strong> ${order.phone}
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Email:</strong> ${order.email}
                               </p>
                              
                               <p>
-                                <strong>Order Note:</strong> ${order.orderNote}
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
                               </p>
                               <p>
                                 <strong>Total Price:</strong> ₦${
@@ -3062,11 +3094,13 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                                   </p>
                                   <p>
                                     <strong>Vendor Name:</strong>
-                                    ${item.vendorDetails.firstName} ${item.vendorDetails.lastName} 
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
                                   </p>
                                   <p>
                                     <strong>Supplya store address:</strong>
-                                    ${item.vendorDetails.storeUrl} 
+                                    ${item.vendorDetails.storeUrl ?? ""} 
                                   </p>
                                 </li>
                                 `

@@ -39,7 +39,7 @@ const createOrder = async (req, res) => {
     const userId = req.user.userid;
     const {
       orderItems,
-      promoCode,
+      PromoCode,
       city,
       zip,
       country,
@@ -65,7 +65,7 @@ const createOrder = async (req, res) => {
       orderItems: populatedItems,
     } = await populateOrderItems(orderItems, session);
     const { discount, updatedTotal } = await applyPromoCode(
-      promoCode,
+      PromoCode,
       totalPrice,
       session
     );
@@ -92,7 +92,7 @@ const createOrder = async (req, res) => {
           orderNote,
           totalPrice: updatedTotal,
           discount,
-          promoCode,
+          PromoCode,
           paymentRefId,
           paymentMethod,
         },
@@ -118,8 +118,7 @@ const createOrder = async (req, res) => {
           "firstName lastName email phoneNumber address city state country",
       });
 
-    if (formattedPhone)
-      await notifyUsers(order, user, req.user.email, formattedPhone);
+    await notifyUsers(order, user, req.user.email, formattedPhone);
 
     return res.status(StatusCodes.CREATED).json({
       status: true,
@@ -627,11 +626,11 @@ const formatPhoneNumber = (phone) => {
   return phone;
 };
 
-const applyPromoCode = async (promoCode, totalPrice, session) => {
-  if (!promoCode) return { discount: 0, updatedTotal: totalPrice };
+const applyPromoCode = async (PromoCode, totalPrice, session) => {
+  if (!PromoCode) return { discount: 0, updatedTotal: totalPrice };
 
   const promo = await PromoCode.findOne({
-    code: promoCode,
+    code: PromoCode,
     isActive: true,
   }).session(session);
   if (!promo || promo.expirationDate < new Date())
@@ -687,9 +686,7 @@ const populateOrderItems = async (orderItems, session) => {
   );
 
   if (insufficientStock.length > 0)
-    throw new Error(
-      `Insufficient stock for products: ${insufficientStock.join(", ")}`
-    );
+    throw new Error(`Insufficient stock for ${insufficientStock.join(", ")}`);
   if (moqFailures.length > 0)
     throw new Error(`MOQ not met for products: ${moqFailures.join(", ")}`);
 
@@ -755,7 +752,7 @@ const notifyUsers = async (order, user, email, phone) => {
 //       orderNote,
 //       paymentRefId,
 //       paymentMethod,
-//       promoCode, // Extract promoCode from the request
+//       PromoCode, // Extract PromoCode from the request
 //     } = req.body;
 
 //     let formattedPhone = phone;
@@ -846,9 +843,9 @@ const notifyUsers = async (order, user, email, phone) => {
 
 //     // Promo Code Handling
 //     let discount = 0;
-//     if (promoCode) {
+//     if (PromoCode) {
 //       const promo = await PromoCode.findOne({
-//         code: promoCode,
+//         code: PromoCode,
 //         isActive: true,
 //       });
 
@@ -934,7 +931,7 @@ const notifyUsers = async (order, user, email, phone) => {
 //           orderNote,
 //           totalPrice,
 //           discount, // Add discount to the order data
-//           promoCode, // Reference promoCode on the order
+//           PromoCode, // Reference PromoCode on the order
 //           paymentRefId,
 //           paymentMethod,
 //         },
