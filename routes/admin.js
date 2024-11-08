@@ -14,6 +14,7 @@ const {
   getOrderStats,
   bulkUploadUsers,
   searchUsers,
+  exportUsers,
 } = require("../controllers/admin");
 const multer = require("multer");
 const path = require("path");
@@ -120,6 +121,12 @@ router.post(
   rolesAllowed("admin"),
   upload.single("file"),
   bulkUploadUsers
+);
+router.get(
+  "/dashboard/users/export",
+  authenticateUser,
+  rolesAllowed("admin"),
+  exportUsers
 );
 router.post("/assign-product", authenticateUser, assignProductToVendor);
 

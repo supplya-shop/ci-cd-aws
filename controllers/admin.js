@@ -1321,6 +1321,41 @@ const bulkdeleteUsers = async (req, res) => {
   }
 };
 
+const exportUsers = async (req, res) => {
+  try {
+    const users = await User.find({}, "email phoneNumber role");
+
+    const userData = users.map((user) => ({
+      Email: user.email || "",
+      PhoneNumber: user.phoneNumber || "",
+      Role: user.role || "",
+    }));
+
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(userData);
+    xlsx.utils.book_append_sheet(workbook, worksheet, "Export Users");
+
+    const directoryPath = path.join(__dirname, "../exports");
+    if (!fs.existsSync(directoryPath)) {
+      fs.mkdirSync(directoryPath);
+    }
+
+    const filePath = path.join(directoryPath, "users_export.xlsx");
+    xlsx.writeFile(workbook, filePath);
+
+    res.download(filePath, "users_exports.xlsx", (err) => {
+      if (err) {
+        res.status(500).json({ message: "Error downloading file." });
+      } else {
+        console.log("File exported successfully.");
+      }
+    });
+  } catch (error) {
+    console.error("Error exporting users:", error);
+    res.status(500).json({ message: "Failed to export user data." });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getProductDashboardStats,
@@ -1334,6 +1369,7 @@ module.exports = {
   getOrderStats,
   bulkUploadUsers,
   searchUsers,
+  exportUsers,
   // getAllUsers,
   // getAdminUsers,
   // getUserById,
