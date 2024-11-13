@@ -39,7 +39,7 @@ const createOrder = async (req, res) => {
     const userId = req.user.userid;
     const {
       orderItems,
-      PromoCode,
+      promoCode,
       city,
       zip,
       country,
@@ -65,7 +65,7 @@ const createOrder = async (req, res) => {
       orderItems: populatedItems,
     } = await populateOrderItems(orderItems, session);
     const { discount, updatedTotal } = await applyPromoCode(
-      PromoCode,
+      promoCode,
       totalPrice,
       session
     );
@@ -92,7 +92,7 @@ const createOrder = async (req, res) => {
           orderNote,
           totalPrice: updatedTotal,
           discount,
-          PromoCode,
+          promoCode,
           paymentRefId,
           paymentMethod,
         },
@@ -626,11 +626,11 @@ const formatPhoneNumber = (phone) => {
   return phone;
 };
 
-const applyPromoCode = async (PromoCode, totalPrice, session) => {
-  if (!PromoCode) return { discount: 0, updatedTotal: totalPrice };
+const applyPromoCode = async (promoCode, totalPrice, session) => {
+  if (!promoCode) return { discount: 0, updatedTotal: totalPrice };
 
   const promo = await PromoCode.findOne({
-    code: PromoCode,
+    code: promoCode,
     isActive: true,
   }).session(session);
   if (!promo || promo.expirationDate < new Date())
