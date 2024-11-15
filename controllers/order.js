@@ -39,7 +39,7 @@ const createOrder = async (req, res) => {
     const userId = req.user.userid;
     const {
       orderItems,
-      PromoCode,
+      promoCode,
       city,
       zip,
       country,
@@ -64,8 +64,8 @@ const createOrder = async (req, res) => {
       productUpdates,
       orderItems: populatedItems,
     } = await populateOrderItems(orderItems, session);
-    const { discount, updatedTotal } = await applyPromoCode(
-      PromoCode,
+    const { discount, updatedTotal } = await applyPromoCodeInOrder(
+      promoCode,
       totalPrice,
       session
     );
@@ -92,7 +92,7 @@ const createOrder = async (req, res) => {
           orderNote,
           totalPrice: updatedTotal,
           discount,
-          PromoCode,
+          promoCode,
           paymentRefId,
           paymentMethod,
         },
@@ -626,13 +626,14 @@ const formatPhoneNumber = (phone) => {
   return phone;
 };
 
-const applyPromoCode = async (PromoCode, totalPrice, session) => {
-  if (!PromoCode) return { discount: 0, updatedTotal: totalPrice };
+const applyPromoCodeInOrder = async (promoCode, totalPrice, session) => {
+  if (!promoCode) return { discount: 0, updatedTotal: totalPrice };
 
   const promo = await PromoCode.findOne({
-    code: PromoCode,
+    code: promoCode,
     isActive: true,
   }).session(session);
+
   if (!promo || promo.expirationDate < new Date())
     throw new Error("Invalid or expired promo code.");
   if (totalPrice < promo.minimumOrderAmount)
@@ -644,6 +645,7 @@ const applyPromoCode = async (PromoCode, totalPrice, session) => {
     (totalPrice * promo.discountPercentage) / 100,
     promo.maxDiscountAmount
   );
+
   promo.usedCount += 1;
   await promo.save({ session });
 

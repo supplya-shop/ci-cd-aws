@@ -8,10 +8,7 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 const {
   validateWithJoi,
-  validateUserData,
-  processUsers,
   generatePassword,
-  existingUserCheck,
 } = require("../middleware/validation/userDTO");
 const { StatusCodes } = require("http-status-codes");
 const {
@@ -21,8 +18,6 @@ const {
 } = require("../errors");
 const { sendMigratedCustomersMail } = require("../middleware/mailUtil");
 const termiiService = require("../service/TermiiService");
-
-const { isNull } = require("util");
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -1328,7 +1323,7 @@ const exportUsers = async (req, res) => {
     const userData = users.map((user) => ({
       Email: user.email || "",
       PhoneNumber: user.phoneNumber || "",
-      Role: user.role || "",
+      Role: user.role || "customer",
     }));
 
     const workbook = xlsx.utils.book_new();
