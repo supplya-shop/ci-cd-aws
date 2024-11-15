@@ -108,11 +108,14 @@ const deletePromoCode = async (req, res) => {
   }
 };
 
-const applyPromoCode = async (req, res) => {
+const applyPromoCode = async (req, res, session = null) => {
   const { promoCode, subtotal } = req.body;
 
   try {
-    const code = await PromoCode.findOne({ code: promoCode, isActive: true });
+    const code = await PromoCode.findOne({
+      code: promoCode,
+      isActive: true,
+    }).session(session);
 
     if (!code) {
       return res.status(400).json({
@@ -121,7 +124,6 @@ const applyPromoCode = async (req, res) => {
       });
     }
 
-    // Check if the promo code has expired
     if (new Date() > code.expirationDate) {
       return res.status(400).json({
         status: false,
@@ -129,25 +131,24 @@ const applyPromoCode = async (req, res) => {
       });
     }
 
-    // Check minimum order amount
     if (subtotal < code.minimumOrderAmount) {
       return res.status(400).json({
         status: false,
-        message: `Promo code requires a minimum order amount of ₦${code.minimumOrderAmount}.`,
+        message: `You'll need a minimum order amount of ₦${code.minimumOrderAmount} to use me!`,
       });
     }
 
-    // Calculate discount
     let discount = (code.discountPercentage / 100) * subtotal;
     if (code.maxDiscountAmount && discount > code.maxDiscountAmount) {
-      discount = code.maxDiscountAmount; // Cap the discount at max amount if applicable
+      discount = code.maxDiscountAmount;
     }
+
+    const newTotal = subtotal - discount;
 
     return res.status(200).json({
       status: true,
-      message: "Promo code applied successfully",
       discount,
-      newTotal: subtotal - discount,
+      newTotal,
     });
   } catch (error) {
     console.error("Error applying promo code:", error);

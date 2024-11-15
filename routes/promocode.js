@@ -14,6 +14,5 @@ router.patch("/:id", authenticateUser, updatePromoCode);
 router.get("/", authenticateUser, getPromoCodes);
 router.get("/:id", authenticateUser, getPromoCodes);
 router.delete("/:id", authenticateUser, deletePromoCode);
-router.put("/:id", authenticateUser, applyPromoCode);
-
+router.post("/apply", authenticateUser, applyPromoCode);
 module.exports = router;
