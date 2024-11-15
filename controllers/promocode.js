@@ -1,5 +1,6 @@
 const PromoCode = require("../models/PromoCode");
 const { StatusCodes } = require("http-status-codes");
+const mongoose = require("mongoose");
 
 const createPromoCode = async (req, res) => {
   try {
@@ -108,14 +109,21 @@ const deletePromoCode = async (req, res) => {
   }
 };
 
-const applyPromoCode = async (req, res, session = null) => {
+const applyPromoCode = async (req, res) => {
   const { promoCode, subtotal } = req.body;
 
+  let mongoSession = null;
+
   try {
-    const code = await PromoCode.findOne({
-      code: promoCode,
-      isActive: true,
-    }).session(session);
+    mongoSession = await mongoose.startSession();
+
+    const query = PromoCode.findOne({ code: promoCode, isActive: true });
+
+    if (mongoSession) {
+      query.session(mongoSession);
+    }
+
+    const code = await query;
 
     if (!code) {
       return res.status(400).json({
@@ -134,7 +142,7 @@ const applyPromoCode = async (req, res, session = null) => {
     if (subtotal < code.minimumOrderAmount) {
       return res.status(400).json({
         status: false,
-        message: `You'll need a minimum order amount of ₦${code.minimumOrderAmount} to use me!`,
+        message: `Minimum order amount must be over ₦${code.minimumOrderAmount} to apply`,
       });
     }
 
@@ -143,12 +151,11 @@ const applyPromoCode = async (req, res, session = null) => {
       discount = code.maxDiscountAmount;
     }
 
-    const newTotal = subtotal - discount;
-
     return res.status(200).json({
       status: true,
+      message: "Promo code applied successfully",
       discount,
-      newTotal,
+      newTotal: subtotal - discount,
     });
   } catch (error) {
     console.error("Error applying promo code:", error);
@@ -156,6 +163,10 @@ const applyPromoCode = async (req, res, session = null) => {
       status: false,
       message: "Failed to apply promo code. Please try again later.",
     });
+  } finally {
+    if (mongoSession) {
+      mongoSession.endSession();
+    }
   }
 };
 
