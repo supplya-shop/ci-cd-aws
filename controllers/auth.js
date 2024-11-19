@@ -22,7 +22,6 @@ const jwt = require("jsonwebtoken");
 
 const userRegistrationCache = new Map();
 
-// EMAIL AND PASSWORD REGISTER AND LOGIN
 const signUp = async (req, res) => {
   try {
     const {
@@ -145,7 +144,7 @@ const signUp = async (req, res) => {
   }
 };
 
-const signUpComplete = async (req, res, next) => {
+const signUpComplete = async (req, res) => {
   try {
     const { email, phoneNumber, otp } = req.body;
 
@@ -157,12 +156,20 @@ const signUpComplete = async (req, res, next) => {
     }
 
     const identifier = phoneNumber || email;
-    const user = await OtpLogs.findOne({
+
+    if (!identifier) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "Email or phone number is required to complete signup.",
+      });
+    }
+
+    const otpLog = await OtpLogs.findOne({
       $or: [{ email }, { phoneNumber }],
       otp,
     });
 
-    if (!user) {
+    if (!otpLog) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
         message: "Wrong OTP. Please verify and retry.",
@@ -170,10 +177,11 @@ const signUpComplete = async (req, res, next) => {
     }
 
     const userData = userRegistrationCache.get(identifier);
+
     if (!userData) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: "An error occurred.",
+        message: "Registration data not found. Please retry signup.",
       });
     }
 
@@ -183,7 +191,6 @@ const signUpComplete = async (req, res, next) => {
       email: userData.email,
       phoneNumber: userData.phoneNumber,
       password: userData.password,
-      otp: otp,
       role: userData.role,
       storeName: userData.storeName || null,
       storeUrl: userData.storeUrl || null,
@@ -201,7 +208,12 @@ const signUpComplete = async (req, res, next) => {
       }
     }
 
-    await OtpLogs.findOneAndDelete({ $or: [{ email }, { phoneNumber }], otp });
+    await OtpLogs.findOneAndDelete({
+      $or: [{ email }, { phoneNumber }],
+      otp,
+    });
+
+    userRegistrationCache.delete(identifier);
 
     const token = newUser.createJWT();
 
@@ -228,7 +240,7 @@ const signUpComplete = async (req, res, next) => {
       token,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error completing signup:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal server error. Please try again later.",

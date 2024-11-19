@@ -590,7 +590,7 @@ const sendConfirmationMail = async (email) => {
 
   const mailOptions = {
     from: {
-      name: "Supplya",
+      name: "Welcome to Supplya",
       address: process.env.EMAIL_USERNAME,
     },
     to: email,
