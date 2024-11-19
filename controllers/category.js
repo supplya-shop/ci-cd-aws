@@ -47,68 +47,82 @@ const createCategory = async (req, res) => {
 
 const getAllCategories = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    const categories = await Category.aggregate([
-      {
-        $lookup: {
-          from: "products",
-          localField: "_id",
-          foreignField: "category",
-          as: "products",
+    const [categories, totalCount] = await Promise.all([
+      Category.aggregate([
+        {
+          $lookup: {
+            from: "products",
+            localField: "_id",
+            foreignField: "category",
+            as: "products",
+          },
         },
-      },
-      {
-        $addFields: {
-          totalProduct: { $size: "$products" },
+        {
+          $addFields: {
+            totalProduct: { $size: "$products" },
+          },
         },
-      },
-      {
-        $skip: (page - 1) * limit,
-      },
-      {
-        $limit: limit * 1,
-      },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "parentCategory",
-          foreignField: "_id",
-          as: "parentCategory",
+        {
+          $skip: skip,
         },
-      },
-      {
-        $unwind: {
-          path: "$parentCategory",
-          preserveNullAndEmptyArrays: true,
+        {
+          $limit: limit,
         },
-      },
-      {
-        $project: {
-          name: 1,
-          description: 1,
-          image: { $ifNull: ["$image", ""] },
-          parentCategory: { $ifNull: ["$parentCategory.name", "-"] },
-          status: 1,
-          totalProduct: 1,
-          homepageDisplay: { $ifNull: ["$homepageDisplay", ""] },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "parentCategory",
+            foreignField: "_id",
+            as: "parentCategory",
+          },
         },
-      },
+        {
+          $unwind: {
+            path: "$parentCategory",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            name: 1,
+            description: 1,
+            image: { $ifNull: ["$image", ""] },
+            parentCategory: { $ifNull: ["$parentCategory.name", "-"] },
+            status: 1,
+            totalProduct: 1,
+            homepageDisplay: { $ifNull: ["$homepageDisplay", ""] },
+          },
+        },
+      ]),
+      Category.countDocuments(),
     ]);
 
-    const count = await Category.countDocuments();
+    if (categories.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "No categories found",
+        data: [],
+      });
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Categories fetched successfully",
       data: categories,
-      totalPages: Math.ceil(count / limit),
+      totalPages,
       currentPage: page,
+      totalCount: totalCount,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: error.message,
+      message: "Internal Server Error: " + error.message,
     });
   }
 };

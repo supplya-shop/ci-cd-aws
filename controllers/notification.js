@@ -26,37 +26,94 @@ const createNotification = async (req, res) => {
 
 const getUserNotifications = async (req, res) => {
   const userId = req.user.userid;
-  try {
-    const notifications = await Notification.find({ userId: userId });
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
 
-    res.status(200).json({ status: true, notifications });
+  try {
+    const [notifications, totalCount] = await Promise.all([
+      Notification.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(startIndex),
+      Notification.countDocuments({ userId }),
+    ]);
+
+    if (notifications.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No notifications found",
+        data: [],
+      });
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      status: true,
+      message: "Notifications retrieved successfully",
+      data: notifications,
+      currentPage: page,
+      totalPages,
+      totalCount,
+    });
   } catch (error) {
     res.status(500).json({
       status: false,
       message: "Failed to retrieve notifications",
-      error,
+      error: error.message,
     });
   }
 };
 
 const getNotifications = async (req, res) => {
-  try {
-    const notifications = await Notification.find({});
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
 
-    res.status(200).json({ status: true, notifications });
+  try {
+    const [notifications, totalCount] = await Promise.all([
+      Notification.find({})
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(startIndex),
+      Notification.countDocuments(),
+    ]);
+
+    if (notifications.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No notifications found",
+        data: [],
+      });
+    }
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.status(200).json({
+      status: true,
+      message: "Notifications retrieved successfully",
+      data: notifications,
+      currentPage: page,
+      totalPages,
+      totalCount,
+    });
   } catch (error) {
     res.status(500).json({
       status: false,
       message: "Failed to retrieve notifications",
-      error,
+      error: error.message,
     });
   }
 };
 
 const getNotificationsByRole = async (req, res) => {
-  try {
-    const { role } = req.query;
+  const { role } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
 
+  try {
     if (!role) {
       return res.status(400).json({
         status: false,
@@ -75,19 +132,31 @@ const getNotificationsByRole = async (req, res) => {
 
     const userIds = usersWithRole.map((user) => user._id);
 
-    const notifications = await Notification.find({ userId: { $in: userIds } });
+    const [notifications, totalCount] = await Promise.all([
+      Notification.find({ userId: { $in: userIds } })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(startIndex),
+      Notification.countDocuments({ userId: { $in: userIds } }),
+    ]);
 
-    if (!notifications || notifications.length === 0) {
+    if (notifications.length === 0) {
       return res.status(404).json({
         status: false,
         message: `No notifications found for users with role: ${role}`,
+        data: [],
       });
     }
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     res.status(200).json({
       status: true,
       message: `Notifications for ${role} retrieved successfully`,
-      notifications,
+      data: notifications,
+      currentPage: page,
+      totalPages,
+      totalCount,
     });
   } catch (error) {
     console.error("Error fetching notifications by role:", error);
