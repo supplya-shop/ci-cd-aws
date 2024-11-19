@@ -136,12 +136,15 @@ const getUserById = async (req, res) => {
 
 const getUsersByRole = async (req, res) => {
   const role = req.params.role;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 15;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
   try {
-    const users = await User.find({ role })
-      .select(
-        "firstName lastName email phoneNumber role createdAt storeName storeUrl blocked"
-      )
-      .sort({ createdAt: -1 });
+    const [users, totalCount] = await Promise.all([
+      User.find({ role }).sort({ createdAt: -1 }).limit(limit).skip(startIndex),
+      User.countDocuments({ role }),
+    ]);
 
     if (!users || users.length === 0) {
       return res.status(StatusCodes.OK).json({
@@ -150,11 +153,15 @@ const getUsersByRole = async (req, res) => {
         data: users,
       });
     }
+    const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Users fetched successfully",
       data: users,
+      currentPage: page,
+      totalCount: totalCount,
+      totalPages: totalPages,
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({

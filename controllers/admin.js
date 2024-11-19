@@ -1244,7 +1244,7 @@ const bulkUploadUsers = async (req, res) => {
 };
 
 const searchUsers = async (req, res) => {
-  const { query } = req.query;
+  const { query, page = 1, limit = 10 } = req.query;
 
   if (!query) {
     return res.status(StatusCodes.BAD_REQUEST).json({
@@ -1253,33 +1253,52 @@ const searchUsers = async (req, res) => {
     });
   }
 
-  try {
-    const user = await User.findOne({
-      $or: [
-        { firstName: new RegExp(query, "i") },
-        { lastName: new RegExp(query, "i") },
-        { email: new RegExp(`^${query}$`, "i") },
-        { phoneNumber: new RegExp(`^${query}$`, "i") },
-      ],
-    });
+  const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    if (!user) {
+  try {
+    const [users, totalCount] = await Promise.all([
+      User.find({
+        $or: [
+          { firstName: new RegExp(query, "i") },
+          { lastName: new RegExp(query, "i") },
+          { email: new RegExp(query, "i") },
+          { phoneNumber: new RegExp(query, "i") },
+        ],
+      })
+        .sort({ createdAt: -1 }) // Sort users by creation date (most recent first)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .select("-password"), // Exclude password field,
+      User.countDocuments({
+        $or: [
+          { firstName: new RegExp(query, "i") },
+          { lastName: new RegExp(query, "i") },
+          { email: new RegExp(query, "i") },
+          { phoneNumber: new RegExp(query, "i") },
+        ],
+      }),
+    ]);
+
+    if (!users || users.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: "User not found",
+        message: "No users found matching the query",
+        data: [],
       });
     }
 
-    const response = user.toObject();
-    delete response.password;
+    const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "User found",
-      data: response,
+      message: "Users retrieved successfully",
+      data: users,
+      currentPage: parseInt(page),
+      totalPages,
+      totalCount,
     });
   } catch (error) {
-    console.error("Error finding user:", error);
+    console.error("Error searching users:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal server error",
