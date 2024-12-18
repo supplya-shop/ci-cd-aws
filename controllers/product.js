@@ -1027,21 +1027,55 @@ const recentlyViewed = async (req, res) => {
 
 const specialDeals = async (req, res) => {
   try {
-    const specialDeals = await Product.find({
-      $or: [{ specialDeal: true }, { discounted_price: { $exists: true } }],
-    });
+    const { page = 1, limit = 15 } = req.query;
+    const startIndex = (page - 1) * limit;
 
-    if (specialDeals.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+    const [specialDeals, totalCount] = await Promise.all([
+      Product.find({
+        $and: [
+          { status: "inStock" },
+          {
+            $or: [
+              { specialDeal: true },
+              { isTrending: true },
+              { flashsale: true },
+            ],
+          },
+        ],
+      })
+        .skip(startIndex)
+        .limit(parseInt(limit))
+        .sort({ createdAt: -1 }),
+      Product.countDocuments({
+        $and: [
+          { status: "inStock" },
+          {
+            $or: [
+              { specialDeal: true },
+              { isTrending: true },
+              { flashsale: true },
+            ],
+          },
+        ],
+      }),
+    ]);
+
+    if (!specialDeals || specialDeals.length === 0) {
+      return res.status(StatusCodes.OK).json({
         status: false,
         message: "No special deals found.",
       });
     }
 
+    const totalPages = Math.ceil(totalCount / limit);
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Special deals fetched successfully.",
       data: specialDeals,
+      currentPage: parseInt(page),
+      totalPages,
+      totalCount,
     });
   } catch (error) {
     console.error("Error fetching special deals:", error);
