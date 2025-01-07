@@ -23,7 +23,7 @@ const getDashboardStats = async (req, res) => {
   try {
     const today = moment().startOf("day").toDate();
     const yesterday = moment().subtract(1, "day").startOf("day").toDate();
-    const lastWeek = moment().subtract(10, "days").startOf("day").toDate();
+    const lastWeek = moment().subtract(7, "days").startOf("day").toDate();
     const lastMonth = moment().subtract(30, "days").startOf("day").toDate();
 
     const page = parseInt(req.query.page) || 1;
@@ -598,6 +598,160 @@ const getOrderStats = async (req, res) => {
       status: false,
       message: `Failed to fetch sales statistics: ${error.message}`,
     });
+  }
+};
+
+const getMonthlySales = async (req, res) => {
+  try {
+    const { year, month } = req.query;
+
+    if (!year || !month) {
+      return res.status(400).json({
+        status: false,
+        message: "Please provide both 'year' and 'month' query parameters.",
+      });
+    }
+
+    const numericMonth = parseInt(month, 10) - 1; // Convert month to zero-based index
+    const numericYear = parseInt(year, 10);
+
+    if (
+      isNaN(numericMonth) ||
+      numericMonth < 0 ||
+      numericMonth > 11 ||
+      isNaN(numericYear)
+    ) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Invalid 'month' or 'year' parameter. Please provide valid numeric values.",
+      });
+    }
+
+    // Convert the numeric month to the month name
+    const monthName = new Date(numericYear, numericMonth).toLocaleString(
+      "en-US",
+      { month: "long" }
+    );
+
+    // Define the start and end dates for the specified month
+    const startDate = new Date(numericYear, numericMonth, 1);
+    const endDate = new Date(numericYear, numericMonth + 1, 0, 23, 59, 59);
+
+    // Query orders within the specified month
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          dateOrdered: { $gte: startDate, $lte: endDate },
+          orderStatus: { $nin: ["cancelled", "returned"] }, // Exclude non-sales orders
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalSalesAmount: { $sum: "$totalPrice" }, // Sum up the totalPrice field
+        },
+      },
+    ]);
+
+    const totalSalesAmount = orders.length > 0 ? orders[0].totalSalesAmount : 0;
+
+    return res.status(200).json({
+      status: true,
+      message: `Total sales amount for ${monthName} ${year} fetched successfully.`,
+      data: {
+        totalSalesAmount,
+        month: monthName,
+        year,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching sales:", error);
+    return res.status(500).json({
+      status: false,
+      message: "An error occurred while fetching the sales data.",
+      error: error.message,
+    });
+  }
+};
+
+const getSignupsPerMonth = async (req, res) => {
+  const { year } = req.query;
+
+  // Validate the year parameter
+  if (!year || isNaN(Number(year))) {
+    return res.status(400).json({ error: "Invalid year parameter" });
+  }
+
+  try {
+    const startOfYear = new Date(`${year}-01-01`);
+    const startOfNextYear = new Date(`${Number(year) + 1}-01-01`);
+
+    // MongoDB aggregation to group users by month and role
+    const signups = await User.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startOfYear,
+            $lt: startOfNextYear,
+          },
+        },
+      },
+      {
+        $project: {
+          month: { $month: "$createdAt" },
+          role: 1,
+        },
+      },
+      {
+        $group: {
+          _id: { month: "$month", role: "$role" },
+          total: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { "_id.month": 1 },
+      },
+    ]);
+
+    // Prepare the result data structure
+    const result = {
+      January: { totalCustomers: 0, totalVendors: 0 },
+      February: { totalCustomers: 0, totalVendors: 0 },
+      March: { totalCustomers: 0, totalVendors: 0 },
+      April: { totalCustomers: 0, totalVendors: 0 },
+      May: { totalCustomers: 0, totalVendors: 0 },
+      June: { totalCustomers: 0, totalVendors: 0 },
+      July: { totalCustomers: 0, totalVendors: 0 },
+      August: { totalCustomers: 0, totalVendors: 0 },
+      September: { totalCustomers: 0, totalVendors: 0 },
+      October: { totalCustomers: 0, totalVendors: 0 },
+      November: { totalCustomers: 0, totalVendors: 0 },
+      December: { totalCustomers: 0, totalVendors: 0 },
+    };
+
+    // Populate the result object with the aggregated data
+    signups.forEach(({ _id, total }) => {
+      const monthName = new Date(0, _id.month - 1).toLocaleString("en-US", {
+        month: "long",
+      });
+      if (_id.role === "customer") {
+        result[monthName].totalCustomers += total;
+      } else if (_id.role === "vendor") {
+        result[monthName].totalVendors += total;
+      }
+    });
+
+    // Return the result
+    return res.status(200).json({
+      data: result,
+      message: `Total user signups for the year ${year} fetched successfully.`,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ error: "An error occurred while fetching the signups" });
   }
 };
 
@@ -1381,6 +1535,8 @@ module.exports = {
   getMostBoughtProducts,
   getUserSignupStats,
   getOrderStats,
+  getMonthlySales,
+  getSignupsPerMonth,
   bulkUploadUsers,
   searchUsers,
   exportUsers,
