@@ -12,6 +12,8 @@ const {
   getMostBoughtProducts,
   getUserSignupStats,
   getOrderStats,
+  getMonthlySales,
+  getSignupsPerMonth,
   bulkUploadUsers,
   searchUsers,
   exportUsers,
@@ -114,6 +116,18 @@ router.get(
   authenticateUser,
   rolesAllowed("admin"),
   getOrderStats
+);
+router.get(
+  "/dashboard/sales",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getMonthlySales
+);
+router.get(
+  "/dashboard/signups",
+  authenticateUser,
+  rolesAllowed("admin"),
+  getSignupsPerMonth
 );
 router.post(
   "/dashboard/users/import",
