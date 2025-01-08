@@ -314,7 +314,7 @@ const sendBirthdayNotifications = async () => {
 
     const notifications = usersWithBirthdayToday.map((user) => ({
       title: "Happy Birthday!",
-      message: `Happy Birthday, ${user.firstName}! 🥳🥳🥳\n Wishing you a fantastic year ahead. Thank you for being part of our journey. 💙`,
+      message: `Happy Birthday ${user.firstName}! 🥳🥳🥳\n Wishing you a fantastic year ahead. Thank you for being a part of our journey! ❤️ Supplya.`,
       userId: user._id,
     }));
 

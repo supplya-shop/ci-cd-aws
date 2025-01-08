@@ -323,6 +323,7 @@ const getCustomerStats = async (req, res) => {
         $group: {
           _id: "$user",
           totalSpent: { $sum: "$totalPrice" },
+          orderCount: { $count: {} }, // Count the number of orders for each customer
         },
       },
     ]);
@@ -334,6 +335,7 @@ const getCustomerStats = async (req, res) => {
       return {
         ...customer._doc,
         totalSpent: order ? order.totalSpent : 0,
+        totalOrders: order ? order.orderCount : 0, // Add totalOrders field
       };
     });
 
@@ -354,7 +356,7 @@ const getCustomerStats = async (req, res) => {
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to fetch customer statistics: " + error.message,
+      message: `Failed to fetch customer statistics: ${error.message}`,
     });
   }
 };
@@ -503,6 +505,7 @@ const getAdminStats = async (req, res) => {
   }
 };
 
+// graph endpoints
 const getUserSignupStats = async (req, res) => {
   try {
     const { days = 30 } = req.query;
