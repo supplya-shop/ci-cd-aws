@@ -313,7 +313,8 @@ const getCustomerStats = async (req, res) => {
 
     const customers = await User.find({ role: "customer" })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
     const customerIds = customers.map((customer) => customer._id);
 

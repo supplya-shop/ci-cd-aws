@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const TemporarySignup = require("../models/TemporarySignup");
 // const Notification = require("../models/Notification");
 const OtpLogs = require("../models/OtpLogs");
 const { StatusCodes } = require("http-status-codes");
@@ -20,8 +21,6 @@ const { sendOtpViaTermii } = require("../service/TermiiService");
 const oauth2Client = require("../oauth2Client");
 const jwt = require("jsonwebtoken");
 
-const userRegistrationCache = new Map();
-
 const signUp = async (req, res) => {
   try {
     const {
@@ -37,28 +36,14 @@ const signUp = async (req, res) => {
     if (!email && !phoneNumber) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Please enter either an email or phone number.",
+        message: "Provide email or phone number.",
       });
     }
 
-    if (!password) {
+    if (!password || !firstName || !lastName) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Please enter your password",
-      });
-    }
-
-    if (!firstName) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Please enter your first name",
-      });
-    }
-
-    if (!lastName) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Please enter your last name",
+        message: "Incomplete signup details.",
       });
     }
 
@@ -70,76 +55,52 @@ const signUp = async (req, res) => {
     }
 
     if (existingUser) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+      return res.status(StatusCodes.CONFLICT).json({
         status: false,
-        message:
-          "This email or phone number already exists within our records. Please use a unique email or phone number.",
+        message: "User already exists.",
       });
     }
 
-    req.body.role = req.body.uniqueKey === 1212 ? "admin" : "customer";
-
-    let userData = {
-      firstName,
-      lastName,
-      role: role || "customer",
-      email,
-      phoneNumber,
-    };
-
     let storeUrl;
     if (role === "vendor" && storeName) {
-      const storeNameExists = await User.findOne({ storeName });
-      if (storeNameExists) {
+      const storeExists = await User.findOne({ storeName });
+      if (storeExists) {
         return res.status(StatusCodes.CONFLICT).json({
           status: false,
-          message: "This store name is already taken",
+          message: "Store name already taken.",
         });
       }
       storeUrl = `https://supplya.store/store/${storeName}`;
-      userData = {
-        ...userData,
-        storeName,
-        storeUrl,
-      };
     }
 
-    const otpData = generateOTP();
-    const otp = otpData.otp;
+    const { otp } = generateOTP();
 
-    userRegistrationCache.set(phoneNumber || email, {
-      ...userData,
+    const tempSignup = new TemporarySignup({
+      email,
+      phoneNumber,
+      firstName,
+      lastName,
+      role: role || "customer",
       password,
       otp,
+      storeName,
+      storeUrl,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });
+    await tempSignup.save();
 
-    const sendOtpPromises = [];
-    if (email) {
-      sendOtpPromises.push(sendOTPMail(email, otp));
-    }
-    if (phoneNumber) {
-      sendOtpPromises.push(sendOtpViaTermii(phoneNumber, otp));
-    }
-
-    const createOtpLogPromise = OtpLogs.create({
-      ...userData,
-      createdAt: Date.now(),
-      otp,
-    });
-
-    await Promise.all([...sendOtpPromises, createOtpLogPromise]);
+    if (email) await sendOTPMail(email, otp);
+    if (phoneNumber) await sendOtpViaTermii(phoneNumber, otp);
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: `OTP sent successfully. Please check your ${
-        phoneNumber ? "WhatsApp" : "email"
-      }.`,
+      message: `OTP sent. Check your ${phoneNumber ? "WhatsApp" : "email"}.`,
     });
   } catch (error) {
-    console.error(`error: ${error}`);
+    console.error("Signup error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to register user. Please try again later.",
+      message: "Signup failed.",
     });
   }
 };
@@ -147,95 +108,85 @@ const signUp = async (req, res) => {
 const signUpComplete = async (req, res) => {
   try {
     const { email, phoneNumber, otp } = req.body;
-
-    if (!otp) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "Please enter OTP.",
-      });
-    }
-
     const identifier = phoneNumber || email;
 
-    if (!identifier) {
+    if (!identifier || !otp) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Email or phone number is required to complete signup.",
+        message: "Missing identifier or OTP.",
       });
     }
 
-    const otpLog = await OtpLogs.findOne({
-      $or: [{ email }, { phoneNumber }],
-      otp,
-    });
+    let tempSignup = null;
+    if (email) {
+      tempSignup = await TemporarySignup.findOne({ email });
+    } else if (phoneNumber) {
+      tempSignup = await TemporarySignup.findOne({ phoneNumber });
+    }
 
-    if (!otpLog) {
+    if (!tempSignup || new Date() > tempSignup.expiresAt) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: false,
-        message: "Wrong OTP. Please verify and retry.",
+        message: "OTP expired or not found.",
       });
     }
 
-    const userData = userRegistrationCache.get(identifier);
-
-    if (!userData) {
-      return res.status(StatusCodes.NOT_FOUND).json({
+    const isOtpValid = otp === tempSignup.otp;
+    if (!isOtpValid) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         status: false,
-        message: "Registration data not found. Please retry signup.",
+        message: "Invalid OTP.",
       });
     }
+
+    const decryptedPassword = tempSignup.getDecryptedPassword();
 
     const newUser = new User({
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      phoneNumber: userData.phoneNumber,
-      password: userData.password,
-      role: userData.role,
-      storeName: userData.storeName || null,
-      storeUrl: userData.storeUrl || null,
+      firstName: tempSignup.firstName,
+      lastName: tempSignup.lastName,
+      email: tempSignup.email,
+      phoneNumber: tempSignup.phoneNumber,
+      password: decryptedPassword,
+      role: tempSignup.role,
+      storeName: tempSignup.storeName,
+      storeUrl: tempSignup.storeUrl,
     });
 
     await newUser.save();
 
-    if (email) {
-      await sendConfirmationMail(email);
-
-      if (userData.role === "vendor") {
-        await newVendorSignUpMail(email);
+    if (tempSignup.email) {
+      if (tempSignup.role === "vendor") {
+        await newVendorSignUpMail(tempSignup.email);
       } else {
-        await newUserSignUpMail(email);
+        await newUserSignUpMail(tempSignup.email);
+        await sendConfirmationMail(tempSignup.email);
       }
     }
 
-    await OtpLogs.findOneAndDelete({
-      $or: [{ email }, { phoneNumber }],
-      otp,
-    });
-
-    userRegistrationCache.delete(identifier);
+    await TemporarySignup.deleteOne({ _id: tempSignup._id });
 
     const token = newUser.createJWT();
+    newUser.lastLogin = Date.now();
 
     return res.status(StatusCodes.CREATED).json({
       status: true,
-      message: "Congratulations! You have successfully registered on Supplya.",
+      message: "Signup completed successfully.",
       data: {
         _id: newUser._id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
         storeName: newUser.storeName,
         storeUrl: newUser.storeUrl,
-        dob: newUser.dob,
-        role: newUser.role,
         gender: newUser.gender,
         country: newUser.country,
         city: newUser.city,
         state: newUser.state,
         address: newUser.address,
         createdAt: newUser.createdAt,
+        lastLogin: newUser.lastLogin,
       },
       token,
     });
@@ -243,7 +194,7 @@ const signUpComplete = async (req, res) => {
     console.error("Error completing signup:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Internal server error. Please try again later.",
+      message: "Signup failed.",
     });
   }
 };
@@ -251,55 +202,39 @@ const signUpComplete = async (req, res) => {
 const resendOTP = async (req, res) => {
   try {
     const { email, phoneNumber } = req.body;
+    const identifier = phoneNumber || email;
 
-    if (!email) {
+    if (!identifier) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Please provide your email.",
+        message: "Provide email or phone number.",
       });
     }
 
-    const identifier = phoneNumber || email;
-    let userData = userRegistrationCache.get(identifier);
+    // Find the TemporarySignup record
+    const tempSignup = await TemporarySignup.findOne({
+      $or: [{ email }, { phoneNumber }],
+    });
 
-    if (!userData) {
-      const existingUser = await User.findOne({
-        $or: [{ email }, { phoneNumber }],
+    if (!tempSignup || new Date() > tempSignup.expiresAt) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "No active signup session found.",
       });
+    }
 
-      if (!existingUser) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          status: false,
-          message: "User not found. Please register first.",
-        });
-      }
+    // Generate a new OTP
+    const { otp } = generateOTP();
+    tempSignup.otp = otp; // Update OTP
+    tempSignup.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Extend expiry
+    await tempSignup.save(); // Save updated OTP
 
-      userData = { email, phoneNumber };
-      const newOTPData = generateOTP();
-      const newOTP = newOTPData.otp;
-      existingUser.resetPasswordToken = newOTP;
-      existingUser.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
-      await existingUser.save();
-
-      if (phoneNumber) {
-        await sendOtpViaTermii(phoneNumber, newOTP);
-      }
-      await resendOTPMail(email, newOTP);
-    } else {
-      const newOTPData = generateOTP();
-      const newOTP = newOTPData.otp;
-      userRegistrationCache.set(identifier, { ...userData, otp: newOTP });
-
-      await OtpLogs.updateOne(
-        { $or: [{ email }, { phoneNumber }] },
-        { otp: newOTP }
-      );
-
-      if (phoneNumber) {
-        await sendOtpViaTermii(phoneNumber, newOTP);
-      } else {
-        await resendOTPMail(email, newOTP);
-      }
+    // Send the new OTP
+    if (tempSignup.email) {
+      await resendOTPMail(tempSignup.email, otp);
+    }
+    if (tempSignup.phoneNumber) {
+      await sendOtpViaTermii(tempSignup.phoneNumber, otp);
     }
 
     return res.status(StatusCodes.OK).json({
@@ -312,7 +247,7 @@ const resendOTP = async (req, res) => {
     console.error("Error resending OTP:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to re-send OTP. Please try again later.",
+      message: "Failed to resend OTP. Please try again later.",
     });
   }
 };
