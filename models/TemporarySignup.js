@@ -9,8 +9,22 @@ const temporarySignupSchema = new mongoose.Schema({
   role: { type: String, enum: ["customer", "vendor"], default: "customer" },
   password: { type: String, required: true },
   otp: { type: String, required: true },
-  storeName: { type: String },
-  storeUrl: { type: String },
+  storeName: { type: String, sparse: true },
+  storeUrl: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId, // References the referrer (User)
+    ref: "User",
+    default: null, // Null if no referrer
+  },
   expiresAt: { type: Date, required: true },
 });
 

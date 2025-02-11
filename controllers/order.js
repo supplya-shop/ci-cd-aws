@@ -48,6 +48,7 @@ const createOrder = async (req, res) => {
       orderNote,
       paymentRefId,
       paymentMethod,
+      referralCode,
     } = req.body;
     const formattedPhone = formatPhoneNumber(phone);
 
@@ -55,18 +56,37 @@ const createOrder = async (req, res) => {
     session.startTransaction();
 
     const [user, orderId] = await Promise.all([
-      User.findById(userId).select("firstName lastName email").session(session),
+      User.findById(userId)
+        .select("firstName lastName email referredBy")
+        .session(session),
       generateOrderId(),
     ]);
+
+    let validReferralCode = referralCode;
+    if (!referralCode && user.referredBy) {
+      // Fetch referralCode from the referrer
+      const referrer = await User.findById(user.referredBy)
+        .select("referralCode")
+        .session(session);
+
+      validReferralCode = referrer?.referralCode || null;
+    }
+
+    console.log("referralCode", referralCode);
+    console.log("validReferralCode", validReferralCode);
 
     const {
       totalPrice,
       productUpdates,
       orderItems: populatedItems,
     } = await populateOrderItems(orderItems, session);
-    const { discount, updatedTotal } = await applyPromoCodeInOrder(
-      promoCode,
+
+    // Calculate discounts (referral and promo)
+    const { totalDiscount, updatedTotal } = await calculateDiscounts(
       totalPrice,
+      validReferralCode,
+      promoCode,
+      userId,
       session
     );
 
@@ -91,8 +111,9 @@ const createOrder = async (req, res) => {
           address,
           orderNote,
           totalPrice: updatedTotal,
-          discount,
+          discount: totalDiscount,
           promoCode,
+          appliedReferralCode: validReferralCode || null,
           paymentRefId,
           paymentMethod,
         },
@@ -650,6 +671,41 @@ const applyPromoCodeInOrder = async (promoCode, totalPrice, session) => {
   await promo.save({ session });
 
   return { discount, updatedTotal: totalPrice - discount };
+};
+
+const calculateDiscounts = async (
+  totalPrice,
+  referralCode,
+  promoCode,
+  userId,
+  session
+) => {
+  let referralDiscount = 0;
+  let promoDiscount = 0;
+
+  // Apply referral discount
+  if (referralCode) {
+    // Ensure referral discount is only for the first purchase
+    const hasExistingOrders = await Order.exists({ user: userId });
+    if (!hasExistingOrders) {
+      // Calculate referral discount (10% capped at ₦2,000)
+      referralDiscount = Math.min(totalPrice * 0.1, 2000);
+    }
+  }
+
+  // Apply promo code discount
+  const { discount: promoCodeDiscount } = await applyPromoCodeInOrder(
+    promoCode,
+    totalPrice - referralDiscount, // Apply referral discount first
+    session
+  );
+  promoDiscount = promoCodeDiscount;
+
+  // Combine discounts and calculate updated total
+  const totalDiscount = referralDiscount + promoDiscount;
+  const updatedTotal = totalPrice - totalDiscount;
+
+  return { totalDiscount, updatedTotal };
 };
 
 const populateOrderItems = async (orderItems, session) => {

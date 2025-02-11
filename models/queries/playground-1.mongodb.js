@@ -3,7 +3,7 @@
 // Use Ctrl+Space inside a snippet or a string literal to trigger completions.
 
 // The current database to use.
-use("test");
+// use("test");
 
 // Search for documents in the current collection.
 // db.getCollection("TemporarySignup")
@@ -33,6 +33,6 @@ use("test");
 //   });
 
 // Find and drop an index
-db.users.getIndexes();
-db.users.dropIndex("email_1");
-db.users.getIndexes();
+// db.users.getIndexes();
+// db.users.dropIndexes();
+// db.users.getIndexes();

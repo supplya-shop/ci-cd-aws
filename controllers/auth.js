@@ -31,6 +31,7 @@ const signUp = async (req, res) => {
       role,
       storeName,
       phoneNumber,
+      referralCode,
     } = req.body;
 
     if (!email && !phoneNumber) {
@@ -73,22 +74,65 @@ const signUp = async (req, res) => {
       storeUrl = `https://supplya.store/store/${storeName}`;
     }
 
+    let referringUser = null;
+    if (referralCode) {
+      referringUser = await User.findOne({ referralCode });
+      if (!referringUser) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Invalid referral code.",
+        });
+      }
+    }
+
+    if (
+      referringUser &&
+      ((email && referringUser.email === email) ||
+        (phoneNumber && referringUser.phoneNumber === phoneNumber))
+    ) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "You cannot use your own referral code.",
+      });
+    }
+
     const { otp } = generateOTP();
 
-    const tempSignup = new TemporarySignup({
-      email,
-      phoneNumber,
-      firstName,
-      lastName,
-      role: role || "customer",
-      password,
-      otp,
-      storeName,
-      storeUrl,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    });
-    await tempSignup.save();
-
+    let tempSignup = null;
+    if (email) {
+      tempSignup = await TemporarySignup.findOne({ email });
+    } else if (phoneNumber) {
+      tempSignup = await TemporarySignup.findOne({ phoneNumber });
+    }
+    if (tempSignup) {
+      tempSignup.set({
+        otp,
+        password,
+        firstName,
+        lastName,
+        role: role || "customer",
+        storeName,
+        storeUrl: storeName ? `https://supplya.store/store/${storeName}` : null,
+        referralCode,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // Extend expiry
+      });
+      await tempSignup.save();
+    } else {
+      tempSignup = new TemporarySignup({
+        email,
+        phoneNumber,
+        firstName,
+        lastName,
+        password,
+        otp,
+        role: role || "customer",
+        storeName,
+        storeUrl: storeName ? `https://supplya.store/store/${storeName}` : null,
+        referralCode,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10-minute expiry
+      });
+      await tempSignup.save();
+    }
     if (email) await sendOTPMail(email, otp);
     if (phoneNumber) await sendOtpViaTermii(phoneNumber, otp);
 
@@ -131,8 +175,7 @@ const signUpComplete = async (req, res) => {
       });
     }
 
-    const isOtpValid = otp === tempSignup.otp;
-    if (!isOtpValid) {
+    if (tempSignup.otp !== otp) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         status: false,
         message: "Invalid OTP.",
@@ -154,13 +197,32 @@ const signUpComplete = async (req, res) => {
 
     await newUser.save();
 
+    if (tempSignup.referralCode) {
+      const referringUser = await User.findOne({
+        referralCode: tempSignup.referralCode,
+      });
+
+      if (referringUser) {
+        referringUser.referralCodeUsageCount += 1;
+        referringUser.referredUsers.push(newUser._id);
+        await referringUser.save();
+
+        newUser.referredBy = referringUser._id;
+      }
+    }
+
+    await newUser.save();
+
     if (tempSignup.email) {
       if (tempSignup.role === "vendor") {
         await newVendorSignUpMail(tempSignup.email);
+        await sendConfirmationMail(tempSignup.email);
       } else {
         await newUserSignUpMail(tempSignup.email);
         await sendConfirmationMail(tempSignup.email);
       }
+    } else if (tempSignup.phoneNumber) {
+      await newUserSignUpMail(tempSignup.phoneNumber);
     }
 
     await TemporarySignup.deleteOne({ _id: tempSignup._id });
@@ -172,23 +234,9 @@ const signUpComplete = async (req, res) => {
       status: true,
       message: "Signup completed successfully.",
       data: {
-        _id: newUser._id,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        email: newUser.email,
-        phoneNumber: newUser.phoneNumber,
-        role: newUser.role,
-        storeName: newUser.storeName,
-        storeUrl: newUser.storeUrl,
-        gender: newUser.gender,
-        country: newUser.country,
-        city: newUser.city,
-        state: newUser.state,
-        address: newUser.address,
-        createdAt: newUser.createdAt,
-        lastLogin: newUser.lastLogin,
+        ...newUser.toObject(),
+        token,
       },
-      token,
     });
   } catch (error) {
     console.error("Error completing signup:", error);
@@ -211,7 +259,6 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    // Find the TemporarySignup record
     const tempSignup = await TemporarySignup.findOne({
       $or: [{ email }, { phoneNumber }],
     });
@@ -223,13 +270,11 @@ const resendOTP = async (req, res) => {
       });
     }
 
-    // Generate a new OTP
     const { otp } = generateOTP();
-    tempSignup.otp = otp; // Update OTP
-    tempSignup.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Extend expiry
-    await tempSignup.save(); // Save updated OTP
+    tempSignup.otp = otp;
+    tempSignup.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await tempSignup.save();
 
-    // Send the new OTP
     if (tempSignup.email) {
       await resendOTPMail(tempSignup.email, otp);
     }

@@ -2,10 +2,15 @@ const Store = require("../models/Store");
 const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
 const Order = require("../models/Order");
+const Wallet = require("../models/Wallet");
 const {
   sendCustomerOrderConfirmedMail,
+  sendCustomerOrderPackagedMail,
+  sendCustomerOrderShippedMail,
   sendCustomerOrderDeliveredMail,
   sendVendorOrderDeliveredMail,
+  sendReferralRewardNotification,
+  sendCustomerOrderCancelledMail,
 } = require("../middleware/mailUtil");
 
 const createVendor = async (req, res) => {
@@ -237,7 +242,7 @@ const updateOrderStatus = async (req, res) => {
 
     if (
       deliveryDate &&
-      (orderStatus === "confirmed" || orderStatus === "Delivered")
+      (orderStatus === "confirmed" || orderStatus === "delivered")
     ) {
       const parsedDeliveryDate = new Date(deliveryDate);
       if (isNaN(parsedDeliveryDate.getTime())) {
@@ -253,14 +258,14 @@ const updateOrderStatus = async (req, res) => {
       updateFields.paymentStatus = paymentStatus;
     }
 
-    const order = await Order.findOneAndUpdate(
-      {
-        orderId,
-        "orderItems.vendorDetails.email": req.user.email,
-      },
-      updateFields,
-      { new: true }
-    )
+    const query =
+      req.user.role === "admin"
+        ? { orderId } // Admin can update any order
+        : { orderId, "orderItems.vendorDetails.email": req.user.email }; // Vendors can only update their orders
+
+    const order = await Order.findOneAndUpdate(query, updateFields, {
+      new: true,
+    })
       .populate("user")
       .populate("orderItems.product");
 
@@ -275,11 +280,26 @@ const updateOrderStatus = async (req, res) => {
     const emailPromises = [];
     if (orderStatus === "confirmed" && deliveryDate) {
       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
-    } else if (orderStatus === "Delivered") {
+    } else if (orderStatus === "packaged") {
+      emailPromises.push(sendCustomerOrderPackagedMail(order, order.user));
+    } else if (orderStatus === "shipped") {
+      emailPromises.push(sendCustomerOrderShippedMail(order, order.user));
+    } else if (orderStatus === "delivered") {
       emailPromises.push(
         sendCustomerOrderDeliveredMail(order, order.user),
         sendVendorOrderDeliveredMail(order, order.user)
       );
+
+      if (order.appliedReferralCode) {
+        const result = await processReferralReward(order, 0.02); // 2% reward for the referrer
+        if (result) {
+          emailPromises.push(
+            sendReferralRewardNotification(result.referringUser, result.reward)
+          );
+        }
+      }
+    } else if (orderStatus === "cancelled") {
+      emailPromises.push(sendCustomerOrderCancelledMail(order, order.user));
     }
 
     await Promise.all(emailPromises);
@@ -315,6 +335,32 @@ const deleteVendor = async () => {
       .status(500)
       .json({ status: false, message: "Internal server error" });
   }
+};
+
+const processReferralReward = async (order, rewardPercentage) => {
+  const referringUser = await User.findOne({
+    referralCode: order.appliedReferralCode,
+  });
+
+  if (referringUser) {
+    const reward = order.totalPrice * rewardPercentage;
+    const wallet = await Wallet.findOne({ userId: referringUser._id });
+
+    wallet.balance += reward;
+    wallet.transactions.push({
+      type: "credit",
+      amount: reward,
+      description: `Referral reward for Order ID ${order.orderId}`,
+    });
+
+    await wallet.save();
+
+    order.referralPayoutStatus = "completed";
+    await order.save();
+
+    return { referringUser, reward };
+  }
+  return null;
 };
 
 module.exports = {
