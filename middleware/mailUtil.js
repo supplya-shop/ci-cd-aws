@@ -69,7 +69,7 @@ const sendOTPMail = async (email, otp) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -406,7 +406,7 @@ const resendOTPMail = async (email, otp) => {
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>OTP</title>
+    <title>Resend OTP</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -422,8 +422,8 @@ const resendOTPMail = async (email, otp) => {
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
                     <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
-              alt="Supplya-Logo-on-GBG"
+              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              alt="Supplya-Logo"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
                 </div>
@@ -594,7 +594,7 @@ const sendConfirmationMail = async (email) => {
       address: process.env.EMAIL_USERNAME,
     },
     to: email,
-    subject: "Supplya Registration Complete",
+    subject: "Registration Complete",
     html: `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
@@ -639,8 +639,8 @@ const sendConfirmationMail = async (email) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
-              alt="Supplya-Logo-on-GBG"
+              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              alt="Supplya-Logo"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
           </div>
@@ -694,9 +694,9 @@ const sendConfirmationMail = async (email) => {
                               "
                             >
                               You have successfully completed your registration
-                              on <span style="font-weight: 600"> Supplya</span>.
-                              We're glad to have you on board. Click the link below to login and experience a
-                              new world of buying and selling now!
+                              on <span style="font-weight: 600"> Supplya</span>!
+                              Click the link below to experience a
+                              new world of buying and selling!
                             </p>
 
                             <a
@@ -721,27 +721,20 @@ const sendConfirmationMail = async (email) => {
 
                         <tr>
                           <td style="font-size: 14px; line-height: 16px">
-                            <p
-                              style="
-                                color: #131417;
-                                text-align: left;
-                                font-weight: 400;
-                                line-height: 15px;
-                                margin-top: 30px;
-                              "
-                            >
-                              Thank you,
-                            </p>
-                            <p
-                              style="
-                                color: #131417;
-                                text-align: left;
-                                font-weight: 400;
-                                line-height: 15px;
-                              "
-                            >
-                              Supplya Team.
-                            </p>
+                            <div style="text-align: right">
+                              <p
+                                style="
+                                  color: #131417;
+                                  font-weight: 400;
+                                  margin-top: 30px;
+                                "
+                              >
+                                Thank you,
+                              </p>
+                              <p style="color: #131417; font-weight: 400">
+                                Supplya Team.
+                              </p>
+                            </div>
                           </td>
                         </tr>
                       </table>
@@ -771,7 +764,8 @@ const sendConfirmationMail = async (email) => {
   await transporter.sendMail(mailOptions);
 };
 
-const newUserSignUpMail = async (email) => {
+const newUserSignUpMail = async (email = null, phoneNumber = null) => {
+  const identifier = email || phoneNumber;
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: 465,
@@ -833,7 +827,7 @@ const newUserSignUpMail = async (email) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -887,7 +881,7 @@ const newUserSignUpMail = async (email) => {
                                 line-height: 20px;
                               "
                             >
-                              A new user <span style="font-weight: 600"> ${email} </span>
+                              A new user <span style="font-weight: 600"> ${identifier} </span>
                               has just registered on Supplya! 🥳
                             </p>
                           </td>
@@ -916,7 +910,11 @@ const newUserSignUpMail = async (email) => {
 `,
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending signup email:", error.message);
+  }
 };
 
 const newVendorSignUpMail = async (email) => {
@@ -1064,7 +1062,11 @@ const newVendorSignUpMail = async (email) => {
 `,
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending new vendor signup mail:", error.message);
+  }
 };
 
 const forgotPasswordMail = async (email, resetCode) => {
@@ -1696,7 +1698,7 @@ const sendOrderSummaryMail = async (order) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
-                                <strong>Customer Full Name:</strong> ${
+                                <strong>Customer Name:</strong> ${
                                   order.user.firstName
                                 }  ${order.user.lastName}
                               </p>
@@ -1910,7 +1912,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
               "
             >
               <img
-                src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -1955,7 +1957,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
-                                <strong>Customer Full Name:</strong> ${
+                                <strong>Customer Name:</strong> ${
                                   order.user.firstName
                                 }  ${order.user.lastName}
                               </p>
@@ -2168,7 +2170,7 @@ const sendVendorOrderSummaryMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2217,7 +2219,7 @@ const sendVendorOrderSummaryMail = async (order, user) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
-                                <strong>Customer Full Name:</strong> ${
+                                <strong>Customer Name:</strong> ${
                                   order.user.firstName
                                 }  ${order.user.lastName}
                               </p>
@@ -2429,7 +2431,7 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2470,7 +2472,7 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                                   order.orderStatus
                                 } by ${
       order.orderItems[0].vendorDetails.firstName
-    }. View order details below:
+    }. View your order details below:
                               </p>
                             </td>
                           </tr>
@@ -2478,7 +2480,549 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
-                                <strong>Customer Full Name:</strong> ${
+                                <strong>Customer Name:</strong> ${
+                                  user.firstName
+                                }  ${user.lastName}
+                              </p>
+                              <p>
+                                <strong>Order Status:</strong> ${
+                                  order.orderStatus
+                                }
+                              </p>
+                              <p>
+                                <strong>Delivery Date:</strong> ${
+                                  order.deliveryDate
+                                }
+                              </p>
+                              <p>
+                                <strong>Shipping Address:</strong> ${
+                                  order.address
+                                }, ${order.country}
+                              </p>
+                              <p>
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
+                              </p>
+                              <p>
+                                <strong>Email:</strong> ${order.email}
+                              </p>
+                             
+                              <p>
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
+                              </p>
+                              <p>
+                                <strong>Total Price:</strong> ₦${
+                                  order.totalPrice
+                                }
+                              </p>
+                              <p>
+                                <strong>Payment Method:</strong> ${
+                                  order.paymentMethod
+                                }
+                              </p>
+                              <p>
+                                <strong>Payment Status:</strong> ${
+                                  order.paymentStatus
+                                }
+                              </p>
+                              <p>
+                                <strong>Order Date:</strong> ${formattedDate}
+                              </p>
+                              <h4><strong>Order Items:</strong></h4>
+                              <ul>
+                                ${order.orderItems
+                                  .map(
+                                    (item) => `
+                                <li>
+                                  <p>
+                                    <strong>Product Name:</strong>
+                                    ${item.product.name}
+                                  </p>
+                                  <p>
+                                    <strong>Quantity:</strong> ${item.quantity}
+                                  </p>
+                                  <p>
+                                    <strong>Price per Unit:</strong>
+                                    ₦${item.product.unit_price}
+                                  </p>
+                                  <p>
+                                    <strong>Vendor Name:</strong>
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
+                                  </p>
+                                  <p>
+                                    <strong>Supplya store address:</strong>
+                                    ${item.vendorDetails.storeUrl ?? ""} 
+                                  </p>
+                                </li>
+                                `
+                                  )
+                                  .join(", ")}
+                              </ul>
+                            </td>
+                          </tr>
+                            <tr>
+                          <td style="font-size: 14px; line-height: 16px">
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                                margin-top: 30px;
+                              "
+                            >
+                              Regards,
+                            </p>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Supplya Support.
+                            </p>
+                          </td>
+                        </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <footer>
+              <p style="color: #131417; margin-top: 30px; font-size: 14px">
+                Copyright © 2024 Supplya
+              </p>
+            </footer>
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+</html>
+`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+const sendCustomerOrderCancelledMail = async (order, user) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+  const formattedDate = new Date(order.dateOrdered).toLocaleString();
+
+  const mailOptions = {
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
+    to: order.email,
+    subject: `Order #${order.orderId} has been cancelled`,
+    html: `
+       <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Order Cancelled</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <style>
+    a:hover {
+      background-color: #02555b;
+    }
+  </style>
+
+  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Order cancelled</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet"
+      />
+    </head>
+
+    <style>
+      a:hover {
+        background-color: #02555b;
+      }
+    </style>
+
+    <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
+      <table
+        style="padding: 10px 20px"
+        role="presentation"
+        border="0"
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        bgcolor="#FFFFFF"
+      >
+        <tr>
+          <td>
+            <div
+              align="center"
+              style="
+                margin-top: 30px;
+                margin-bottom: 30px;
+                display: flex;
+                margin: 0 auto;
+                background-color: #0199a4;
+                width: 70%;
+              "
+            >
+              <img
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                alt="Supplya-Logo-on-GBG"
+                style="text-align: left; width: 90px; margin-left: 60px"
+              />
+            </div>
+            <table
+              align="center"
+              bgcolor="#F4F6F8"
+              width="70%"
+              style="border-radius: 15px; padding: 0"
+            >
+              <tr>
+                <td>
+                  <table
+                    align="center"
+                    style="padding-left: 32px; padding-right: 32px"
+                    border="0"
+                    cellspacing="0"
+                    cellpadding="0"
+                    width="80%"
+                  >
+                    <tr>
+                      <td
+                        style="padding: 0; margin-top: 20px; text-align: left"
+                      >
+                        <table
+                          align="center"
+                          border="0"
+                          cellpadding="0"
+                          cellspacing="0"
+                          width="100%"
+                          style="border-collapse: collapse"
+                        >
+                          <tr>
+                            <td style="color: #153643">
+                            <p>Hi ${user.firstName},</p>
+                              <p>
+                                Your supplya order has been marked as ${
+                                  order.orderStatus
+                                } by ${
+      order.orderItems[0].vendorDetails.firstName
+    }. View your order details below:
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
+                              <p><strong>Order ID:</strong> ${order.orderId}</p>
+                              <p>
+                                <strong>Customer Name:</strong> ${
+                                  user.firstName
+                                }  ${user.lastName}
+                              </p>
+                              <p>
+                                <strong>Order Status:</strong> ${
+                                  order.orderStatus
+                                }
+                              </p>
+                              <p>
+                                <strong>Delivery Date:</strong> ${
+                                  order.deliveryDate
+                                }
+                              </p>
+                              <p>
+                                <strong>Shipping Address:</strong> ${
+                                  order.address
+                                }, ${order.country}
+                              </p>
+                              <p>
+                                <strong>Phone Number:</strong> ${
+                                  order.phone ?? ""
+                                }
+                              </p>
+                              <p>
+                                <strong>Email:</strong> ${order.email}
+                              </p>
+                             
+                              <p>
+                                <strong>Order Note:</strong> ${
+                                  order.orderNote ?? ""
+                                }
+                              </p>
+                              <p>
+                                <strong>Total Price:</strong> ₦${
+                                  order.totalPrice
+                                }
+                              </p>
+                              <p>
+                                <strong>Payment Method:</strong> ${
+                                  order.paymentMethod
+                                }
+                              </p>
+                              <p>
+                                <strong>Payment Status:</strong> ${
+                                  order.paymentStatus
+                                }
+                              </p>
+                              <p>
+                                <strong>Order Date:</strong> ${formattedDate}
+                              </p>
+                              <h4><strong>Order Items:</strong></h4>
+                              <ul>
+                                ${order.orderItems
+                                  .map(
+                                    (item) => `
+                                <li>
+                                  <p>
+                                    <strong>Product Name:</strong>
+                                    ${item.product.name}
+                                  </p>
+                                  <p>
+                                    <strong>Quantity:</strong> ${item.quantity}
+                                  </p>
+                                  <p>
+                                    <strong>Price per Unit:</strong>
+                                    ₦${item.product.unit_price}
+                                  </p>
+                                  <p>
+                                    <strong>Vendor Name:</strong>
+                                    ${item.vendorDetails.firstName} ${
+                                      item.vendorDetails.lastName
+                                    } 
+                                  </p>
+                                  <p>
+                                    <strong>Supplya store address:</strong>
+                                    ${item.vendorDetails.storeUrl ?? ""} 
+                                  </p>
+                                </li>
+                                `
+                                  )
+                                  .join(", ")}
+                              </ul>
+                            </td>
+                          </tr>
+                            <tr>
+                          <td style="font-size: 14px; line-height: 16px">
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                                margin-top: 30px;
+                              "
+                            >
+                              Regards,
+                            </p>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Supplya Support.
+                            </p>
+                          </td>
+                        </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center">
+            <footer>
+              <p style="color: #131417; margin-top: 30px; font-size: 14px">
+                Copyright © 2024 Supplya
+              </p>
+            </footer>
+          </td>
+        </tr>
+      </table>
+    </body>
+  </html>
+</html>
+`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+const sendCustomerOrderShippedMail = async (order, user) => {
+  const transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+  const formattedDate = new Date(order.dateOrdered).toLocaleString();
+
+  const mailOptions = {
+    from: {
+      name: "Supplya",
+      address: process.env.EMAIL_USERNAME,
+    },
+    to: order.email,
+    subject: `Order #${order.orderId} has been shipped`,
+    html: `
+       <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Order Confirmed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <style>
+    a:hover {
+      background-color: #02555b;
+    }
+  </style>
+
+  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      <title>Order shipped</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet"
+      />
+    </head>
+
+    <style>
+      a:hover {
+        background-color: #02555b;
+      }
+    </style>
+
+    <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
+      <table
+        style="padding: 10px 20px"
+        role="presentation"
+        border="0"
+        cellpadding="0"
+        cellspacing="0"
+        width="100%"
+        bgcolor="#FFFFFF"
+      >
+        <tr>
+          <td>
+            <div
+              align="center"
+              style="
+                margin-top: 30px;
+                margin-bottom: 30px;
+                display: flex;
+                margin: 0 auto;
+                background-color: #0199a4;
+                width: 70%;
+              "
+            >
+              <img
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                alt="Supplya-Logo-on-GBG"
+                style="text-align: left; width: 90px; margin-left: 60px"
+              />
+            </div>
+            <table
+              align="center"
+              bgcolor="#F4F6F8"
+              width="70%"
+              style="border-radius: 15px; padding: 0"
+            >
+              <tr>
+                <td>
+                  <table
+                    align="center"
+                    style="padding-left: 32px; padding-right: 32px"
+                    border="0"
+                    cellspacing="0"
+                    cellpadding="0"
+                    width="80%"
+                  >
+                    <tr>
+                      <td
+                        style="padding: 0; margin-top: 20px; text-align: left"
+                      >
+                        <table
+                          align="center"
+                          border="0"
+                          cellpadding="0"
+                          cellspacing="0"
+                          width="100%"
+                          style="border-collapse: collapse"
+                        >
+                          <tr>
+                            <td style="color: #153643">
+                            <p>Hi ${user.firstName},</p>
+                              <p>
+                                Your supplya order has been marked as ${
+                                  order.orderStatus
+                                } by ${
+      order.orderItems[0].vendorDetails.firstName
+    }. View your order details below:
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
+                              <p><strong>Order ID:</strong> ${order.orderId}</p>
+                              <p>
+                                <strong>Customer Name:</strong> ${
                                   user.firstName
                                 }  ${user.lastName}
                               </p>
@@ -2700,7 +3244,7 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2747,7 +3291,7 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
-                                <strong>Customer Full Name:</strong> ${
+                                <strong>Customer Name:</strong> ${
                                   order.user.firstName
                                 }  ${order.user.lastName}
                               </p>
@@ -2915,7 +3459,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Vendor Order Delivered</title>
+    <title>Order Delivered</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -2975,7 +3519,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -3024,7 +3568,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                             <td style="font-size: 12px; background-color: white; padding: 10px 20px;">
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
-                                <strong>Customer Full Name:</strong> ${
+                                <strong>Customer Name:</strong> ${
                                   order.user.firstName
                                 }  ${order.user.lastName}
                               </p>
@@ -3126,7 +3670,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
                                 margin-top: 30px;
                               "
                             >
-                              Regards,
+                              Best regards,
                             </p>
                             <p
                               style="
@@ -3168,6 +3712,25 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
   await transporter.sendMail(mailOptions);
 };
 
+const sendReferralRewardNotification = async (referringUser, reward) => {
+  const mailOptions = {
+    from: process.env.SMTP_EMAIL,
+    to: referringUser.email,
+    subject: "You Earned a Referral Reward!",
+    html: `
+      <p>Hi ${referringUser.firstName},</p>
+      <p>Congratulations! You earned a reward of ₦${reward.toFixed(
+        2
+      )} for referring a user who successfully completed an order.</p>
+      <p>Your reward has been credited to your wallet. Keep referring more friends to earn even more!</p>
+      <p>Thank you for your continued support.</p>
+      <p>Best regards,<br>Supplya Team</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 const approveProductMail = async (vendorName, productName) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
@@ -3190,7 +3753,7 @@ const approveProductMail = async (vendorName, productName) => {
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>Approve product</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -3230,7 +3793,7 @@ const approveProductMail = async (vendorName, productName) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -3410,7 +3973,7 @@ const sendMigratedCustomersMail = async (
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -3547,7 +4110,6 @@ const contactMail = async (name, email, phone, subject, message) => {
       pass: process.env.EMAIL_PASSWORD,
     },
   });
-  // const formattedDate = new Date(order.dateOrdered).toLocaleString();
 
   const mailOptions = {
     from: {
@@ -3620,7 +4182,7 @@ const contactMail = async (name, email, phone, subject, message) => {
                 width: 70%;
               "
             >
-            <img src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png" alt="Supplya-Logo-on-GBG"
+            <img src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg" alt="Supplya-Logo-on-GBG"
             style="position: absolute; top: 30px; left: 110px; width: 90px"/>
             </div>
             <table
@@ -3711,10 +4273,12 @@ module.exports = {
   sendConfirmationMail,
   sendOrderSummaryMail,
   sendCustomerOrderConfirmedMail,
+  sendCustomerOrderShippedMail,
   sendCustomerOrderDeliveredMail,
   sendCustomerOrderSummaryMail,
   sendVendorOrderSummaryMail,
   sendVendorOrderDeliveredMail,
+  sendCustomerOrderCancelledMail,
   newUserSignUpMail,
   newVendorSignUpMail,
   forgotPasswordMail,
@@ -3722,4 +4286,5 @@ module.exports = {
   approveProductMail,
   contactMail,
   sendMigratedCustomersMail,
+  sendReferralRewardNotification,
 };

@@ -77,7 +77,15 @@ const orderSchema = mongoose.Schema({
   promoCode: {
     type: String,
   },
-
+  appliedReferralCode: {
+    type: String,
+    index: true, // Makes querying by referral code efficient
+  },
+  referralPayoutStatus: {
+    type: String,
+    enum: ["pending", "completed", "failed", "not-applicable"],
+    default: "not-applicable",
+  },
   orderStatus: {
     type: String,
     enum: ["new", "confirmed", "packaged", "shipped", "delivered", "cancelled"],
