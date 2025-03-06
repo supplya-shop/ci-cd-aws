@@ -260,8 +260,8 @@ const updateOrderStatus = async (req, res) => {
 
     const query =
       req.user.role === "admin"
-        ? { orderId } // Admin can update any order
-        : { orderId, "orderItems.vendorDetails.email": req.user.email }; // Vendors can only update their orders
+        ? { orderId }
+        : { orderId, "orderItems.vendorDetails.email": req.user.email };
 
     const order = await Order.findOneAndUpdate(query, updateFields, {
       new: true,
@@ -291,7 +291,7 @@ const updateOrderStatus = async (req, res) => {
       );
 
       if (order.appliedReferralCode) {
-        const result = await processReferralReward(order, 0.02); // 2% reward for the referrer
+        const result = await processReferralReward(order, 0.02);
         if (result) {
           emailPromises.push(
             sendReferralRewardNotification(result.referringUser, result.reward)

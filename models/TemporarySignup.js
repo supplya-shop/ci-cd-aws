@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { encrypt, decrypt } = require("../middleware/encryption"); // Path to your encryption utility
+const { encrypt, decrypt } = require("../middleware/encryption");
 
 const temporarySignupSchema = new mongoose.Schema({
   email: { type: String, lowercase: true, sparse: true },
@@ -21,9 +21,9 @@ const temporarySignupSchema = new mongoose.Schema({
     sparse: true,
   },
   referredBy: {
-    type: mongoose.Schema.Types.ObjectId, // References the referrer (User)
+    type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    default: null, // Null if no referrer
+    default: null,
   },
   expiresAt: { type: Date, required: true },
 });
@@ -34,6 +34,11 @@ temporarySignupSchema.pre("save", function (next) {
   }
   next();
 });
+
+temporarySignupSchema.index(
+  { referralCode: 1 },
+  { unique: true, sparse: true }
+);
 
 temporarySignupSchema.methods.getDecryptedPassword = function () {
   return decrypt(this.password);

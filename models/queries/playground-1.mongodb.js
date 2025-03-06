@@ -3,14 +3,13 @@
 // Use Ctrl+Space inside a snippet or a string literal to trigger completions.
 
 // The current database to use.
-// use("test");
+use("test");
 
 // Search for documents in the current collection.
-// db.getCollection("TemporarySignup")
-//   .find(
-//     {
-//       email: "osuchukwudavid@gmail.com", // Filter by phone number
-//     },
+// db.getCollection("TemporarySignup").find(
+//   {
+//     email: "osuchukwudavid@gmail.com", // Filter by phone number
+//   }
 //     {
 //       /*
 //        * Filter
@@ -24,7 +23,7 @@
 //        * fieldA: 1 // include field
 //        */
 //     }
-//   )
+// );
 //   .sort({
 //     /*
 //      * fieldA: 1 // ascending
@@ -33,6 +32,11 @@
 //   });
 
 // Find and drop an index
-// db.users.getIndexes();
-// db.users.dropIndexes();
-// db.users.getIndexes();
+// db.temporarysignups.dropIndex("referralCode_1");
+db.temporarysignups.createIndex(
+  { referralCode: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { referralCode: { $exists: true, $ne: null } },
+  }
+);

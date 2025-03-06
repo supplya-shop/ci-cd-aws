@@ -101,12 +101,12 @@ const userSchema = new mongoose.Schema(
     ],
     referralCodeUsageCount: {
       type: Number,
-      default: 0, // Tracks how many times the referral code was used
+      default: 0,
     },
     referredBy: {
-      type: mongoose.Schema.Types.ObjectId, // References the referrer (User)
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      default: null, // Null if no referrer
+      default: null,
     },
     dob: {
       type: Date,
@@ -212,8 +212,7 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.pre("save", function (next) {
-  if (!this.isModified("referralCode")) {
-    // Generate a unique referral code (e.g., based on user's firstName and ObjectId)
+  if (!this.referralCode) {
     const randomString = Math.random()
       .toString(36)
       .substring(2, 8)
