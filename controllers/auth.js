@@ -62,7 +62,10 @@ const signUp = async (req, res) => {
       });
     }
 
-    let storeUrl;
+    await TemporarySignup.deleteOne({
+      $or: [{ email }, { phoneNumber }],
+    });
+
     if (role === "vendor" && storeName) {
       const storeExists = await User.findOne({ storeName });
       if (storeExists) {
@@ -71,7 +74,6 @@ const signUp = async (req, res) => {
           message: "Store name already taken.",
         });
       }
-      storeUrl = `https://supplya.store/store/${storeName}`;
     }
 
     let referringUser = null;
@@ -234,9 +236,28 @@ const signUpComplete = async (req, res) => {
       status: true,
       message: "Signup completed successfully.",
       data: {
-        ...newUser.toObject(),
-        token,
+        _id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
+        storeName: newUser.storeName,
+        storeUrl: newUser.storeUrl,
+        referralCode: newUser.referralCode,
+        referredBy: newUser.referredBy,
+        walletId: newUser.walletId,
+        referralCodeUsageCount: newUser.referralCodeUsageCount,
+        referredUsers: newUser.referredUsers,
+        gender: newUser.gender,
+        country: newUser.country,
+        city: newUser.city,
+        state: newUser.state,
+        address: newUser.address,
+        createdAt: newUser.createdAt,
+        lastLogin: newUser.lastLogin,
       },
+      token,
     });
   } catch (error) {
     console.error("Error completing signup:", error);

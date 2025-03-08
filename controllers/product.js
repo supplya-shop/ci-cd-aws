@@ -411,12 +411,25 @@ const getAllProducts = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
     const startIndex = (page - 1) * limit;
-    // const endIndex = page * limit;
+    const searchQuery = req.query.search || ""; // Get search term
 
-    const totalProducts = await Product.countDocuments();
+    // Build search filter
+    let filter = {};
+    if (searchQuery) {
+      filter = {
+        $or: [
+          { name: { $regex: searchQuery, $options: "i" } },
+          { description: { $regex: searchQuery, $options: "i" } },
+          { brand: { $regex: searchQuery, $options: "i" } },
+          { sku: { $regex: searchQuery, $options: "i" } },
+        ],
+      };
+    }
+
+    const totalProducts = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProducts / limit);
 
-    const products = await Product.find({})
+    const products = await Product.find(filter)
       .populate({
         path: "createdBy",
         select:
@@ -544,13 +557,22 @@ const getProductsByVendor = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
     const startIndex = (page - 1) * limit;
+    const searchQuery = req.query.search || "";
 
-    const totalProductsCount = await Product.countDocuments({
-      createdBy: vendorId,
-    });
+    let filter = { createdBy: vendorId };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalProductsCount = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProductsCount / limit);
 
-    const products = await Product.find({ createdBy: vendorId })
+    const products = await Product.find(filter)
       .select(
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
       )
@@ -568,9 +590,10 @@ const getProductsByVendor = async (req, res) => {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "No products found",
-        data: products,
+        data: [],
       });
     }
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Products fetched successfully",
@@ -592,6 +615,7 @@ const getProductsByCategory = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
     const category = await Category.findOne({ name: categoryName });
@@ -602,11 +626,20 @@ const getProductsByCategory = async (req, res) => {
       });
     }
 
-    const totalProductsCount = await Product.countDocuments({
-      category: category._id,
-    });
+    let filter = { category: category._id };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
 
-    const products = await Product.find({ category: category._id })
+    const totalProductsCount = await Product.countDocuments(filter);
+    const totalPages = Math.ceil(totalProductsCount / limit);
+
+    const products = await Product.find(filter)
       .populate("category", "name")
       .populate({
         path: "createdBy",
@@ -616,8 +649,6 @@ const getProductsByCategory = async (req, res) => {
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
-
-    const totalPages = Math.ceil(totalProductsCount / limit);
 
     if (!products.length) {
       return res.status(StatusCodes.OK).json({
@@ -649,13 +680,26 @@ const getProductsByUserId = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
-    const totalProductsCount = await Product.countDocuments({
-      createdBy: userId,
-    });
+    // Build search filter
+    let filter = { createdBy: userId };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
 
-    const products = await Product.find({ createdBy: userId })
+    // Get total matching products count
+    const totalProductsCount = await Product.countDocuments(filter);
+    const totalPages = Math.ceil(totalProductsCount / limit);
+
+    // Fetch paginated products
+    const products = await Product.find(filter)
       .select(
         "name unit_price discounted_price description quantity category image images brand createdBy status rating numReviews isFeatured flashsale isTrending isDealOfTheDay saleCount dateCreated moq approved sku"
       )
@@ -675,8 +719,6 @@ const getProductsByUserId = async (req, res) => {
         message: "No products found for this user",
       });
     }
-
-    const totalPages = Math.ceil(totalProductsCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -698,6 +740,7 @@ const getProductsByStoreName = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
     const { storeName } = req.params;
@@ -713,11 +756,23 @@ const getProductsByStoreName = async (req, res) => {
       });
     }
 
-    const totalProducts = await Product.countDocuments({
-      createdBy: vendor._id,
-    });
+    // Build search filter
+    let filter = { createdBy: vendor._id };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
 
-    const products = await Product.find({ createdBy: vendor._id })
+    // Get total matching products count
+    const totalProducts = await Product.countDocuments(filter);
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Fetch paginated products
+    const products = await Product.find(filter)
       .populate({
         path: "category",
         select: "name",
@@ -736,6 +791,7 @@ const getProductsByStoreName = async (req, res) => {
       });
     }
 
+    // Get total order counts for each product
     const productOrderCounts = await Promise.all(
       products.map(async (product) => {
         const orderData = await Order.aggregate([
@@ -765,6 +821,7 @@ const getProductsByStoreName = async (req, res) => {
       })
     );
 
+    // Merge product order counts into response
     const productsWithOrderCounts = products.map((product) => {
       const orderCountData = productOrderCounts.find((item) =>
         item.productId.equals(product._id)
@@ -775,8 +832,6 @@ const getProductsByStoreName = async (req, res) => {
         totalOrders: orderCountData?.totalOrders || 0,
       };
     });
-
-    const totalPages = Math.ceil(totalProducts / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -812,18 +867,26 @@ const getProductsByBrand = async (req, res) => {
   try {
     let brand = req.params.brand;
     brand = brand.toLowerCase();
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
-
     const startIndex = (page - 1) * limit;
+    const searchQuery = req.query.search || "";
 
-    const totalProductsCount = await Product.countDocuments({
-      brand: { $regex: new RegExp(brand, "i") },
-    });
+    // Build search filter
+    let filter = { brand: { $regex: new RegExp(brand, "i") } };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalProductsCount = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProductsCount / limit);
-    const products = await Product.find({
-      brand: { $regex: new RegExp(brand, "i") },
-    })
+
+    const products = await Product.find(filter)
       .populate({
         path: "createdBy",
         select:
@@ -832,25 +895,31 @@ const getProductsByBrand = async (req, res) => {
       .populate("category", "name")
       .limit(limit)
       .skip(startIndex);
-    if (products.length === 0) {
+
+    if (!products.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "No products found",
-        data: products,
+        data: [],
+        currentPage: page,
+        totalPages,
+        totalProducts: totalProductsCount,
       });
     }
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Products fetched successfully",
       data: products,
       currentPage: page,
-      totalPages: totalPages,
+      totalPages,
       totalProducts: totalProductsCount,
     });
   } catch (error) {
+    console.error("Error fetching products by brand:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+      .json({ status: false, message: "Failed to fetch products." });
   }
 };
 
@@ -858,10 +927,25 @@ const getDiscountedProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
+
   try {
-    const discountedProducts = await Product.find({
-      discounted_price: { $gt: 0 },
-    })
+    // Build search filter
+    let filter = { discounted_price: { $gt: 0 } };
+
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalProductsCount = await Product.countDocuments(filter);
+    const totalPagesCount = Math.ceil(totalProductsCount / limit);
+
+    const discountedProducts = await Product.find(filter)
       .populate("category", "name")
       .populate({
         path: "createdBy",
@@ -872,30 +956,30 @@ const getDiscountedProducts = async (req, res) => {
       .limit(limit)
       .skip(startIndex);
 
-    const totalProductsCount = await Product.countDocuments({
-      discounted_price: { $gt: 0 },
-    });
-    const totalPagesCount = Math.ceil(totalProductsCount / limit);
-
-    if (!discountedProducts || discountedProducts.length === 0) {
+    if (!discountedProducts.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No products found",
-        data: discountedProducts,
+        message: "No discounted products found",
+        data: [],
+        currentPage: page,
+        totalPages: totalPagesCount,
+        totalProducts: totalProductsCount,
       });
     }
-    return res.json({
+
+    return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Products fetched successfully",
+      message: "Discounted products fetched successfully",
       data: discountedProducts,
       currentPage: page,
       totalPages: totalPagesCount,
+      totalProducts: totalProductsCount,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching discounted products:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+      .json({ status: false, message: "Failed to fetch discounted products." });
   }
 };
 
@@ -903,10 +987,26 @@ const getTrendingProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
+
   try {
-    const trendingProducts = await Product.find({
-      isTrending: true,
-    })
+    // Build search filter
+    let filter = { isTrending: true };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    // Get total count of matching trending products
+    const totalProductsCount = await Product.countDocuments(filter);
+    const totalPagesCount = Math.ceil(totalProductsCount / limit);
+
+    // Fetch trending products with pagination
+    const trendingProducts = await Product.find(filter)
       .populate("category", "name")
       .populate({
         path: "createdBy",
@@ -917,30 +1017,28 @@ const getTrendingProducts = async (req, res) => {
       .limit(limit)
       .skip(startIndex);
 
-    const totalProductsCount = await Product.countDocuments({
-      isTrending: true,
-    });
-    const totalPagesCount = Math.ceil(totalProductsCount / limit);
-
     if (!trendingProducts || trendingProducts.length === 0) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No products found",
-        data: trendingProducts,
+        message: "No trending products found",
+        data: [],
+        currentPage: page,
+        totalPages: totalPagesCount,
       });
     }
-    return res.json({
+
+    return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Products fetched successfully",
+      message: "Trending products fetched successfully",
       data: trendingProducts,
       currentPage: page,
       totalPages: totalPagesCount,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching trending products:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+      .json({ status: false, message: "Failed to fetch trending products" });
   }
 };
 
@@ -948,44 +1046,70 @@ const getDealsOfTheDay = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
-  try {
-    const deals = await Product.find({
-      isDealOfTheDay: true,
-    })
-      .populate("category", "name")
-      .populate({
-        path: "createdBy",
-        select:
-          "firstName lastName email country state city postalCode gender businessName phoneNumber accountNumber bank role",
-      })
-      .sort({ dateCreated: -1 })
-      .limit(limit)
-      .skip(startIndex);
+  const searchQuery = req.query.search || "";
 
-    const totalProductsCount = await Product.countDocuments({
-      isDealOfTheDay: true,
-    });
+  try {
+    // Build search filter
+    let filter = { isDealOfTheDay: true };
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    // Get total count of matching deals
+    const totalProductsCount = await Product.countDocuments(filter);
     const totalPagesCount = Math.ceil(totalProductsCount / limit);
 
-    if (!deals || deals.length === 0) {
+    if (totalProductsCount === 0) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No products found",
-        data: deals,
+        message: "No deals available today",
+        data: [],
+        currentPage: page,
+        totalPages: totalPagesCount,
       });
     }
-    return res.json({
+
+    // Fetch deals with randomization & pagination
+    const deals = await Product.aggregate([
+      { $match: filter },
+      { $sample: { size: totalProductsCount } }, // Shuffle products randomly
+      { $skip: startIndex },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdBy",
+        },
+      },
+    ]);
+
+    return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Products fetched successfully",
+      message: "Deals of the day fetched successfully",
       data: deals,
       currentPage: page,
       totalPages: totalPagesCount,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching deals of the day:", error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+      .json({ status: false, message: "Failed to fetch deals of the day" });
   }
 };
 
@@ -1008,7 +1132,6 @@ const recentlyViewed = async (req, res) => {
       });
     }
 
-    // Optional: Limit the number of recently viewed products returned
     const recentProducts = recentlyViewed.products.slice(0, 10);
 
     return res.status(StatusCodes.OK).json({
@@ -1027,47 +1150,43 @@ const recentlyViewed = async (req, res) => {
 
 const specialDeals = async (req, res) => {
   try {
-    const { page = 1, limit = 15 } = req.query;
+    const { page = 1, limit = 15, search = "" } = req.query;
     const startIndex = (page - 1) * limit;
 
+    // Build search filter
+    let filter = {
+      status: "inStock",
+      $or: [{ specialDeal: true }, { isTrending: true }, { flashsale: true }],
+    };
+
+    if (search) {
+      filter.$or.push(
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { brand: { $regex: search, $options: "i" } },
+        { sku: { $regex: search, $options: "i" } }
+      );
+    }
+
     const [specialDeals, totalCount] = await Promise.all([
-      Product.find({
-        $and: [
-          { status: "inStock" },
-          {
-            $or: [
-              { specialDeal: true },
-              { isTrending: true },
-              { flashsale: true },
-            ],
-          },
-        ],
-      })
+      Product.find(filter)
         .skip(startIndex)
         .limit(parseInt(limit))
         .sort({ createdAt: -1 }),
-      Product.countDocuments({
-        $and: [
-          { status: "inStock" },
-          {
-            $or: [
-              { specialDeal: true },
-              { isTrending: true },
-              { flashsale: true },
-            ],
-          },
-        ],
-      }),
+      Product.countDocuments(filter),
     ]);
 
-    if (!specialDeals || specialDeals.length === 0) {
+    const totalPages = Math.ceil(totalCount / limit);
+
+    if (!specialDeals.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "No special deals found.",
+        data: [],
+        currentPage: parseInt(page),
+        totalPages,
       });
     }
-
-    const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -1090,14 +1209,23 @@ const getFlashsaleProducts = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
   const now = new Date();
 
   try {
-    const flashsaleProducts = await Product.find({
-      flashsale: true,
-      // flashsaleStartDate: { $lte: now },
-      // flashsaleEndDate: { $gte: now },
-    })
+    // Build search filter
+    let filter = { flashsale: true };
+
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const flashsaleProducts = await Product.find(filter)
       .populate("category", "name")
       .populate({
         path: "createdBy",
@@ -1108,44 +1236,54 @@ const getFlashsaleProducts = async (req, res) => {
       .limit(limit)
       .skip(startIndex);
 
-    const totalProductsCount = await Product.countDocuments({
-      flashsale: true,
-      // flashsaleStartDate: { $lte: now },
-      // flashsaleEndDate: { $gte: now },
-    });
-
+    const totalProductsCount = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProductsCount / limit);
 
     if (!flashsaleProducts.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
-        message: "No products found",
+        message: "No flash sale products found",
         data: [],
+        currentPage: page,
+        totalPages,
       });
     }
 
-    return res.json({
+    return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Products fetched successfully",
+      message: "Flash sale products fetched successfully",
       data: flashsaleProducts,
       currentPage: page,
-      totalPages: totalPages,
+      totalPages,
       totalProducts: totalProductsCount,
     });
   } catch (error) {
+    console.error("Error fetching flash sale products:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: error.message,
+      message: "Failed to fetch flash sale products",
     });
   }
 };
 
-const getNewlyArrivedBrands = async (req, res, next) => {
+const getNewlyArrivedBrands = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
+
   try {
-    const response = await Product.find({})
+    let filter = {};
+    if (searchQuery) {
+      filter.$or = [
+        { name: { $regex: searchQuery, $options: "i" } },
+        { description: { $regex: searchQuery, $options: "i" } },
+        { brand: { $regex: searchQuery, $options: "i" } },
+        { sku: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const response = await Product.find(filter)
       .populate("category", "name")
       .populate({
         path: "createdBy",
@@ -1155,6 +1293,7 @@ const getNewlyArrivedBrands = async (req, res, next) => {
       .sort({ dateCreated: -1 })
       .limit(limit)
       .skip(startIndex);
+
     const brandMap = new Map();
     response.forEach((product) => {
       const brand = product.brand;
@@ -1162,19 +1301,20 @@ const getNewlyArrivedBrands = async (req, res, next) => {
         brandMap.set(brand, product.toObject());
       }
     });
+
     const products = Array.from(brandMap.values());
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Products fetched successfully",
+      message: "Newly arrived brands fetched successfully",
       data: products,
       currentPage: page,
     });
   } catch (error) {
-    console.error(error.message);
+    console.error("Error fetching newly arrived brands:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: error.message,
+      message: "Failed to fetch newly arrived brands",
     });
   }
 };
