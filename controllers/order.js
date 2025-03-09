@@ -162,8 +162,61 @@ const getOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
+
   try {
-    const orders = await Order.find()
+    let filter = {};
+
+    if (searchQuery) {
+      const matchingUsers = await User.find({
+        $or: [
+          { firstName: { $regex: searchQuery, $options: "i" } },
+          { lastName: { $regex: searchQuery, $options: "i" } },
+          { email: { $regex: searchQuery, $options: "i" } },
+        ],
+      }).select("_id");
+
+      const userIds = matchingUsers.map((user) => user._id);
+
+      filter.$or = [
+        { user: { $in: userIds } },
+        {
+          "orderItems.vendorDetails.firstName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.lastName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.email": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.storeName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.phoneNumber": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    const orders = await Order.find(filter)
       .populate({
         path: "orderItems.product",
         populate: [
@@ -186,17 +239,27 @@ const getOrders = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const totalOrders = await Order.countDocuments();
+    if (!orders.length) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "No orders found",
+        data: [],
+        totalOrders,
+        totalPages,
+        currentPage: page,
+      });
+    }
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Orders fetched successfully",
       data: orders,
       totalOrders,
-      totalPages: Math.ceil(totalOrders / limit),
+      totalPages,
       currentPage: page,
     });
   } catch (error) {
+    console.error("Error fetching orders:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to fetch orders: " + error.message,
@@ -205,78 +268,107 @@ const getOrders = async (req, res) => {
 };
 
 const getOrdersByUserId = async (req, res) => {
-  const userId = req.params.id;
-  const user = await User.findById(userId);
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-
   try {
-    let orders;
-    let totalOrdersCount;
+    const userId = req.params.id;
+    const user = await User.findById(userId).select("role");
+
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const searchQuery = req.query.search || "";
+
+    let filter = {};
+    let orders = [];
+    let totalOrdersCount = 0;
 
     if (user.role === "vendor") {
       const vendorProducts = await Product.find({ createdBy: userId }).select(
-        "quantity"
+        "_id"
       );
       const productIds = vendorProducts.map((product) => product._id);
 
-      totalOrdersCount = await Order.countDocuments({
-        "orderItems.product": { $in: productIds },
+      filter["orderItems.product"] = { $in: productIds };
+    } else {
+      filter["user"] = userId;
+    }
+
+    if (searchQuery) {
+      const matchingUsers = await User.find({
+        $or: [
+          { firstName: { $regex: searchQuery, $options: "i" } },
+          { lastName: { $regex: searchQuery, $options: "i" } },
+          { email: { $regex: searchQuery, $options: "i" } },
+        ],
+      }).select("_id");
+
+      const userIds = matchingUsers.map((user) => user._id);
+
+      filter.$or = [
+        { user: { $in: userIds } },
+        {
+          "orderItems.vendorDetails.firstName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.lastName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.email": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.storeName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.phoneNumber": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    totalOrdersCount = await Order.countDocuments(filter);
+
+    orders = await Order.find(filter)
+      .sort({ dateOrdered: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("user", "firstName lastName email")
+      .populate({
+        path: "orderItems.product",
+        populate: [
+          {
+            path: "createdBy",
+            select:
+              "firstName lastName email country state city postalCode businessName phoneNumber",
+          },
+          { path: "category", select: "name" },
+        ],
       });
 
-      orders = await Order.find({
-        "orderItems.product": { $in: productIds },
-      })
-        .sort({ dateOrdered: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate("user")
-        .populate({
-          path: "orderItems.product",
-          populate: [
-            {
-              path: "createdBy",
-              select:
-                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
-            },
-            {
-              path: "category",
-              select: "name",
-            },
-          ],
-        });
-    }
-
-    if (user.role === "customer") {
-      totalOrdersCount = await Order.countDocuments({ user: userId });
-
-      orders = await Order.find({ user: userId })
-
-        .skip(skip)
-        .limit(limit)
-        .populate("user")
-        .populate({
-          path: "orderItems.product",
-          populate: [
-            {
-              path: "createdBy",
-              select:
-                "firstName lastName email country state city postalCode businessName phoneNumber accountNumber bank",
-            },
-            {
-              path: "category",
-              select: "name",
-            },
-          ],
-        });
-    }
-
-    if (!orders || orders.length === 0) {
+    if (orders.length === 0) {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "No orders found for this user",
-        data: orders,
+        data: [],
       });
     }
 
@@ -292,7 +384,7 @@ const getOrdersByUserId = async (req, res) => {
     console.error("Error fetching orders:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to fetch orders. " + error.message,
+      message: "Failed to fetch orders: " + error.message,
     });
   }
 };

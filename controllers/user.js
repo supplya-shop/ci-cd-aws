@@ -61,14 +61,28 @@ const getAllUsers = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
-  const endIndex = page * limit;
+  const searchQuery = req.query.search || "";
 
   try {
+    let filter = {};
+
+    if (searchQuery) {
+      filter.$or = [
+        { firstName: { $regex: searchQuery, $options: "i" } }, // Search by First Name
+        { lastName: { $regex: searchQuery, $options: "i" } }, // Search by Last Name
+        { email: { $regex: searchQuery, $options: "i" } }, // Search by Email
+        { phoneNumber: { $regex: searchQuery, $options: "i" } }, // Search by Phone
+        { storeName: { $regex: searchQuery, $options: "i" } }, // Search by Store Name (for vendors)
+      ];
+    }
+
     const [users, totalCount] = await Promise.all([
-      User.find().sort({ createdAt: -1 }).limit(limit).skip(startIndex),
-      User.countDocuments(),
+      User.find(filter).sort({ createdAt: -1 }).limit(limit).skip(startIndex),
+      User.countDocuments(filter),
     ]);
+
     const totalPages = Math.ceil(totalCount / limit);
+
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Users fetched successfully",
@@ -139,29 +153,41 @@ const getUsersByRole = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 15;
   const startIndex = (page - 1) * limit;
-  const endIndex = page * limit;
-  try {
-    const [users, totalCount] = await Promise.all([
-      User.find({ role }).sort({ createdAt: -1 }).limit(limit).skip(startIndex),
-      User.countDocuments({ role }),
-    ]);
+  const searchQuery = req.query.search || "";
 
-    if (!users || users.length === 0) {
+  try {
+    let filter = { role };
+
+    if (searchQuery) {
+      filter.$or = [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { email: { $regex: searchQuery, $options: "i" } },
+        { phoneNumber: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalCount = await User.countDocuments(filter);
+    const users = await User.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(startIndex);
+
+    if (!users.length) {
       return res.status(StatusCodes.OK).json({
         status: false,
         message: "Users not found",
-        data: users,
+        data: [],
       });
     }
-    const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Users fetched successfully",
       data: users,
       currentPage: page,
-      totalCount: totalCount,
-      totalPages: totalPages,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     });
   } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -255,6 +281,7 @@ const getUserOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   const excludedStatuses = ["Delivered", "shipped", "cancelled"];
 
@@ -279,17 +306,56 @@ const getUserOrders = async (req, res) => {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
+    let filter = {};
+
+    if (searchQuery) {
+      filter.$or = [
+        { orderId: { $regex: searchQuery, $options: "i" } },
+        { "orderItems.product.name": { $regex: searchQuery, $options: "i" } },
+        {
+          "orderItems.vendorDetails.storeName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.firstName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.lastName": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.email": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+        {
+          "orderItems.vendorDetails.phoneNumber": {
+            $regex: searchQuery,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
     if (userRole === "vendor") {
       const vendorProducts = await Product.find({ createdBy: userId }).select(
         "quantity"
       );
       const productIds = vendorProducts.map((product) => product._id);
 
-      totalOrdersCount = await Order.countDocuments({
-        "orderItems.product": { $in: productIds },
-      });
+      filter["orderItems.product"] = { $in: productIds };
 
-      orders = await Order.find({ "orderItems.product": { $in: productIds } })
+      totalOrdersCount = await Order.countDocuments(filter);
+
+      orders = await Order.find(filter)
         .sort({ dateCreated: -1 })
         .populate("user")
         .populate({
@@ -385,9 +451,11 @@ const getUserOrders = async (req, res) => {
         },
       });
     } else {
-      totalOrdersCount = await Order.countDocuments({ user: userId });
+      filter.user = userId;
 
-      orders = await Order.find({ user: userId })
+      totalOrdersCount = await Order.countDocuments(filter);
+
+      orders = await Order.find(filter)
         .sort({ dateCreated: -1 })
         .populate({
           path: "orderItems.product",
@@ -419,6 +487,7 @@ const getUserOrders = async (req, res) => {
         user: userId,
         orderStatus: { $nin: excludedStatuses },
       });
+
       const deliveredOrdersCount = orders.filter(
         (order) => order.orderStatus === "delivered"
       ).length;
