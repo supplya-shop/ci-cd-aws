@@ -203,6 +203,7 @@ const getOrderDashboardStats = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
     const past7Days = new Date();
@@ -211,28 +212,96 @@ const getOrderDashboardStats = async (req, res) => {
     const currentDayStart = new Date();
     currentDayStart.setHours(0, 0, 0, 0);
 
-    const totalOrders = await Order.countDocuments({});
+    let filter = {};
+
+    if (searchQuery) {
+      // Check if search query is a number (potential orderId)
+      const isNumeric = /^\d+$/.test(searchQuery);
+
+      if (isNumeric) {
+        filter.orderId = parseInt(searchQuery); // Search by orderId
+      } else {
+        // Find matching users (customers) based on search
+        const matchingUsers = await User.find({
+          $or: [
+            { firstName: { $regex: searchQuery, $options: "i" } },
+            { lastName: { $regex: searchQuery, $options: "i" } },
+            { email: { $regex: searchQuery, $options: "i" } },
+          ],
+        }).select("_id");
+
+        const userIds = matchingUsers.map((user) => user._id);
+
+        filter.$or = [
+          { user: { $in: userIds } },
+          {
+            "orderItems.product.name": {
+              $regex: searchQuery,
+              $options: "i",
+            },
+          },
+          {
+            "orderItems.vendorDetails.firstName": {
+              $regex: searchQuery,
+              $options: "i",
+            },
+          },
+          {
+            "orderItems.vendorDetails.lastName": {
+              $regex: searchQuery,
+              $options: "i",
+            },
+          },
+          {
+            "orderItems.vendorDetails.email": {
+              $regex: searchQuery,
+              $options: "i",
+            },
+          },
+          {
+            "orderItems.vendorDetails.storeName": {
+              $regex: searchQuery,
+              $options: "i",
+            },
+          },
+          {
+            "orderItems.vendorDetails.phoneNumber": {
+              $regex: searchQuery,
+              $options: "i",
+            },
+          },
+        ];
+      }
+    }
+
+    const totalOrders = await Order.countDocuments(filter);
     const totalOrdersLast7Days = await Order.countDocuments({
+      ...filter,
       dateOrdered: { $gte: past7Days },
     });
     const totalNewOrdersToday = await Order.countDocuments({
+      ...filter,
       dateOrdered: { $gte: currentDayStart },
     });
     const totalDeliveredOrders = await Order.countDocuments({
+      ...filter,
       orderStatus: "Delivered",
     });
     const totalDeliveredOrdersToday = await Order.countDocuments({
+      ...filter,
       orderStatus: "Delivered",
       dateOrdered: { $gte: currentDayStart },
     });
     const totalPendingOrders = await Order.countDocuments({
+      ...filter,
       orderStatus: "new",
     });
     const totalCancelledOrders = await Order.countDocuments({
+      ...filter,
       orderStatus: "cancelled",
     });
 
-    const orders = await Order.find({})
+    const orders = await Order.find(filter)
       .skip(skip)
       .limit(limit)
       .sort({ dateOrdered: -1 })
@@ -267,7 +336,8 @@ const getOrderDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    console.error("Error fetching order statistics:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to fetch order statistics: " + error.message,
     });
