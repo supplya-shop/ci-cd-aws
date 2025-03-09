@@ -278,6 +278,7 @@ const getCustomerStats = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
     const currentDate = new Date();
@@ -290,7 +291,18 @@ const getCustomerStats = async (req, res) => {
     const startOfDay = new Date(currentDate);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const totalCustomers = await User.countDocuments({ role: "customer" });
+    let filter = { role: "customer" };
+
+    if (searchQuery) {
+      filter.$or = [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { email: { $regex: searchQuery, $options: "i" } },
+        { phoneNumber: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalCustomers = await User.countDocuments(filter);
     const newCustomersLast7Days = await User.countDocuments({
       role: "customer",
       createdAt: { $gte: past7Days },
@@ -311,7 +323,7 @@ const getCustomerStats = async (req, res) => {
       ],
     });
 
-    const customers = await User.find({ role: "customer" })
+    const customers = await User.find(filter)
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
@@ -324,7 +336,7 @@ const getCustomerStats = async (req, res) => {
         $group: {
           _id: "$user",
           totalSpent: { $sum: "$totalPrice" },
-          orderCount: { $count: {} }, // Count the number of orders for each customer
+          orderCount: { $count: {} },
         },
       },
     ]);
@@ -336,7 +348,7 @@ const getCustomerStats = async (req, res) => {
       return {
         ...customer._doc,
         totalSpent: order ? order.totalSpent : 0,
-        totalOrders: order ? order.orderCount : 0, // Add totalOrders field
+        totalOrders: order ? order.orderCount : 0,
       };
     });
 
@@ -366,6 +378,7 @@ const getVendorStats = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
     const currentDate = new Date();
@@ -378,7 +391,19 @@ const getVendorStats = async (req, res) => {
     const startOfDay = new Date(currentDate);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const totalVendors = await User.countDocuments({ role: "vendor" });
+    let filter = { role: "vendor" };
+
+    if (searchQuery) {
+      filter.$or = [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { email: { $regex: searchQuery, $options: "i" } },
+        { phoneNumber: { $regex: searchQuery, $options: "i" } },
+        { storeName: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalVendors = await User.countDocuments(filter);
     const newVendorsLast7Days = await User.countDocuments({
       role: "vendor",
       createdAt: { $gte: past7Days },
@@ -399,7 +424,7 @@ const getVendorStats = async (req, res) => {
       ],
     });
 
-    const vendors = await User.find({ role: "vendor" }).skip(skip).limit(limit);
+    const vendors = await User.find(filter).skip(skip).limit(limit);
 
     const vendorIds = vendors.map((vendor) => vendor._id);
 
@@ -449,6 +474,7 @@ const getAdminStats = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  const searchQuery = req.query.search || "";
 
   try {
     const currentDate = new Date();
@@ -461,7 +487,18 @@ const getAdminStats = async (req, res) => {
     const startOfDay = new Date(currentDate);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const totalAdmins = await User.countDocuments({ role: "admin" });
+    let filter = { role: "admin" };
+
+    if (searchQuery) {
+      filter.$or = [
+        { firstName: { $regex: searchQuery, $options: "i" } },
+        { lastName: { $regex: searchQuery, $options: "i" } },
+        { email: { $regex: searchQuery, $options: "i" } },
+        { phoneNumber: { $regex: searchQuery, $options: "i" } },
+      ];
+    }
+
+    const totalAdmins = await User.countDocuments(filter);
     const newAdminsLast7Days = await User.countDocuments({
       role: "admin",
       createdAt: { $gte: past7Days },
@@ -482,7 +519,7 @@ const getAdminStats = async (req, res) => {
       ],
     });
 
-    const admins = await User.find({ role: "admin" }).skip(skip).limit(limit);
+    const admins = await User.find(filter).skip(skip).limit(limit);
 
     return res.status(StatusCodes.OK).json({
       status: true,
