@@ -3,6 +3,11 @@ const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Wallet = require("../models/Wallet");
+// const {
+//   sendOrderStatusSMS,
+//   sendOrderCancellationSMS,
+// } = require("../utils/smsService");
+
 const {
   sendCustomerOrderConfirmedMail,
   sendCustomerOrderPackagedMail,
@@ -12,7 +17,6 @@ const {
   sendReferralRewardNotification,
   sendCustomerOrderCancelledMail,
 } = require("../middleware/mailUtil");
-const termiiService = require("../service/TermiiService");
 
 const createVendor = async (req, res) => {
   try {
@@ -316,10 +320,10 @@ const getVendorByStoreName = async (req, res) => {
 //     });
 //   }
 // };
-
 const updateOrderStatus = async (req, res) => {
   const orderId = req.params.orderId;
-  const { orderStatus, paymentStatus } = req.body;
+  const { orderStatus, deliveryDate, paymentStatus, cancellationReason } =
+    req.body;
 
   const validStatuses = [
     "new",
@@ -342,18 +346,19 @@ const updateOrderStatus = async (req, res) => {
   try {
     const updateFields = { orderStatus };
 
-    // if (
-    //   (orderStatus === "confirmed" || orderStatus === "delivered")
-    // ) {
-    //   const parsedDeliveryDate = new Date(deliveryDate);
-    //   if (isNaN(parsedDeliveryDate.getTime())) {
-    //     return res.status(StatusCodes.BAD_REQUEST).json({
-    //       status: false,
-    //       message: "Invalid delivery date format.",
-    //     });
-    //   }
-    //   updateFields.deliveryDate = parsedDeliveryDate;
-    // }
+    if (
+      deliveryDate &&
+      (orderStatus === "confirmed" || orderStatus === "delivered")
+    ) {
+      const parsedDeliveryDate = new Date(deliveryDate);
+      if (isNaN(parsedDeliveryDate.getTime())) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Invalid delivery date format.",
+        });
+      }
+      updateFields.deliveryDate = parsedDeliveryDate;
+    }
 
     if (paymentStatus) {
       updateFields.paymentStatus = paymentStatus;
@@ -379,13 +384,13 @@ const updateOrderStatus = async (req, res) => {
     }
 
     const emailPromises = [];
-    if (orderStatus === "confirmed") {
+    if (orderStatus === "confirmed" && deliveryDate) {
       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
     } else if (orderStatus === "packaged") {
       emailPromises.push(sendCustomerOrderPackagedMail(order, order.user));
     } else if (orderStatus === "shipped") {
       emailPromises.push(sendCustomerOrderShippedMail(order, order.user));
-    } else if (orderStatus === "delivered") {
+    } else if (orderStatus === "delivered" && deliveryDate) {
       emailPromises.push(
         sendCustomerOrderDeliveredMail(order, order.user),
         sendVendorOrderDeliveredMail(order, order.user)
@@ -400,9 +405,7 @@ const updateOrderStatus = async (req, res) => {
         }
       }
     } else if (orderStatus === "cancelled") {
-      emailPromises.push(
-        sendCustomerOrderCancelledMail(order, order.user, cancellationReason)
-      );
+      emailPromises.push(sendCustomerOrderCancelledMail(order, order.user));
     }
 
     await Promise.all(emailPromises);
