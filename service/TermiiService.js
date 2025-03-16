@@ -56,6 +56,28 @@ const sendWhatsAppNotification = async (phoneNumber, templateId, data) => {
   }
 };
 
+// const sendSMSNotification = async (phoneNumber, templateId, data) => {
+//   try {
+//     const requestBody = {
+//       phone_number: phoneNumber,
+//       device_id: termiiConfig.deviceId,
+//       template_id: templateId,
+//       api_key: termiiConfig.apiKey,
+//       data,
+//     };
+
+//     const response = await axios.post(
+//       `${termiiConfig.baseUrl}/send/template`,
+//       requestBody
+//     );
+
+//     return response.data;
+//   } catch (error) {
+//     console.error("Error sending WhatsApp notification:", error);
+//     throw new Error("Failed to send custom message. Please try again later.");
+//   }
+// };
+
 const sendVendorWhatsAppOrderNotification = async (
   phoneNumber,
   firstName,
