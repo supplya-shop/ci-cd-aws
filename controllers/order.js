@@ -5,8 +5,17 @@ const PromoCode = require("../models/PromoCode");
 const { StatusCodes } = require("http-status-codes");
 const { NotFoundError, InvalidPhoneFormatError } = require("../errors");
 const Notification = require("../models/Notification");
+const Wallet = require("../models/Wallet");
+
 const {
   sendOrderSummaryMail,
+  sendCustomerOrderConfirmedMail,
+  sendCustomerOrderPackagedMail,
+  sendCustomerOrderShippedMail,
+  sendCustomerOrderDeliveredMail,
+  sendVendorOrderDeliveredMail,
+  sendReferralRewardNotification,
+  sendCustomerOrderCancelledMail,
   sendCustomerOrderSummaryMail,
   sendVendorOrderSummaryMail,
 } = require("../middleware/mailUtil");
@@ -617,29 +626,122 @@ const getLatestOrder = async (req, res) => {
 const updateOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    const updatedOrderData = req.body;
+    const {
+      orderStatus,
+      paymentStatus,
+      cancellationReason,
+      ...updatedOrderData
+    } = req.body;
 
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      updatedOrderData,
-      { new: true }
-    );
+    const validStatuses = [
+      "new",
+      "confirmed",
+      "packaged" || "package",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ];
+    const isStatusUpdate = orderStatus && validStatuses.includes(orderStatus);
 
-    if (!updatedOrder) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ status: false, message: "Order not found" });
+    // Construct update fields dynamically
+    const updateFields = { ...updatedOrderData };
+    if (paymentStatus) updateFields.paymentStatus = paymentStatus;
+    if (isStatusUpdate) updateFields.orderStatus = orderStatus;
+
+    // Define order query based on user role
+    const query =
+      req.user.role === "admin"
+        ? { orderId }
+        : { orderId, "orderItems.vendorDetails.email": req.user.email };
+
+    // Update order in database
+    const order = await Order.findOneAndUpdate(query, updateFields, {
+      new: true,
+    })
+      .populate("user")
+      .populate("orderItems.product");
+
+    if (!order) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Order not found or unauthorized access",
+      });
     }
+
+    const user = order.user;
+    const userPhoneNumber = user.phoneNumber;
+    const userEmail = user.email;
+    const emailPromises = [];
+
+    if (isStatusUpdate) {
+      switch (orderStatus) {
+        case "confirmed":
+          emailPromises.push(sendCustomerOrderConfirmedMail(order, user));
+          break;
+        case "packaged":
+          emailPromises.push(sendCustomerOrderPackagedMail(order, user));
+          break;
+        case "shipped":
+          emailPromises.push(sendCustomerOrderShippedMail(order, user));
+          break;
+        case "delivered":
+          emailPromises.push(
+            sendCustomerOrderDeliveredMail(order, user),
+            sendVendorOrderDeliveredMail(order, user)
+          );
+          // await sendOrderStatusSMS(
+          //   userPhoneNumber,
+          //   user.firstName,
+          //   orderId,
+          //   orderStatus
+          // );
+
+          // Handle Referral Rewards
+          if (order.appliedReferralCode) {
+            const result = await processReferralReward(order, 0.02);
+            if (result) {
+              emailPromises.push(
+                sendReferralRewardNotification(
+                  result.referringUser,
+                  result.reward
+                )
+              );
+            }
+          }
+          break;
+        case "cancelled":
+          if (!cancellationReason) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+              status: false,
+              message: "Cancellation reason is required.",
+            });
+          }
+          emailPromises.push(
+            sendCustomerOrderCancelledMail(order, user, cancellationReason)
+          );
+          await sendOrderCancellationSMS(
+            userPhoneNumber,
+            user.firstName,
+            orderId,
+            cancellationReason
+          );
+          break;
+      }
+    }
+
+    await Promise.all(emailPromises);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Order updated successfully",
-      data: updatedOrder,
+      data: order,
     });
   } catch (error) {
-    return res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ status: false, message: error.message });
+    console.error("Error updating order:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to update order: " + error.message,
+    });
   }
 };
 

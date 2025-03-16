@@ -285,11 +285,11 @@ const getOrderDashboardStats = async (req, res) => {
     });
     const totalDeliveredOrders = await Order.countDocuments({
       ...filter,
-      orderStatus: "Delivered",
+      orderStatus: { $in: ["delivered", "Delivered"] },
     });
     const totalDeliveredOrdersToday = await Order.countDocuments({
       ...filter,
-      orderStatus: "Delivered",
+      orderStatus: { $in: ["delivered", "Delivered"] },
       dateOrdered: { $gte: currentDayStart },
     });
     const totalPendingOrders = await Order.countDocuments({

@@ -12,6 +12,7 @@ const {
   sendReferralRewardNotification,
   sendCustomerOrderCancelledMail,
 } = require("../middleware/mailUtil");
+const termiiService = require("../service/TermiiService");
 
 const createVendor = async (req, res) => {
   try {
@@ -215,9 +216,110 @@ const getVendorByStoreName = async (req, res) => {
   }
 };
 
+// const updateOrderStatus = async (req, res) => {
+//   const orderId = req.params.orderId;
+//   const { orderStatus, deliveryDate, paymentStatus } = req.body;
+
+//   const validStatuses = [
+//     "new",
+//     "confirmed",
+//     "packaged",
+//     "shipped",
+//     "delivered",
+//     "cancelled",
+//   ];
+
+//   if (!validStatuses.includes(orderStatus)) {
+//     return res.status(StatusCodes.BAD_REQUEST).json({
+//       status: false,
+//       message: `Invalid order status. Valid statuses are: ${validStatuses.join(
+//         ", "
+//       )}`,
+//     });
+//   }
+
+//   try {
+//     const updateFields = { orderStatus };
+
+//     if (
+//       deliveryDate &&
+//       (orderStatus === "confirmed" || orderStatus === "delivered")
+//     ) {
+//       const parsedDeliveryDate = new Date(deliveryDate);
+//       if (isNaN(parsedDeliveryDate.getTime())) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: "Invalid delivery date format.",
+//         });
+//       }
+//       updateFields.deliveryDate = parsedDeliveryDate;
+//     }
+
+//     if (paymentStatus) {
+//       updateFields.paymentStatus = paymentStatus;
+//     }
+
+//     const query =
+//       req.user.role === "admin"
+//         ? { orderId }
+//         : { orderId, "orderItems.vendorDetails.email": req.user.email };
+
+//     const order = await Order.findOneAndUpdate(query, updateFields, {
+//       new: true,
+//     })
+//       .populate("user")
+//       .populate("orderItems.product");
+
+//     if (!order) {
+//       return res.status(StatusCodes.NOT_FOUND).json({
+//         status: false,
+//         message:
+//           "Order not found or you are not authorized to update this order",
+//       });
+//     }
+
+//     const emailPromises = [];
+//     if (orderStatus === "confirmed" && deliveryDate) {
+//       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
+//     } else if (orderStatus === "shipped") {
+//       emailPromises.push(sendCustomerOrderShippedMail(order, order.user));
+//     } else if (orderStatus === "delivered" && deliveryDate) {
+//       emailPromises.push(
+//         sendCustomerOrderDeliveredMail(order, order.user),
+//         sendVendorOrderDeliveredMail(order, order.user)
+//       );
+
+//       if (order.appliedReferralCode) {
+//         const result = await processReferralReward(order, 0.02);
+//         if (result) {
+//           emailPromises.push(
+//             sendReferralRewardNotification(result.referringUser, result.reward)
+//           );
+//         }
+//       }
+//     } else if (orderStatus === "cancelled") {
+//       emailPromises.push(sendCustomerOrderCancelledMail(order, order.user));
+//     }
+
+//     await Promise.all(emailPromises);
+
+//     return res.status(StatusCodes.OK).json({
+//       status: true,
+//       message: "Order status updated successfully",
+//       data: order,
+//     });
+//   } catch (error) {
+//     console.error("Error updating order status:", error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       status: false,
+//       message: "Failed to update order status. " + error.message,
+//     });
+//   }
+// };
+
 const updateOrderStatus = async (req, res) => {
   const orderId = req.params.orderId;
-  const { orderStatus, deliveryDate, paymentStatus } = req.body;
+  const { orderStatus, paymentStatus } = req.body;
 
   const validStatuses = [
     "new",
@@ -240,19 +342,18 @@ const updateOrderStatus = async (req, res) => {
   try {
     const updateFields = { orderStatus };
 
-    if (
-      deliveryDate &&
-      (orderStatus === "confirmed" || orderStatus === "delivered")
-    ) {
-      const parsedDeliveryDate = new Date(deliveryDate);
-      if (isNaN(parsedDeliveryDate.getTime())) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Invalid delivery date format.",
-        });
-      }
-      updateFields.deliveryDate = parsedDeliveryDate;
-    }
+    // if (
+    //   (orderStatus === "confirmed" || orderStatus === "delivered")
+    // ) {
+    //   const parsedDeliveryDate = new Date(deliveryDate);
+    //   if (isNaN(parsedDeliveryDate.getTime())) {
+    //     return res.status(StatusCodes.BAD_REQUEST).json({
+    //       status: false,
+    //       message: "Invalid delivery date format.",
+    //     });
+    //   }
+    //   updateFields.deliveryDate = parsedDeliveryDate;
+    // }
 
     if (paymentStatus) {
       updateFields.paymentStatus = paymentStatus;
@@ -278,7 +379,7 @@ const updateOrderStatus = async (req, res) => {
     }
 
     const emailPromises = [];
-    if (orderStatus === "confirmed" && deliveryDate) {
+    if (orderStatus === "confirmed") {
       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
     } else if (orderStatus === "packaged") {
       emailPromises.push(sendCustomerOrderPackagedMail(order, order.user));
@@ -299,7 +400,9 @@ const updateOrderStatus = async (req, res) => {
         }
       }
     } else if (orderStatus === "cancelled") {
-      emailPromises.push(sendCustomerOrderCancelledMail(order, order.user));
+      emailPromises.push(
+        sendCustomerOrderCancelledMail(order, order.user, cancellationReason)
+      );
     }
 
     await Promise.all(emailPromises);
