@@ -3009,11 +3009,12 @@ const sendCustomerOrderCancelledMail = async (
                         >
                           <tr>
                             <td style="color: #153643">
-                            <p>Hi ${user.firstName},</p>
+                            <p>Hi ${order.user.firstName},</p>
                             <p>Unfortunately, your order <strong>${
                               order.orderId
-                            }</strong> has been cancelled.</p>
-    <p>Reason: <strong>${cancellationReason}</strong></p>
+                            }</strong> has been cancelled for the following reason.</p>
+                            <br>
+    <p> <strong>${cancellationReason}</strong></p>
     <p>We apologize for any inconvenience this may have caused.</p>
     <p>If you need assistance, please contact our support team.</p>. View your order details below:
                               </p>
@@ -3024,8 +3025,8 @@ const sendCustomerOrderCancelledMail = async (
                               <p><strong>Order ID:</strong> ${order.orderId}</p>
                               <p>
                                 <strong>Customer Name:</strong> ${
-                                  user.firstName
-                                }  ${user.lastName}
+                                  order.user.firstName
+                                }  ${order.user.lastName}
                               </p>
                               <p>
                                 <strong>Order Status:</strong> ${
@@ -3157,8 +3158,11 @@ const sendCustomerOrderCancelledMail = async (
 </html>
 `,
   };
-
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.log("Error sending order cancelled mail: ", error);
+  }
 };
 
 const sendCustomerOrderShippedMail = async (order, user) => {

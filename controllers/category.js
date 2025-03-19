@@ -94,7 +94,7 @@ const getAllCategories = async (req, res) => {
             parentCategory: { $ifNull: ["$parentCategory.name", "-"] },
             status: 1,
             totalProduct: 1,
-            homepageDisplay: { $ifNull: ["$homepageDisplay", ""] },
+            homepageDisplay: 1,
           },
         },
       ]),
@@ -132,7 +132,9 @@ const getCategoryById = async (req, res) => {
     const categoryId = req.params.categoryId;
     const category = await Category.findById(categoryId).populate(
       "parentCategory",
-      "name"
+      "name",
+      "homepageDisplay",
+      "status"
     );
 
     if (!category) {

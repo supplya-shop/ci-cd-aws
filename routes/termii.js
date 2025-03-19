@@ -2,7 +2,9 @@ const {
   sendOtpViaTermii,
   sendVendorWhatsAppOrderNotification,
   sendCustomerWhatsAppOrderNotification,
+  sendCustomerOrderCancelledNotification,
   sendMigrationNotification,
+  sendOrderCancellationSMS,
 } = require("../service/TermiiService");
 const express = require("express");
 const router = express.Router();
@@ -37,6 +39,37 @@ const handleSendOtp = async (req, res) => {
   }
 };
 
+const handleSendOrderCancelledSMS = async (req, res) => {
+  try {
+    const { phoneNumber, firstName, orderId, cancellationReason } = req.body;
+
+    if (!phoneNumber || !firstName || !orderId || !cancellationReason) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message:
+          "Phone number, first name, order ID, and cancellation reason are required.",
+      });
+    }
+
+    const response = await sendOrderCancellationSMS(
+      phoneNumber,
+      firstName,
+      orderId,
+      cancellationReason
+    );
+    res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Order cancellation SMS sent successfully.",
+      data: response,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
 const handleSendOrderNotification = async (req, res) => {
   try {
     const { phoneNumber, firstName, orderId, timeFrame } = req.body;
@@ -58,6 +91,38 @@ const handleSendOrderNotification = async (req, res) => {
     res.status(StatusCodes.OK).json({
       status: true,
       message: "Custom message sent successfully.",
+      data: response,
+    });
+  } catch (error) {
+    console.log("error: ", error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+const handleSendCustomerOrderCancelledNotification = async (req, res) => {
+  try {
+    const { phoneNumber, firstName, orderId, cancellationReason } = req.body;
+
+    if (!phoneNumber || !firstName || !orderId || !cancellationReason) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message:
+          "Phone number, first name, order ID, and cancellation reason are required.",
+      });
+    }
+
+    const response = await sendCustomerOrderCancelledNotification(
+      phoneNumber,
+      firstName,
+      orderId,
+      cancellationReason
+    );
+    res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Order cancellation SMS sent successfully.",
       data: response,
     });
   } catch (error) {
@@ -129,5 +194,9 @@ router.post("/sms/send", handleSendOtp);
 router.post("/send/template", handleSendOrderNotification);
 router.post("/send/template/vendor", handleSendVendorOrderNotification);
 router.post("/send/template/migration", handleSendMigrationNotification);
-
+router.post(
+  "/send/template/order-cancelled",
+  handleSendCustomerOrderCancelledNotification
+);
+router.post("/send/sms/order-cancelled", handleSendOrderCancelledSMS);
 module.exports = router;

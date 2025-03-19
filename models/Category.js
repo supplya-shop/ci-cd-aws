@@ -25,7 +25,7 @@ const categorySchema = new mongoose.Schema({
   },
   status: { type: String, enum: ["active", "inActive"], default: "active" },
   totalProduct: { type: Number, default: 0 },
-  homepageDisplay: { type: Number, default: 0 },
+  homepageDisplay: { type: Boolean, default: false },
   createdAt: {
     type: Date,
     default: Date.now,
