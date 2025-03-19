@@ -57,7 +57,7 @@ const createOrder = async (req, res) => {
 
     const [user, orderId] = await Promise.all([
       User.findById(userId)
-        .select("firstName lastName email referredBy")
+        .select("firstName lastName email phoneNumber referredBy")
         .session(session),
       generateOrderId(),
     ]);
@@ -101,6 +101,7 @@ const createOrder = async (req, res) => {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
+            phoneNumber: user.phoneNumber,
           },
           orderItems: populatedItems,
           city,

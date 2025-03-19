@@ -3,10 +3,7 @@ const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
 const Order = require("../models/Order");
 const Wallet = require("../models/Wallet");
-// const {
-//   sendOrderStatusSMS,
-//   sendOrderCancellationSMS,
-// } = require("../utils/smsService");
+const termiiService = require("../service/TermiiService");
 
 const {
   sendCustomerOrderConfirmedMail,
@@ -320,6 +317,7 @@ const getVendorByStoreName = async (req, res) => {
 //     });
 //   }
 // };
+
 const updateOrderStatus = async (req, res) => {
   const orderId = req.params.orderId;
   const { orderStatus, deliveryDate, paymentStatus, cancellationReason } =
@@ -346,10 +344,7 @@ const updateOrderStatus = async (req, res) => {
   try {
     const updateFields = { orderStatus };
 
-    if (
-      deliveryDate &&
-      (orderStatus === "confirmed" || orderStatus === "delivered")
-    ) {
+    if (deliveryDate && orderStatus === "delivered") {
       const parsedDeliveryDate = new Date(deliveryDate);
       if (isNaN(parsedDeliveryDate.getTime())) {
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -363,11 +358,13 @@ const updateOrderStatus = async (req, res) => {
     if (paymentStatus) {
       updateFields.paymentStatus = paymentStatus;
     }
-
+    console.log("stuffffff");
     const query =
       req.user.role === "admin"
         ? { orderId }
         : { orderId, "orderItems.vendorDetails.email": req.user.email };
+
+    console.log("Updating order with ID:", orderId);
 
     const order = await Order.findOneAndUpdate(query, updateFields, {
       new: true,
@@ -383,8 +380,16 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
+    if (!order.user) {
+      console.warn(`User details missing for order ID ${order.orderId}`);
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message: "Order has no associated user.",
+      });
+    }
+
     const emailPromises = [];
-    if (orderStatus === "confirmed" && deliveryDate) {
+    if (orderStatus === "confirmed") {
       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
     } else if (orderStatus === "packaged") {
       emailPromises.push(sendCustomerOrderPackagedMail(order, order.user));
@@ -405,7 +410,39 @@ const updateOrderStatus = async (req, res) => {
         }
       }
     } else if (orderStatus === "cancelled") {
-      emailPromises.push(sendCustomerOrderCancelledMail(order, order.user));
+      if (!cancellationReason) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          status: false,
+          message: "Cancellation reason is required.",
+        });
+      }
+      emailPromises.push(
+        sendCustomerOrderCancelledMail(order, order.user, cancellationReason)
+      );
+
+      if (order.user.phoneNumber) {
+        try {
+          console.log(`Sending cancellation SMS to: ${order.user.phoneNumber}`);
+          await termiiService.sendCustomerOrderCancelledNotification(
+            order.user.phoneNumber,
+            order.user.firstName,
+            order.orderId,
+            cancellationReason
+          );
+          await termiiService.sendOrderCancellationSMS(
+            order.user.phoneNumber,
+            order.user.firstName,
+            order.orderId,
+            cancellationReason
+          );
+        } catch (error) {
+          console.error("Error sending Termii notification:", error);
+        }
+      } else {
+        console.log(
+          `User with ID ${order.user._id} does not have a phone number. Skipping SMS notification.`
+        );
+      }
     }
 
     await Promise.all(emailPromises);
@@ -416,7 +453,7 @@ const updateOrderStatus = async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.error("Error updating order status:", error);
+    console.log("Error updating order status:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Failed to update order status. " + error.message,

@@ -6,6 +6,8 @@ const termiiConfig = {
   deviceId: process.env.TERMII_DEVICE_ID,
   customerTemplateId: process.env.TERMII_CUSTOMER_TEMPLATE_ID,
   vendorTemplateId: process.env.TERMII_VENDOR_TEMPLATE_ID,
+  customerOrderCancelledTemplateId:
+    process.env.TERMII_ORDER_CANCELLED_TEMPLATE_ID,
   migrationTemplateId: process.env.TERMII_MIGRATION_TEMPLATE_ID,
 };
 
@@ -34,6 +36,39 @@ const sendOtpViaTermii = async (phoneNumber, otp) => {
   }
 };
 
+const sendSMSNotification = async (phoneNumber, data) => {
+  try {
+    const requestBody = {
+      to: phoneNumber,
+      from: "Supplya",
+      sms: data,
+      type: "plain",
+      channel: "generic",
+      api_key: termiiConfig.apiKey,
+    };
+
+    const response = await axios.post(
+      `${termiiConfig.baseUrl}/sms/send`,
+      requestBody
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error sending SMS notification:", error);
+    throw new Error("Failed to send custom message. Please try again later.");
+  }
+};
+
+const sendOrderCancellationSMS = async (
+  phoneNumber,
+  userFirstName,
+  orderId,
+  cancellationReason
+) => {
+  const message = `Hello ${userFirstName}, unfortunately, your order ${orderId} has been cancelled due to: ${cancellationReason}. We apologize for any inconvenience. Contact us for assistance. - Supplya`;
+  await sendSMSNotification(phoneNumber, message);
+};
+
 const sendWhatsAppNotification = async (phoneNumber, templateId, data) => {
   try {
     const requestBody = {
@@ -55,28 +90,6 @@ const sendWhatsAppNotification = async (phoneNumber, templateId, data) => {
     throw new Error("Failed to send custom message. Please try again later.");
   }
 };
-
-// const sendSMSNotification = async (phoneNumber, templateId, data) => {
-//   try {
-//     const requestBody = {
-//       phone_number: phoneNumber,
-//       device_id: termiiConfig.deviceId,
-//       template_id: templateId,
-//       api_key: termiiConfig.apiKey,
-//       data,
-//     };
-
-//     const response = await axios.post(
-//       `${termiiConfig.baseUrl}/send/template`,
-//       requestBody
-//     );
-
-//     return response.data;
-//   } catch (error) {
-//     console.error("Error sending WhatsApp notification:", error);
-//     throw new Error("Failed to send custom message. Please try again later.");
-//   }
-// };
 
 const sendVendorWhatsAppOrderNotification = async (
   phoneNumber,
@@ -116,6 +129,25 @@ const sendCustomerWhatsAppOrderNotification = async (
   );
 };
 
+// WhatsApp notification for customer order cancellation
+const sendCustomerOrderCancelledNotification = async (
+  phoneNumber,
+  firstName,
+  orderId,
+  cancellationReason
+) => {
+  const data = {
+    user_firstname: firstName,
+    order_id: orderId,
+    cancellation_reason: cancellationReason,
+  };
+  return sendWhatsAppNotification(
+    phoneNumber,
+    termiiConfig.customerOrderCancelledTemplateId,
+    data
+  );
+};
+
 const sendMigrationNotification = async (
   firstName,
   phoneNumber,
@@ -139,5 +171,7 @@ module.exports = {
   sendOtpViaTermii,
   sendVendorWhatsAppOrderNotification,
   sendCustomerWhatsAppOrderNotification,
+  sendCustomerOrderCancelledNotification,
+  sendOrderCancellationSMS,
   sendMigrationNotification,
 };
