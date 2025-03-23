@@ -69,6 +69,17 @@ const sendOrderCancellationSMS = async (
   await sendSMSNotification(phoneNumber, message);
 };
 
+const sendUpdateOrderStatusSMS = async (
+  phoneNumber,
+  userFirstName,
+  orderId,
+  orderStatus,
+  websiteUrl = `https://supplya.shop`
+) => {
+  const message = `Hello ${userFirstName}, the status of your order ${orderId} has been updated to ${orderStatus}. Login in to your dashboard at ${websiteUrl} for more information. - Supplya`;
+  await sendSMSNotification(phoneNumber, message);
+};
+
 const sendWhatsAppNotification = async (phoneNumber, templateId, data) => {
   try {
     const requestBody = {
@@ -173,5 +184,6 @@ module.exports = {
   sendCustomerWhatsAppOrderNotification,
   sendCustomerOrderCancelledNotification,
   sendOrderCancellationSMS,
+  sendUpdateOrderStatusSMS,
   sendMigrationNotification,
 };

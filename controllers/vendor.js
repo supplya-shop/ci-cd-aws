@@ -318,6 +318,171 @@ const getVendorByStoreName = async (req, res) => {
 //   }
 // };
 
+// const updateOrderStatus = async (req, res) => {
+//   const orderId = req.params.orderId;
+//   const { orderStatus, deliveryDate, paymentStatus, cancellationReason } =
+//     req.body;
+
+//   const validStatuses = [
+//     "new",
+//     "confirmed",
+//     "packaged",
+//     "shipped",
+//     "delivered",
+//     "cancelled",
+//   ];
+
+//   if (!validStatuses.includes(orderStatus)) {
+//     return res.status(StatusCodes.BAD_REQUEST).json({
+//       status: false,
+//       message: `Invalid order status. Valid statuses are: ${validStatuses.join(
+//         ", "
+//       )}`,
+//     });
+//   }
+
+//   try {
+//     const updateFields = { orderStatus };
+
+//     if (deliveryDate && orderStatus === "delivered") {
+//       const parsedDeliveryDate = new Date(deliveryDate);
+//       if (isNaN(parsedDeliveryDate.getTime())) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: "Invalid delivery date format.",
+//         });
+//       }
+//       updateFields.deliveryDate = parsedDeliveryDate;
+//     }
+
+//     if (paymentStatus) {
+//       updateFields.paymentStatus = paymentStatus;
+//     }
+
+//     const query =
+//       req.user.role === "admin"
+//         ? { orderId }
+//         : { orderId, "orderItems.vendorDetails.email": req.user.email };
+
+//     const order = await Order.findOneAndUpdate(query, updateFields, {
+//       new: true,
+//     })
+//       .populate("user")
+//       .populate("orderItems.product");
+
+//     if (!order) {
+//       return res.status(StatusCodes.NOT_FOUND).json({
+//         status: false,
+//         message:
+//           "Order not found or you are not authorized to update this order",
+//       });
+//     }
+
+//     if (!order.user) {
+//       console.warn(`User details missing for order ID ${order.orderId}`);
+//       return res.status(StatusCodes.BAD_REQUEST).json({
+//         status: false,
+//         message: "Order has no associated user.",
+//       });
+//     }
+
+//     const emailPromises = [];
+//     if (orderStatus === "confirmed") {
+//       emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
+//       await termiiService.sendUpdateOrderStatusSMS(
+//         order.user.phoneNumber,
+//         order.user.firstName,
+//         order.orderId,
+//         orderStatus
+//       );
+//     } else if (orderStatus === "packaged") {
+//       emailPromises.push(sendCustomerOrderPackagedMail(order, order.user));
+//       await termiiService.sendUpdateOrderStatusSMS(
+//         order.user.phoneNumber,
+//         order.user.firstName,
+//         order.orderId,
+//         orderStatus
+//       );
+//     } else if (orderStatus === "shipped") {
+//       emailPromises.push(sendCustomerOrderShippedMail(order, order.user));
+//       await termiiService.sendUpdateOrderStatusSMS(
+//         order.user.phoneNumber,
+//         order.user.firstName,
+//         order.orderId,
+//         orderStatus
+//       );
+//     } else if (orderStatus === "delivered" && deliveryDate) {
+//       emailPromises.push(
+//         sendCustomerOrderDeliveredMail(order, order.user),
+//         sendVendorOrderDeliveredMail(order, order.user)
+//       );
+//       await termiiService.sendUpdateOrderStatusSMS(
+//         order.user.phoneNumber,
+//         order.user.firstName,
+//         order.orderId,
+//         orderStatus
+//       );
+
+//       if (order.appliedReferralCode) {
+//         const result = await processReferralReward(order, 0.02);
+//         if (result) {
+//           emailPromises.push(
+//             sendReferralRewardNotification(result.referringUser, result.reward)
+//           );
+//         }
+//       }
+//     } else if (orderStatus === "cancelled") {
+//       if (!cancellationReason) {
+//         return res.status(StatusCodes.BAD_REQUEST).json({
+//           status: false,
+//           message: "Cancellation reason is required.",
+//         });
+//       }
+//       emailPromises.push(
+//         sendCustomerOrderCancelledMail(order, order.user, cancellationReason)
+//       );
+
+//       if (order.user.phoneNumber) {
+//         try {
+//           console.log(`Sending cancellation SMS to: ${order.user.phoneNumber}`);
+//           await termiiService.sendCustomerOrderCancelledNotification(
+//             order.user.phoneNumber,
+//             order.user.firstName,
+//             order.orderId,
+//             cancellationReason
+//           );
+//           await termiiService.sendOrderCancellationSMS(
+//             order.user.phoneNumber,
+//             order.user.firstName,
+//             order.orderId,
+//             cancellationReason
+//           );
+//         } catch (error) {
+//           console.error("Error sending Termii notification: ", error);
+//         }
+//       } else {
+//         console.log(
+//           `User with ID ${order.user._id} does not have a phone number. Skipping SMS notification.`
+//         );
+//       }
+//     }
+
+//     await Promise.all(emailPromises);
+
+//     return res.status(StatusCodes.OK).json({
+//       status: true,
+//       message: "Order status updated successfully",
+//       data: order,
+//     });
+//   } catch (error) {
+//     console.log("Error updating order status:", error);
+//     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       status: false,
+//       message: "Failed to update order status. " + error.message,
+//     });
+//   }
+// };
+
 const updateOrderStatus = async (req, res) => {
   const orderId = req.params.orderId;
   const { orderStatus, deliveryDate, paymentStatus, cancellationReason } =
@@ -344,7 +509,7 @@ const updateOrderStatus = async (req, res) => {
   try {
     const updateFields = { orderStatus };
 
-    if (deliveryDate && orderStatus === "delivered") {
+    if (orderStatus === "delivered" && deliveryDate) {
       const parsedDeliveryDate = new Date(deliveryDate);
       if (isNaN(parsedDeliveryDate.getTime())) {
         return res.status(StatusCodes.BAD_REQUEST).json({
@@ -358,13 +523,11 @@ const updateOrderStatus = async (req, res) => {
     if (paymentStatus) {
       updateFields.paymentStatus = paymentStatus;
     }
-    console.log("stuffffff");
+
     const query =
       req.user.role === "admin"
         ? { orderId }
         : { orderId, "orderItems.vendorDetails.email": req.user.email };
-
-    console.log("Updating order with ID:", orderId);
 
     const order = await Order.findOneAndUpdate(query, updateFields, {
       new: true,
@@ -388,64 +551,101 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const emailPromises = [];
-    if (orderStatus === "confirmed") {
-      emailPromises.push(sendCustomerOrderConfirmedMail(order, order.user));
-    } else if (orderStatus === "packaged") {
-      emailPromises.push(sendCustomerOrderPackagedMail(order, order.user));
-    } else if (orderStatus === "shipped") {
-      emailPromises.push(sendCustomerOrderShippedMail(order, order.user));
-    } else if (orderStatus === "delivered" && deliveryDate) {
-      emailPromises.push(
-        sendCustomerOrderDeliveredMail(order, order.user),
-        sendVendorOrderDeliveredMail(order, order.user)
-      );
+    const notifications = [];
 
-      if (order.appliedReferralCode) {
-        const result = await processReferralReward(order, 0.02);
-        if (result) {
-          emailPromises.push(
-            sendReferralRewardNotification(result.referringUser, result.reward)
-          );
-        }
-      }
-    } else if (orderStatus === "cancelled") {
-      if (!cancellationReason) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          status: false,
-          message: "Cancellation reason is required.",
-        });
-      }
-      emailPromises.push(
-        sendCustomerOrderCancelledMail(order, order.user, cancellationReason)
-      );
-
+    // Define email and SMS logic
+    const sendNotifications = async (emailFunc, smsFunc) => {
+      notifications.push(emailFunc(order, order.user));
       if (order.user.phoneNumber) {
-        try {
-          console.log(`Sending cancellation SMS to: ${order.user.phoneNumber}`);
-          await termiiService.sendCustomerOrderCancelledNotification(
+        notifications.push(
+          smsFunc(
             order.user.phoneNumber,
             order.user.firstName,
             order.orderId,
-            cancellationReason
-          );
-          await termiiService.sendOrderCancellationSMS(
-            order.user.phoneNumber,
-            order.user.firstName,
-            order.orderId,
-            cancellationReason
-          );
-        } catch (error) {
-          console.error("Error sending Termii notification:", error);
-        }
-      } else {
-        console.log(
-          `User with ID ${order.user._id} does not have a phone number. Skipping SMS notification.`
+            orderStatus
+          )
         );
       }
+    };
+
+    switch (orderStatus) {
+      case "confirmed":
+        await sendNotifications(
+          sendCustomerOrderConfirmedMail,
+          termiiService.sendUpdateOrderStatusSMS
+        );
+        break;
+      case "packaged":
+        await sendNotifications(
+          sendCustomerOrderPackagedMail,
+          termiiService.sendUpdateOrderStatusSMS
+        );
+        break;
+      case "shipped":
+        await sendNotifications(
+          sendCustomerOrderShippedMail,
+          termiiService.sendUpdateOrderStatusSMS
+        );
+        break;
+      case "delivered":
+        notifications.push(
+          sendCustomerOrderDeliveredMail(order, order.user),
+          sendVendorOrderDeliveredMail(order, order.user)
+        );
+        if (order.user.phoneNumber) {
+          notifications.push(
+            termiiService.sendUpdateOrderStatusSMS(
+              order.user.phoneNumber,
+              order.user.firstName,
+              order.orderId,
+              orderStatus
+            )
+          );
+        }
+        if (order.appliedReferralCode) {
+          const result = await processReferralReward(order, 0.02);
+          if (result) {
+            notifications.push(
+              sendReferralRewardNotification(
+                result.referringUser,
+                result.reward
+              )
+            );
+          }
+        }
+        break;
+      case "cancelled":
+        if (!cancellationReason) {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            status: false,
+            message: "Cancellation reason is required.",
+          });
+        }
+        notifications.push(
+          sendCustomerOrderCancelledMail(order, order.user, cancellationReason)
+        );
+        if (order.user.phoneNumber) {
+          notifications.push(
+            termiiService.sendCustomerOrderCancelledNotification(
+              order.user.phoneNumber,
+              order.user.firstName,
+              order.orderId,
+              cancellationReason
+            ),
+            termiiService.sendOrderCancellationSMS(
+              order.user.phoneNumber,
+              order.user.firstName,
+              order.orderId,
+              cancellationReason
+            )
+          );
+        }
+        break;
+      default:
+        break;
     }
 
-    await Promise.all(emailPromises);
+    await Promise.all(notifications);
 
     return res.status(StatusCodes.OK).json({
       status: true,

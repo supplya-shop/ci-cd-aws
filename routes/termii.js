@@ -5,6 +5,7 @@ const {
   sendCustomerOrderCancelledNotification,
   sendMigrationNotification,
   sendOrderCancellationSMS,
+  sendUpdateOrderStatusSMS,
 } = require("../service/TermiiService");
 const express = require("express");
 const router = express.Router();
@@ -60,6 +61,37 @@ const handleSendOrderCancelledSMS = async (req, res) => {
     res.status(StatusCodes.OK).json({
       status: true,
       message: "Order cancellation SMS sent successfully.",
+      data: response,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
+
+const handleSendUpdateOrderStatusSMS = async (req, res) => {
+  try {
+    const { phoneNumber, firstName, orderId, orderStatus } = req.body;
+
+    if (!phoneNumber || !firstName || !orderId || !orderStatus) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        status: false,
+        message:
+          "Phone number, first name, order ID, and order status are required.",
+      });
+    }
+
+    const response = await sendUpdateOrderStatusSMS(
+      phoneNumber,
+      firstName,
+      orderId,
+      orderStatus
+    );
+    res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Order status update SMS sent successfully.",
       data: response,
     });
   } catch (error) {
@@ -198,5 +230,6 @@ router.post(
   "/send/template/order-cancelled",
   handleSendCustomerOrderCancelledNotification
 );
-router.post("/send/sms/order-cancelled", handleSendOrderCancelledSMS);
+router.post("/sms/send/order/cancelled", handleSendOrderCancelledSMS);
+router.post("/sms/send/order/status", handleSendUpdateOrderStatusSMS);
 module.exports = router;
