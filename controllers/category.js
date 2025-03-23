@@ -132,9 +132,7 @@ const getCategoryById = async (req, res) => {
     const categoryId = req.params.categoryId;
     const category = await Category.findById(categoryId).populate(
       "parentCategory",
-      "name",
-      "homepageDisplay",
-      "status"
+      "name"
     );
 
     if (!category) {
