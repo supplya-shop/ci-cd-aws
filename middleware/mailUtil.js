@@ -3010,13 +3010,12 @@ const sendCustomerOrderCancelledMail = async (
                           <tr>
                             <td style="color: #153643">
                             <p>Hi ${order.user.firstName},</p>
-                            <p>Unfortunately, your order <strong>${
+                            <p>Unfortunately, your order with the ID: <strong>${
                               order.orderId
                             }</strong> has been cancelled for the following reason.</p>
-                            <br>
     <p> <strong>${cancellationReason}</strong></p>
     <p>We apologize for any inconvenience this may have caused.</p>
-    <p>If you need assistance, please contact our support team.</p>. View your order details below:
+    <p>If you need assistance, please contact our support team.</p> View your order details below:
                               </p>
                             </td>
                           </tr>
