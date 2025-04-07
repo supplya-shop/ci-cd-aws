@@ -102,6 +102,37 @@ const handleSendUpdateOrderStatusSMS = async (req, res) => {
   }
 };
 
+// const handleSendUpdateOrderStatusSMS = async (req, res) => {
+//   try {
+//     const { phoneNumber, firstName, orderId, orderStatus } = req.body;
+
+//     if (!phoneNumber || !firstName || !orderId || !orderStatus) {
+//       return res.status(StatusCodes.BAD_REQUEST).json({
+//         status: false,
+//         message:
+//           "Phone number, first name, order ID, and order status are required.",
+//       });
+//     }
+
+//     const response = await sendUpdateOrderStatusSMS(
+//       phoneNumber,
+//       firstName,
+//       orderId,
+//       orderStatus
+//     );
+//     res.status(StatusCodes.OK).json({
+//       status: true,
+//       message: "Order status update SMS sent successfully.",
+//       data: response,
+//     });
+//   } catch (error) {
+//     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+//       status: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 const handleSendOrderNotification = async (req, res) => {
   try {
     const { phoneNumber, firstName, orderId, timeFrame } = req.body;
@@ -232,4 +263,5 @@ router.post(
 );
 router.post("/sms/send/order/cancelled", handleSendOrderCancelledSMS);
 router.post("/sms/send/order/status", handleSendUpdateOrderStatusSMS);
+// router.post("/sms/send/order", sendVendorNewOrderSMS);
 module.exports = router;

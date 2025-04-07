@@ -31,31 +31,36 @@ const getUserNotifications = async (req, res) => {
   const startIndex = (page - 1) * limit;
 
   try {
-    const [notifications, totalCount] = await Promise.all([
-      Notification.find({ userId })
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(startIndex),
-      Notification.countDocuments({ userId }),
-    ]);
+    const [notifications, totalNotificationsCount, unreadNotifications] =
+      await Promise.all([
+        Notification.find({ userId })
+          .sort({ createdAt: -1 })
+          .limit(limit)
+          .skip(startIndex),
+        Notification.countDocuments({ userId }),
+        Notification.find({ userId, read: false }).sort({ createdAt: -1 }),
+      ]);
 
     if (notifications.length === 0) {
       return res.status(404).json({
         status: false,
         message: "No notifications found",
         data: [],
+        unread: [],
+        totalCount: 0,
       });
     }
 
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = Math.ceil(totalNotificationsCount / limit);
 
     res.status(200).json({
       status: true,
       message: "Notifications retrieved successfully",
       data: notifications,
+      unread: unreadNotifications,
       currentPage: page,
       totalPages,
-      totalCount,
+      totalNotificationsCount,
     });
   } catch (error) {
     res.status(500).json({
