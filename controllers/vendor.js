@@ -787,7 +787,7 @@ const getStoreBanners = async (req, res) => {
 
 const patchStoreBanners = async (req, res) => {
   try {
-    const vendorId = req.user.userid; // Assume auth middleware sets req.user
+    const vendorId = req.user.userid;
     const { banners } = req.body;
 
     if (!Array.isArray(banners)) {
@@ -851,6 +851,51 @@ const patchStoreBanners = async (req, res) => {
   }
 };
 
+const uploadHomepageBanner = async (req, res) => {
+  try {
+    const { tag, image, description, redirectUrl } = req.body;
+    const userId = req.user?.userid;
+    const userRole = req.user?.role;
+
+    if (!tag || !image) {
+      return res.status(400).json({ error: "Tag and image are required." });
+    }
+
+    if (
+      ![
+        "HeroBanner",
+        "SkyscraperBanner",
+        "FooterBanner",
+        "SpecialDealsBanner",
+      ].includes(tag)
+    ) {
+      return res.status(400).json({ error: "Invalid banner tag provided." });
+    }
+
+    const bannerDoc = {
+      tag,
+      image,
+      description: description || "",
+      redirectUrl: redirectUrl || null,
+    };
+
+    if (userRole === "vendor") {
+      bannerDoc.vendor = userId; // for tracking ownership
+    }
+
+    const created = await Media.create(bannerDoc);
+
+    return res.status(201).json({
+      status: true,
+      message: "Homepage banner uploaded successfully.",
+      data: created,
+    });
+  } catch (error) {
+    console.error("uploadHomepageBanner error:", error);
+    return res.status(500).json({ error: "Failed to upload homepage banner." });
+  }
+};
+
 module.exports = {
   createVendor,
   checkStoreNameAvailability,
@@ -863,4 +908,5 @@ module.exports = {
   uploadStoreBanners,
   getStoreBanners,
   patchStoreBanners,
+  uploadHomepageBanner,
 };

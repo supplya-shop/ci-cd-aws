@@ -1,156 +1,271 @@
 const Media = require("../models/Media");
 const { StatusCodes } = require("http-status-codes");
 
-// Create Media
-const createMedia = async (req, res) => {
+const uploadHomepageBanners = async (req, res) => {
   try {
-    const { tag, image, description } = req.body;
-    if (!image) {
+    const userId = req.user?.userid;
+    console.log("User ID:", userId);
+    const { banners } = req.body;
+
+    if (!userId) {
       return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ status: false, message: "Image is required." });
+        .status(400)
+        .json({ status: false, message: "User ID missing from request." });
     }
 
-    const newMedia = new Media({ tag, image, description });
-    await newMedia.save();
+    if (!Array.isArray(banners) || banners.length < 1 || banners.length > 3) {
+      return res.status(400).json({
+        status: false,
+        message: "You must upload between 1 and 3 homepage banners.",
+      });
+    }
 
-    return res.status(StatusCodes.CREATED).json({
+    const allowedTags = [
+      "HeroBanner",
+      "SkyscraperBanner",
+      "FooterBanner",
+      "SpecialDealsBanner",
+    ];
+
+    // Validate all banner tags
+    const invalidTags = banners
+      .map((b) => b.tag)
+      .filter((tag) => !allowedTags.includes(tag));
+
+    if (invalidTags.length > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Invalid tag(s): ${invalidTags.join(
+          ", "
+        )}. Allowed tags: ${allowedTags.join(", ")}`,
+      });
+    }
+
+    // Prepare banner documents
+    const bannerDocs = banners.map((b) => ({
+      tag: b.tag,
+      image: b.image,
+      description: b.description || "",
+      redirectUrl: b.redirectUrl || null,
+      vendor: req.user.role === "vendor" ? userId : undefined,
+    }));
+
+    const saved = await Media.insertMany(bannerDocs, { runValidators: true });
+
+    return res.status(201).json({
       status: true,
-      message: "Media created successfully",
-      data: newMedia,
+      message: "Homepage banners uploaded successfully.",
+      data: saved,
     });
   } catch (error) {
-    console.error("Error creating media:", error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    console.error("uploadHomepageBanners error:", error);
+    return res.status(500).json({
       status: false,
-      message: "Failed to create media.",
+      message: "Failed to upload homepage banners.",
     });
   }
 };
 
-// Get All Media (with pagination & search)
-const getAllMedia = async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+// Get banners by tag (e.g., HeroBanner)
+const getBannersByTag = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const banners = await Media.find({ tag });
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: `Banners fetched for tag: ${tag}`,
+      data: banners,
+    });
+  } catch (error) {
+    console.error("getBannersByTag error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch banners by tag.",
+    });
+  }
+};
+
+// Get banners uploaded by a specific user
+const getBannersByUser = async (req, res) => {
+  try {
+    const userId = req.user?.userid;
+    const banners = await Media.find({ vendor: userId });
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "User banners fetched successfully.",
+      data: banners,
+    });
+  } catch (error) {
+    console.error("getBannersByUser error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch user banners.",
+    });
+  }
+};
+
+// Patch update a single banner
+const updateBanner = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const userId = req.user?.userid;
+    const userRole = req.user?.role;
+
+    const banner = await Media.findById(id);
+    if (!banner) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Banner not found.",
+      });
+    }
+
+    if (userRole !== "admin" && banner.vendor?.toString() !== userId) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        status: false,
+        message: "Not authorized to update this banner.",
+      });
+    }
+
+    const updated = await Media.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Banner updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("updateBanner error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to update banner.",
+    });
+  }
+};
+
+const getAllBanners = async (req, res) => {
+  const { page = 1, limit = 15, tag } = req.query;
   const skip = (page - 1) * limit;
-  const searchQuery = req.query.search || "";
 
   try {
-    let filter = {};
-    if (searchQuery) {
-      filter.$or = [
-        { tag: { $regex: searchQuery, $options: "i" } },
-        { description: { $regex: searchQuery, $options: "i" } },
-      ];
+    const query = {};
+    if (tag) {
+      query.tag = { $regex: new RegExp(tag, "i") };
     }
 
-    const totalMedia = await Media.countDocuments(filter);
-    const mediaItems = await Media.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ _id: -1 });
+    const [banners, totalCount] = await Promise.all([
+      Media.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Media.countDocuments(query),
+    ]);
 
     return res.status(StatusCodes.OK).json({
       status: true,
       message: "Media fetched successfully",
-      data: mediaItems,
-      currentPage: page,
-      totalPages: Math.ceil(totalMedia / limit),
-      totalMedia,
+      data: banners,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalCount / limit),
+      totalMedia: totalCount,
     });
   } catch (error) {
-    console.error("Error fetching media:", error);
+    console.error("getAllBanners error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to fetch media.",
+      message: "Failed to fetch media",
     });
   }
 };
 
-// Get Single Media by ID
-const getMediaById = async (req, res) => {
+// ✅ Get only admin/system homepage banners (those with no vendor field)
+const getAdminHomepageBanners = async (req, res) => {
+  const { page = 1, limit = 15, tag } = req.query;
+  const skip = (page - 1) * limit;
+
   try {
-    const media = await Media.findById(req.params.id);
-    if (!media) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: false,
-        message: "Media not found",
-      });
+    const query = {
+      vendor: { $exists: false },
+    };
+    if (tag) {
+      query.tag = { $regex: new RegExp(tag, "i") };
     }
+
+    const [banners, totalCount] = await Promise.all([
+      Media.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Media.countDocuments(query),
+    ]);
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Media fetched successfully",
-      data: media,
+      message: "Admin homepage banners fetched successfully",
+      data: banners,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(totalCount / limit),
+      totalMedia: totalCount,
     });
   } catch (error) {
-    console.error("Error fetching media by ID:", error);
+    console.error("getAdminHomepageBanners error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to fetch media.",
+      message: "Failed to fetch admin banners",
     });
   }
 };
 
-// Update Media
-const updateMedia = async (req, res) => {
+// Delete one or all banners
+const deleteBanner = async (req, res) => {
   try {
-    const { tag, image, description } = req.body;
-    const updatedMedia = await Media.findByIdAndUpdate(
-      req.params.id,
-      { tag, image, description },
-      { new: true, runValidators: true }
-    );
+    const { id } = req.params;
+    const userId = req.user?.userid;
+    const userRole = req.user?.role;
 
-    if (!updatedMedia) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: false,
-        message: "Media not found",
-      });
+    let deleted;
+    if (id === "all") {
+      const query = userRole === "admin" ? {} : { vendor: userId };
+      deleted = await Media.deleteMany(query);
+    } else {
+      const banner = await Media.findById(id);
+      if (!banner) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          status: false,
+          message: "Banner not found.",
+        });
+      }
+      if (userRole !== "admin" && banner.vendor?.toString() !== userId) {
+        return res.status(StatusCodes.FORBIDDEN).json({
+          status: false,
+          message: "Not authorized to delete this banner.",
+        });
+      }
+      deleted = await Media.findByIdAndDelete(id);
     }
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Media updated successfully",
-      data: updatedMedia,
+      message: "Banner(s) deleted successfully.",
     });
   } catch (error) {
-    console.error("Error updating media:", error);
+    console.error("deleteBanner error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to update media.",
-    });
-  }
-};
-
-// Delete Media
-const deleteMedia = async (req, res) => {
-  try {
-    const deletedMedia = await Media.findByIdAndDelete(req.params.id);
-    if (!deletedMedia) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        status: false,
-        message: "Media not found",
-      });
-    }
-
-    return res.status(StatusCodes.OK).json({
-      status: true,
-      message: "Media deleted successfully",
-    });
-  } catch (error) {
-    console.error("Error deleting media:", error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      status: false,
-      message: "Failed to delete media.",
+      message: "Failed to delete banner(s).",
     });
   }
 };
 
 module.exports = {
-  createMedia,
-  getAllMedia,
-  getMediaById,
-  updateMedia,
-  deleteMedia,
+  uploadHomepageBanners,
+  getBannersByTag,
+  getBannersByUser,
+  getAllBanners,
+  getAdminHomepageBanners,
+  updateBanner,
+  deleteBanner,
 };

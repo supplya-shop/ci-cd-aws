@@ -12,6 +12,7 @@ const {
   uploadStoreBanners,
   getStoreBanners,
   patchStoreBanners,
+  uploadHomepageBanner,
 } = require("../controllers/vendor");
 
 const {
@@ -30,10 +31,16 @@ router.patch("/order/:orderId", authenticateUser, updateOrderStatus);
 router.patch("/store-banners", patchStoreBanners);
 router.delete("/:id", authenticateUser, deleteVendor);
 router.post(
-  "/banners",
+  "/store-banners",
   authenticateUser,
   rolesAllowed("vendor"),
   uploadStoreBanners
+);
+router.post(
+  "/homepage-banners",
+  authenticateUser,
+  rolesAllowed(["vendor", "admin"]),
+  uploadHomepageBanner
 );
 
 module.exports = router;
