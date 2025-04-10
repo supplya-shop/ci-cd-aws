@@ -65,9 +65,24 @@ const sendOrderCancellationSMS = async (
   orderId,
   cancellationReason
 ) => {
-  const message = `Hello ${userFirstName}, unfortunately, your order ${orderId} has been cancelled due to: ${cancellationReason}. We apologize for any inconvenience. Contact us for assistance. - Supplya`;
+  const message = `Hello ${userFirstName}, unfortunately, your order ${orderId} has been cancelled due to: ${cancellationReason}. We apologize for any inconvenience. Contact us for assistance. - Powered by Supplya`;
   await sendSMSNotification(phoneNumber, message);
 };
+
+const sendCustomerNewOrderSMS = async (phoneNumber, userFirstName, orderId) => {
+  const message = `Hello ${userFirstName}, your order ${orderId} has been received successfully. The vendor will contact you within 30 minutes. Thank you. - Powered by Supplya`;
+  await sendSMSNotification(phoneNumber, message);
+};
+
+// const sendVendorNewOrderSMS = async (
+//   phoneNumber,
+//   vendorFirstName,
+//   orderId,
+//   websiteUrl = `https://supplya.shop`
+// ) => {
+//   const message = `Hello ${vendorFirstName}, a customer just placed an order with ID : ${orderId}. Please login at ${websiteUrl} to fulfil the order. Thank you. - Powered by Supplya`;
+//   await sendSMSNotification(phoneNumber, message);
+// };
 
 const sendUpdateOrderStatusSMS = async (
   phoneNumber,
@@ -186,4 +201,6 @@ module.exports = {
   sendOrderCancellationSMS,
   sendUpdateOrderStatusSMS,
   sendMigrationNotification,
+  sendCustomerNewOrderSMS,
+  // sendVendorNewOrderSMS,
 };

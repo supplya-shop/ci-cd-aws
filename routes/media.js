@@ -1,18 +1,30 @@
 const express = require("express");
 const {
-  createMedia,
-  getAllMedia,
-  getMediaById,
-  updateMedia,
-  deleteMedia,
+  uploadHomepageBanners,
+  getBannersByTag,
+  getBannersByUser,
+  getAllBanners,
+  getAdminHomepageBanners,
+  updateBanner,
+  deleteBanner,
 } = require("../controllers/media");
 
 const router = express.Router();
+const {
+  authenticateUser,
+  rolesAllowed,
+} = require("../middleware/authenticateUser");
 
-router.post("/", createMedia);
-router.get("/", getAllMedia);
-router.get("/:id", getMediaById);
-router.put("/:id", updateMedia);
-router.delete("/:id", deleteMedia);
+router.post(
+  "/banners/homepage-banners",
+  authenticateUser,
+  uploadHomepageBanners
+);
+router.get("/banners/tag", getBannersByTag);
+router.get("/banners/:id", getBannersByUser);
+router.get("/banners/all", getAllBanners);
+router.get("/admin/banners/homepage", getAdminHomepageBanners);
+router.put("/banners/:id", updateBanner);
+router.delete("/:id", deleteBanner);
 
 module.exports = router;
