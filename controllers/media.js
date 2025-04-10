@@ -4,7 +4,6 @@ const { StatusCodes } = require("http-status-codes");
 const uploadHomepageBanners = async (req, res) => {
   try {
     const userId = req.user?.userid;
-    console.log("User ID:", userId);
     const { banners } = req.body;
 
     if (!userId) {
