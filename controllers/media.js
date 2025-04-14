@@ -149,28 +149,43 @@ const updateBanner = async (req, res) => {
 
 // ✅ Get all banners with optional section search + pagination
 const getAllBanners = async (req, res) => {
-  const { page = 1, limit = 15, section } = req.query;
-  const skip = (page - 1) * limit;
-
   try {
-    const query = {};
-    if (section) {
-      query.section = { $regex: new RegExp(section, "i") };
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const skip = (page - 1) * limit;
+    const searchQuery = req.query.search || "";
+
+    // Build filter with optional search
+    let filter = {};
+    if (searchQuery) {
+      const searchRegex = new RegExp(searchQuery.trim(), "i"); // case-insensitive
+      filter = {
+        $or: [
+          { section: { $regex: searchRegex } },
+          { platform: { $regex: searchRegex } },
+          { description: { $regex: searchRegex } },
+        ],
+      };
     }
 
     const [banners, totalCount] = await Promise.all([
-      Media.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      Media.countDocuments(query),
+      Media.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Media.countDocuments(filter),
     ]);
+
+    if (banners.length === 0) {
+      return res.status(StatusCodes.OK).json({
+        status: false,
+        message: "No banners found",
+        data: [],
+      });
+    }
 
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: "Media fetched successfully",
+      message: "Banners fetched successfully",
       data: banners,
-      currentPage: parseInt(page),
+      currentPage: page,
       totalPages: Math.ceil(totalCount / limit),
       totalMedia: totalCount,
     });
@@ -178,7 +193,7 @@ const getAllBanners = async (req, res) => {
     console.error("getAllBanners error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to fetch media",
+      message: "Failed to fetch banners",
     });
   }
 };
