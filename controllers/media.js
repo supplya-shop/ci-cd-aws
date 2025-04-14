@@ -19,33 +19,36 @@ const uploadHomepageBanners = async (req, res) => {
       });
     }
 
-    const allowedTags = [
+    const allowedSections = [
       "HeroBanner",
       "SkyscraperBanner",
       "FooterBanner",
       "SpecialDealsBanner",
+      "CategoryTopBanner",
+      "CategoryBottomBanner",
+      "HomeMobileTopBanner",
+      "HomeMobileMiddleBanner",
     ];
 
-    // Validate all banner tags
-    const invalidTags = banners
-      .map((b) => b.tag)
-      .filter((tag) => !allowedTags.includes(tag));
+    const invalidSections = banners
+      .map((b) => b.section)
+      .filter((section) => !allowedSections.includes(section));
 
-    if (invalidTags.length > 0) {
+    if (invalidSections.length > 0) {
       return res.status(400).json({
         status: false,
-        message: `Invalid tag(s): ${invalidTags.join(
+        message: `Invalid section(s): ${invalidSections.join(
           ", "
-        )}. Allowed tags: ${allowedTags.join(", ")}`,
+        )}. Allowed sections: ${allowedSections.join(", ")}`,
       });
     }
 
-    // Prepare banner documents
     const bannerDocs = banners.map((b) => ({
-      tag: b.tag,
+      section: b.section,
       image: b.image,
       description: b.description || "",
       redirectUrl: b.redirectUrl || null,
+      platform: b.platform || "web",
       vendor: req.user.role === "vendor" ? userId : undefined,
     }));
 
@@ -58,33 +61,32 @@ const uploadHomepageBanners = async (req, res) => {
     });
   } catch (error) {
     console.error("uploadHomepageBanners error:", error);
-    return res.status(500).json({
-      status: false,
-      message: "Failed to upload homepage banners.",
-    });
+    return res
+      .status(500)
+      .json({ status: false, message: "Failed to upload homepage banners." });
   }
 };
 
-// Get banners by tag (e.g., HeroBanner)
-const getBannersByTag = async (req, res) => {
+// ✅ Get banners by section (e.g., HeroBanner)
+const getBannersBySection = async (req, res) => {
   try {
-    const { tag } = req.params;
-    const banners = await Media.find({ tag });
+    const { section } = req.params;
+    const banners = await Media.find({ section });
     return res.status(StatusCodes.OK).json({
       status: true,
-      message: `Banners fetched for tag: ${tag}`,
+      message: `Banners fetched for section: ${section}`,
       data: banners,
     });
   } catch (error) {
-    console.error("getBannersByTag error:", error);
+    console.error("getBannersBySection error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
-      message: "Failed to fetch banners by tag.",
+      message: "Failed to fetch banners by section.",
     });
   }
 };
 
-// Get banners uploaded by a specific user
+// ✅ Get banners uploaded by a specific user (vendor)
 const getBannersByUser = async (req, res) => {
   try {
     const userId = req.user?.userid;
@@ -103,7 +105,7 @@ const getBannersByUser = async (req, res) => {
   }
 };
 
-// Patch update a single banner
+// ✅ Patch update a single banner
 const updateBanner = async (req, res) => {
   try {
     const { id } = req.params;
@@ -145,14 +147,15 @@ const updateBanner = async (req, res) => {
   }
 };
 
+// ✅ Get all banners with optional section search + pagination
 const getAllBanners = async (req, res) => {
-  const { page = 1, limit = 15, tag } = req.query;
+  const { page = 1, limit = 15, section } = req.query;
   const skip = (page - 1) * limit;
 
   try {
     const query = {};
-    if (tag) {
-      query.tag = { $regex: new RegExp(tag, "i") };
+    if (section) {
+      query.section = { $regex: new RegExp(section, "i") };
     }
 
     const [banners, totalCount] = await Promise.all([
@@ -182,15 +185,15 @@ const getAllBanners = async (req, res) => {
 
 // ✅ Get only admin/system homepage banners (those with no vendor field)
 const getAdminHomepageBanners = async (req, res) => {
-  const { page = 1, limit = 15, tag } = req.query;
+  const { page = 1, limit = 15, section } = req.query;
   const skip = (page - 1) * limit;
 
   try {
     const query = {
       vendor: { $exists: false },
     };
-    if (tag) {
-      query.tag = { $regex: new RegExp(tag, "i") };
+    if (section) {
+      query.section = { $regex: new RegExp(section, "i") };
     }
 
     const [banners, totalCount] = await Promise.all([
@@ -261,7 +264,7 @@ const deleteBanner = async (req, res) => {
 
 module.exports = {
   uploadHomepageBanners,
-  getBannersByTag,
+  getBannersBySection,
   getBannersByUser,
   getAllBanners,
   getAdminHomepageBanners,
