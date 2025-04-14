@@ -20,9 +20,9 @@ router.post(
   authenticateUser,
   uploadHomepageBanners
 );
+router.get("/banners/all", getAllBanners);
 router.get("/banners/section", getBannersBySection);
 router.get("/banners/:id", getBannersByUser);
-router.get("/banners/all", getAllBanners);
 router.get("/admin/banners/homepage", getAdminHomepageBanners);
 router.put("/banners/:id", updateBanner);
 router.delete("/:id", deleteBanner);
