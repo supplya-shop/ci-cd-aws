@@ -716,60 +716,65 @@ const processReferralReward = async (order, rewardPercentage) => {
 const uploadStoreBanners = async (req, res) => {
   try {
     const vendorId = req.user?.userid;
-    console.log("Vendor ID from request:", vendorId);
-
     if (!vendorId) {
       return res
         .status(400)
-        .json({ error: "Vendor ID missing from request user." });
+        .json({ status: false, message: "Vendor ID missing from request." });
     }
 
     const banners = req.body.banners;
 
-    if (!Array.isArray(banners) || banners.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "At least one banner is required." });
+    if (!Array.isArray(banners) || banners.length < 1 || banners.length > 3) {
+      return res.status(400).json({
+        status: false,
+        message: "You must upload between 1 and 3 store banners.",
+      });
     }
 
-    // Optional: Check if vendor already has 3 banners
     const existingBannerCount = await Media.countDocuments({
-      tag: "StoreBanner",
+      section: "StoreBanner",
       vendor: vendorId,
     });
 
     if (existingBannerCount + banners.length > 3) {
       return res.status(400).json({
-        error: `You can only upload up to 3 store banners. You currently have ${existingBannerCount}.`,
+        status: false,
+        message: `You can only upload up to 3 store banners. You currently have ${existingBannerCount}.`,
       });
     }
 
-    // Prepare banner documents
     const bannerDocs = banners.map((b) => ({
-      tag: "StoreBanner",
+      section: "StoreBanner",
       image: b.image,
       description: b.description || "",
+      platform: b.platform || "web",
       vendor: vendorId,
+      redirectUrl: b.redirectUrl || null,
     }));
 
-    console.log("Creating banners for vendor:", vendorId);
-    console.log("Banner payload:", bannerDocs);
+    const saved = await Media.insertMany(bannerDocs, { runValidators: true });
 
-    await Media.insertMany(bannerDocs, { runValidators: true });
-
-    return res
-      .status(201)
-      .json({ message: "Store banners created successfully." });
+    return res.status(201).json({
+      status: true,
+      message: "Store banners created successfully.",
+      data: saved,
+    });
   } catch (error) {
-    console.error("Error creating store banners:", error);
-    return res.status(500).json({ error: "Failed to create store banners." });
+    console.error("uploadStoreBanners error:", error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Failed to create store banners." });
   }
 };
 
+// ✅ Get store banners for current vendor
 const getStoreBanners = async (req, res) => {
   try {
     const vendorId = req.user.userid;
-    const banners = await Media.find({ vendor: vendorId, tag: "StoreBanner" });
+    const banners = await Media.find({
+      vendor: vendorId,
+      section: "StoreBanner",
+    });
 
     return res.status(StatusCodes.OK).json({
       status: true,
@@ -785,19 +790,13 @@ const getStoreBanners = async (req, res) => {
   }
 };
 
+// ✅ Selective PATCH update or create store banners (max 3)
 const patchStoreBanners = async (req, res) => {
   try {
     const vendorId = req.user.userid;
     const { banners } = req.body;
 
-    if (!Array.isArray(banners)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        status: false,
-        message: "'banners' must be an array of banner objects",
-      });
-    }
-
-    if (banners.length === 0 || banners.length > 3) {
+    if (!Array.isArray(banners) || banners.length < 1 || banners.length > 3) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
         message: "You must submit between 1 and 3 store banners",
@@ -813,16 +812,18 @@ const patchStoreBanners = async (req, res) => {
       }
 
       const query = {
-        tag: "StoreBanner",
+        section: "StoreBanner",
         vendor: vendorId,
         image: banner.image,
       };
+
       const update = {
-        description: banner.description || "",
-        redirectUrl: banner.redirectUrl || "",
-        tag: "StoreBanner",
-        vendor: vendorId,
+        section: "StoreBanner",
         image: banner.image,
+        description: banner.description || "",
+        redirectUrl: banner.redirectUrl || null,
+        vendor: vendorId,
+        platform: banner.platform || "web",
       };
 
       await Media.findOneAndUpdate(query, update, {
@@ -833,7 +834,7 @@ const patchStoreBanners = async (req, res) => {
     }
 
     const updatedBanners = await Media.find({
-      tag: "StoreBanner",
+      section: "StoreBanner",
       vendor: vendorId,
     });
 
@@ -843,56 +844,11 @@ const patchStoreBanners = async (req, res) => {
       data: updatedBanners,
     });
   } catch (error) {
-    console.error("Error updating store banners:", error);
+    console.error("patchStoreBanners error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       status: false,
       message: "Internal server error",
     });
-  }
-};
-
-const uploadHomepageBanner = async (req, res) => {
-  try {
-    const { tag, image, description, redirectUrl } = req.body;
-    const userId = req.user?.userid;
-    const userRole = req.user?.role;
-
-    if (!tag || !image) {
-      return res.status(400).json({ error: "Tag and image are required." });
-    }
-
-    if (
-      ![
-        "HeroBanner",
-        "SkyscraperBanner",
-        "FooterBanner",
-        "SpecialDealsBanner",
-      ].includes(tag)
-    ) {
-      return res.status(400).json({ error: "Invalid banner tag provided." });
-    }
-
-    const bannerDoc = {
-      tag,
-      image,
-      description: description || "",
-      redirectUrl: redirectUrl || null,
-    };
-
-    if (userRole === "vendor") {
-      bannerDoc.vendor = userId; // for tracking ownership
-    }
-
-    const created = await Media.create(bannerDoc);
-
-    return res.status(201).json({
-      status: true,
-      message: "Homepage banner uploaded successfully.",
-      data: created,
-    });
-  } catch (error) {
-    console.error("uploadHomepageBanner error:", error);
-    return res.status(500).json({ error: "Failed to upload homepage banner." });
   }
 };
 
@@ -908,5 +864,4 @@ module.exports = {
   uploadStoreBanners,
   getStoreBanners,
   patchStoreBanners,
-  uploadHomepageBanner,
 };

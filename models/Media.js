@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 
 const mediaSchema = mongoose.Schema(
   {
+    platform: {
+      type: String,
+      required: true,
+      enum: ["web", "mobile"],
+    },
     tag: {
       type: String,
       required: true,
@@ -12,6 +17,10 @@ const mediaSchema = mongoose.Schema(
         "SkyscraperBanner",
         "FooterBanner",
         "SpecialDealsBanner",
+        "CategoryTopBanner",
+        "CategoryBottomBanner",
+        "HomeMobileTopBanner",
+        "HomeMobileMiddleBanner",
       ],
     },
     image: {

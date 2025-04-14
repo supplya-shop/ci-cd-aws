@@ -36,11 +36,5 @@ router.post(
   rolesAllowed("vendor"),
   uploadStoreBanners
 );
-router.post(
-  "/homepage-banners",
-  authenticateUser,
-  rolesAllowed(["vendor", "admin"]),
-  uploadHomepageBanner
-);
 
 module.exports = router;

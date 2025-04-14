@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   uploadHomepageBanners,
-  getBannersByTag,
+  getBannersBySection,
   getBannersByUser,
   getAllBanners,
   getAdminHomepageBanners,
@@ -20,7 +20,7 @@ router.post(
   authenticateUser,
   uploadHomepageBanners
 );
-router.get("/banners/tag", getBannersByTag);
+router.get("/banners/section", getBannersBySection);
 router.get("/banners/:id", getBannersByUser);
 router.get("/banners/all", getAllBanners);
 router.get("/admin/banners/homepage", getAdminHomepageBanners);
