@@ -8,7 +8,7 @@ const mediaSchema = mongoose.Schema(
       required: true,
       enum: ["web", "mobile"],
     },
-    tag: {
+    section: {
       type: String,
       required: true,
       enum: [
