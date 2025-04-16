@@ -111,6 +111,34 @@ const getBannersByUser = async (req, res) => {
   }
 };
 
+// ✅ Get a single banner by ID
+const getBannerById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const banner = await Media.findById(id);
+
+    if (!banner) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: false,
+        message: "Banner not found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      status: true,
+      message: "Banner fetched successfully",
+      data: banner,
+    });
+  } catch (error) {
+    console.error("getBannerById error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: false,
+      message: "Failed to fetch banner",
+    });
+  }
+};
+
 // ✅ Patch update a single banner
 const updateBanner = async (req, res) => {
   try {
@@ -287,6 +315,7 @@ module.exports = {
   uploadHomepageBanners,
   getBannersBySection,
   getBannersByUser,
+  getBannerById,
   getAllBanners,
   getAdminHomepageBanners,
   updateBanner,

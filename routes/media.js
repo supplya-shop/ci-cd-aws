@@ -4,6 +4,7 @@ const {
   getBannersBySection,
   getBannersByUser,
   getAllBanners,
+  getBannerById,
   getAdminHomepageBanners,
   updateBanner,
   deleteBanner,
@@ -22,7 +23,8 @@ router.post(
 );
 router.get("/banners/all", getAllBanners);
 router.get("/banners/section", getBannersBySection);
-router.get("/banners/:id", getBannersByUser);
+router.get("/banners/:id", getBannerById);
+router.get("/banners/user/:id", getBannersByUser);
 router.get("/admin/banners/homepage", getAdminHomepageBanners);
 router.put("/banners/:id", updateBanner);
 router.delete("/:id", deleteBanner);
