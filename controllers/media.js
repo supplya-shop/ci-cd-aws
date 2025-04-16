@@ -20,8 +20,14 @@ const uploadHomepageBanners = async (req, res) => {
     }
 
     const allowedSections = [
+      "TopBarBanner",
       "HeroBanner",
-      "SkyscraperBanner",
+      "SpecialBanner",
+      "PopularDealsBanner",
+      "FlashSalesBanner",
+      "BillboardBanner",
+      "SkyscraperLeftBanner",
+      "SkyscraperRightBanner",
       "FooterBanner",
       "SpecialDealsBanner",
       "CategoryTopBanner",
