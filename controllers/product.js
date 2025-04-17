@@ -2,6 +2,7 @@ const { StatusCodes } = require("http-status-codes");
 const Product = require("../models/Product");
 const RecentlyViewed = require("../models/RecentlyViewed");
 const User = require("../models/User");
+const Media = require("../models/Media");
 const Category = require("../models/Category");
 const Order = require("../models/Order");
 // const userController = require("../controllers/user");
@@ -746,7 +747,7 @@ const getProductsByStoreName = async (req, res) => {
     const { storeName } = req.params;
 
     const vendor = await User.findOne({ storeName }).select(
-      "firstName lastName email phoneNumber storeName storeUrl address city state country"
+      "firstName lastName email phoneNumber storeName storeUrl address city state country _id"
     );
 
     if (!vendor) {
@@ -755,6 +756,12 @@ const getProductsByStoreName = async (req, res) => {
         message: `No vendor found with this store name.`,
       });
     }
+
+    // 🔍 Fetch vendor's store banners (max 3)
+    const storeBanners = await Media.find({
+      vendor: vendor._id,
+      section: "StoreBanner",
+    }).select("image description redirectUrl");
 
     // Build search filter
     let filter = { createdBy: vendor._id };
@@ -767,11 +774,9 @@ const getProductsByStoreName = async (req, res) => {
       ];
     }
 
-    // Get total matching products count
     const totalProducts = await Product.countDocuments(filter);
     const totalPages = Math.ceil(totalProducts / limit);
 
-    // Fetch paginated products
     const products = await Product.find(filter)
       .populate({
         path: "category",
@@ -791,7 +796,6 @@ const getProductsByStoreName = async (req, res) => {
       });
     }
 
-    // Get total order counts for each product
     const productOrderCounts = await Promise.all(
       products.map(async (product) => {
         const orderData = await Order.aggregate([
@@ -821,7 +825,6 @@ const getProductsByStoreName = async (req, res) => {
       })
     );
 
-    // Merge product order counts into response
     const productsWithOrderCounts = products.map((product) => {
       const orderCountData = productOrderCounts.find((item) =>
         item.productId.equals(product._id)
@@ -848,6 +851,7 @@ const getProductsByStoreName = async (req, res) => {
           city: vendor.city,
           state: vendor.state,
           country: vendor.country,
+          storeBanners,
         },
         products: productsWithOrderCounts,
       },
