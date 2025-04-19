@@ -747,7 +747,7 @@ const getProductsByStoreName = async (req, res) => {
     const { storeName } = req.params;
 
     const vendor = await User.findOne({ storeName }).select(
-      "firstName lastName email phoneNumber storeName storeUrl address city state country _id"
+      "firstName lastName email phoneNumber storeName storeUrl address city state country"
     );
 
     if (!vendor) {
