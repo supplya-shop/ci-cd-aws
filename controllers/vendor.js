@@ -609,17 +609,17 @@ const updateOrderStatus = async (req, res) => {
             )
           );
         }
-        if (order.appliedReferralCode) {
-          const result = await processReferralReward(order, 0.02);
-          if (result) {
-            notifications.push(
-              sendReferralRewardNotification(
-                result.referringUser,
-                result.reward
-              )
-            );
-          }
-        }
+        // if (order.appliedReferralCode) {
+        //   const result = await processReferralReward(order, 0.02);
+        //   if (result) {
+        //     notifications.push(
+        //       sendReferralRewardNotification(
+        //         result.referringUser,
+        //         result.reward
+        //       )
+        //     );
+        //   }
+        // }
         break;
       case "cancelled":
         if (!cancellationReason) {
@@ -687,31 +687,31 @@ const deleteVendor = async () => {
   }
 };
 
-const processReferralReward = async (order, rewardPercentage) => {
-  const referringUser = await User.findOne({
-    referralCode: order.appliedReferralCode,
-  });
+// const processReferralReward = async (order, rewardPercentage) => {
+//   const referringUser = await User.findOne({
+//     referralCode: order.appliedReferralCode,
+//   });
 
-  if (referringUser) {
-    const reward = order.totalPrice * rewardPercentage;
-    const wallet = await Wallet.findOne({ userId: referringUser._id });
+//   if (referringUser) {
+//     const reward = order.totalPrice * rewardPercentage;
+//     const wallet = await Wallet.findOne({ userId: referringUser._id });
 
-    wallet.balance += reward;
-    wallet.transactions.push({
-      type: "credit",
-      amount: reward,
-      description: `Referral reward for Order ID ${order.orderId}`,
-    });
+//     wallet.balance += reward;
+//     wallet.transactions.push({
+//       type: "credit",
+//       amount: reward,
+//       description: `Referral reward for Order ID ${order.orderId}`,
+//     });
 
-    await wallet.save();
+//     await wallet.save();
 
-    order.referralPayoutStatus = "completed";
-    await order.save();
+//     order.referralPayoutStatus = "completed";
+//     await order.save();
 
-    return { referringUser, reward };
-  }
-  return null;
-};
+//     return { referringUser, reward };
+//   }
+//   return null;
+// };
 
 const uploadStoreBanners = async (req, res) => {
   try {
