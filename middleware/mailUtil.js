@@ -69,7 +69,7 @@ const sendOTPMail = async (email, otp) => {
             "
           >
             <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              src="https://res.cloudinary.com/dav9x6svw/image/upload/v1715462691/supplya-assets/wqpdptp194zl1dikxpil.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -422,7 +422,7 @@ const resendOTPMail = async (email, otp) => {
             <td>
                 <div align="center" style="margin-top:30px; margin-bottom:30px;  display: flex; margin: 0 auto; background-color: #0199a4; width: 70%;">
                     <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              src="https://res.cloudinary.com/dav9x6svw/image/upload/v1715462691/supplya-assets/wqpdptp194zl1dikxpil.jpg"
               alt="Supplya-Logo"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -639,7 +639,7 @@ const sendConfirmationMail = async (email) => {
             "
           >
             <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              src="https://res.cloudinary.com/dav9x6svw/image/upload/v1715462691/supplya-assets/wqpdptp194zl1dikxpil.jpg"
               alt="Supplya-Logo"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -713,7 +713,7 @@ const sendConfirmationMail = async (email) => {
                                 margin: 0 auto;
                                 cursor: pointer;
                               "
-                              href="https://supplya-web.vercel.app/auth/sign-in"
+                              href="https://supplya.shop/#/auth/sign-in"
                               >Login</a
                             >
                           </td>
@@ -827,7 +827,7 @@ const newUserSignUpMail = async (email = null, phoneNumber = null) => {
             "
           >
             <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              src="https://res.cloudinary.com/dav9x6svw/image/upload/v1715462691/supplya-assets/wqpdptp194zl1dikxpil.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -979,7 +979,7 @@ const newVendorSignUpMail = async (email) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -1022,7 +1022,7 @@ const newVendorSignUpMail = async (email) => {
                                 color: #131417;
                               "
                             >
-                              New User Onboarded 🎊 
+                              New Vendor Onboarded 🎊 
                             </p>
                             <p
                               style="
@@ -1132,7 +1132,7 @@ const forgotPasswordMail = async (email, resetCode) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -1186,8 +1186,7 @@ const forgotPasswordMail = async (email, resetCode) => {
                                 line-height: 20px;
                               "
                             >
-                              You are receiving this email because you (or
-                              someone else) has requested a password reset for
+                              You are receiving this email because you requested a password reset for
                               your account.
                             </p>
                             <div
@@ -1368,7 +1367,7 @@ const forgotPasswordMail = async (email, resetCode) => {
                                 cursor: pointer;
                                 margin-top: 20px;
                               "
-                              href="https://supplya-web.vercel.app/auth/reset-password"
+                              href="https://supplya.shop/#/auth/reset-password"
                               >Reset Password</a
                             >
 
@@ -1380,7 +1379,7 @@ const forgotPasswordMail = async (email, resetCode) => {
                               "
                             >
                               If you did not request a password reset, please
-                              ignore this email.
+                              contact hi@supplya.shop immediately.
                             </p>
                           </td>
                         </tr>
@@ -1475,7 +1474,7 @@ const resetPasswordMail = async (email) => {
             "
           >
             <img
-              src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+              src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -1652,7 +1651,7 @@ const sendOrderSummaryMail = async (order) => {
               "
             >
               <img
-                src="https://i.postimg.cc/4HKm5g4g/Supplya-Logo-on-GBG.png"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -1820,7 +1819,6 @@ const sendOrderSummaryMail = async (order) => {
         </tr>
       </table>
     </body>
-  </html>
 </html>
 `,
   };
@@ -1868,26 +1866,6 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Registration successful</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -1912,7 +1890,7 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2079,7 +2057,6 @@ const sendCustomerOrderSummaryMail = async (order, user, email) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -2126,26 +2103,6 @@ const sendVendorOrderSummaryMail = async (order, user) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Registration successful</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -2170,7 +2127,7 @@ const sendVendorOrderSummaryMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2340,7 +2297,6 @@ const sendVendorOrderSummaryMail = async (order, user) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -2387,26 +2343,6 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Registration successful</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -2431,7 +2367,7 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2611,7 +2547,6 @@ const sendCustomerOrderConfirmedMail = async (order, user) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -2658,26 +2593,6 @@ const sendCustomerOrderPackagedMail = async (order, user) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Order packaged</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -2702,7 +2617,7 @@ const sendCustomerOrderPackagedMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -2879,7 +2794,6 @@ const sendCustomerOrderPackagedMail = async (order, user) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -2930,26 +2844,6 @@ const sendCustomerOrderCancelledMail = async (
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Order cancelled</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -2974,7 +2868,7 @@ const sendCustomerOrderCancelledMail = async (
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -3154,7 +3048,6 @@ const sendCustomerOrderCancelledMail = async (
       </table>
     </body>
   </html>
-</html>
 `,
   };
   try {
@@ -3204,26 +3097,6 @@ const sendCustomerOrderShippedMail = async (order, user) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Order shipped</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -3248,7 +3121,7 @@ const sendCustomerOrderShippedMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -3424,7 +3297,6 @@ const sendCustomerOrderShippedMail = async (order, user) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -3470,27 +3342,6 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
       background-color: #02555b;
     }
   </style>
-
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Order Delivered</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -3515,7 +3366,7 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -3699,7 +3550,6 @@ const sendCustomerOrderDeliveredMail = async (order, user) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -3746,26 +3596,6 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Registration successful</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -3790,7 +3620,7 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
               "
             >
               <img
-                src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+                src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
                 alt="Supplya-Logo-on-GBG"
                 style="text-align: left; width: 90px; margin-left: 60px"
               />
@@ -3971,7 +3801,6 @@ const sendVendorOrderDeliveredMail = async (order, user) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 
@@ -3985,7 +3814,7 @@ const sendReferralRewardNotification = async (referringUser, reward) => {
     subject: "You Earned a Referral Reward!",
     html: `
       <p>Hi ${referringUser.firstName},</p>
-      <p>Congratulations! You earned a reward of ₦${reward.toFixed(
+      <p>Congratulations! You just earned a reward of ₦${reward.toFixed(
         2
       )} for referring a user who successfully completed an order.</p>
       <p>Your reward has been credited to your wallet. Keep referring more friends to earn even more!</p>
@@ -4059,7 +3888,7 @@ const approveProductMail = async (vendorName, productName) => {
             "
           >
             <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -4239,7 +4068,7 @@ const sendMigratedCustomersMail = async (
             "
           >
             <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
+              src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
               alt="Supplya-Logo-on-GBG"
               style="text-align: left; width: 90px; margin-left: 70px"
             />
@@ -4405,26 +4234,6 @@ const contactMail = async (name, email, phone, subject, message) => {
     }
   </style>
 
-  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-  <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <title>Admin Order Summary</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-    </head>
-
-    <style>
-      a:hover {
-        background-color: #02555b;
-      }
-    </style>
-
     <body style="margin: 0; padding: 0; font-family: 'Lato', sans-serif">
       <table
         style="padding: 10px 20px"
@@ -4448,7 +4257,7 @@ const contactMail = async (name, email, phone, subject, message) => {
                 width: 70%;
               "
             >
-            <img src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg" alt="Supplya-Logo-on-GBG"
+            <img src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg" alt="Supplya Logo"
             style="position: absolute; top: 30px; left: 110px; width: 90px"/>
             </div>
             <table
@@ -4525,7 +4334,6 @@ const contactMail = async (name, email, phone, subject, message) => {
       </table>
     </body>
   </html>
-</html>
 `,
   };
 

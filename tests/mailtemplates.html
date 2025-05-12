@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-GB">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Registration successful</title>
+    <title>Customer Order Summary</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -42,9 +42,9 @@
             "
           >
             <img
-              src="https://i.postimg.cc/85Gw5Rhv/Supplya-Logo-Y-BGB.jpg"
-              alt="Supplya-Logo"
-              style="text-align: left; width: 90px; margin-left: 70px"
+              src="https://res.cloudinary.com/dtgrt2wmg/image/upload/v1745885862/supplyalogo.jpg"
+              alt="Supplya-Logo-on-GBG"
+              style="text-align: left; width: 90px; margin-left: 60px"
             />
           </div>
           <table
@@ -75,69 +75,102 @@
                       >
                         <tr>
                           <td style="color: #153643">
-                            <p
-                              style="
-                                font-size: 14px;
-                                font-weight: 600;
-                                margin-top: 40px;
-                                text-align: left;
-                                font-size: 18px;
-                                color: #131417;
-                              "
-                            >
-                              Registration complete! 🚀
-                            </p>
-                            <p
-                              style="
-                                font-size: 14px;
-                                text-align: left;
-                                color: #131417;
-                                margin-bottom: 30px;
-                                line-height: 20px;
-                              "
-                            >
-                              You have successfully completed your registration
-                              on <span style="font-weight: 600"> Supplya</span>!
-                              Click the link below to experience a new world of
-                              buying and selling!
-                            </p>
-
-                            <a
-                              style="
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                text-decoration: none;
-                                background-color: #0199a4;
-                                color: white;
-                                border-radius: 6px;
-                                padding: 10px 25px;
-                                width: fit-content;
-                                margin: 0 auto;
-                                cursor: pointer;
-                              "
-                              href="https://supplya-web.vercel.app/auth/sign-in"
-                              >Login</a
-                            >
+                            <p>Hi ${user.firstName},</p>
+                            <p>Here is your order summary:</p>
                           </td>
                         </tr>
+                        <tr>
+                          <td
+                            style="
+                              font-size: 12px;
+                              background-color: white;
+                              padding: 10px 20px;
+                            "
+                          >
+                            <p><strong>Order ID:</strong> ${order.orderId}</p>
+                            <p>
+                              <strong>Customer Name:</strong> ${
+                              order.user.firstName } ${order.user.lastName}
+                            </p>
+                            <p>
+                              <strong>Order Status:</strong> ${
+                              order.orderStatus }
+                            </p>
+                            <p>
+                              <strong>Shipping Address:</strong> ${
+                              order.address }, ${order.country}
+                            </p>
+                            <p>
+                              <strong>Phone Number:</strong> ${ order.phone ??
+                              "" }
+                            </p>
+                            <p><strong>Email:</strong> ${order.email}</p>
 
+                            <p>
+                              <strong>Order Note:</strong> ${ order.orderNote ??
+                              "" }
+                            </p>
+                            <p>
+                              <strong>Total Price:</strong> ₦${ order.totalPrice
+                              }
+                            </p>
+                            <p>
+                              <strong>Payment Method:</strong> ${
+                              order.paymentMethod }
+                            </p>
+                            <p><strong>Order Date:</strong> ${formattedDate}</p>
+                            <h4><strong>Order Items:</strong></h4>
+                            <ul>
+                              ${order.orderItems .map( (item) => `
+                              <li>
+                                <p>
+                                  <strong>Product Name:</strong>
+                                  ${item.product.name}
+                                </p>
+                                <p>
+                                  <strong>Quantity:</strong> ${item.quantity}
+                                </p>
+                                <p>
+                                  <strong>Price per Unit:</strong>
+                                  ₦${item.product.unit_price}
+                                </p>
+                                <p>
+                                  <strong>Vendor Name:</strong>
+                                  ${item.vendorDetails.firstName} ${
+                                  item.vendorDetails.lastName }
+                                </p>
+                                <p>
+                                  <strong>Supplya store address:</strong>
+                                  ${item.vendorDetails.storeUrl ?? ""}
+                                </p>
+                              </li>
+                              ` ) .join(", ")}
+                            </ul>
+                          </td>
+                        </tr>
                         <tr>
                           <td style="font-size: 14px; line-height: 16px">
-                            <div style="text-align: right">
-                              <p
-                                style="
-                                  color: #131417;
-                                  font-weight: 400;
-                                  margin-top: 30px;
-                                "
-                              >
-                                Thank you,
-                              </p>
-                              <p style="color: #131417; font-weight: 400">
-                                Supplya Team.
-                              </p>
-                            </div>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                                margin-top: 30px;
+                              "
+                            >
+                              Regards,
+                            </p>
+                            <p
+                              style="
+                                color: #131417;
+                                text-align: left;
+                                font-weight: 400;
+                                line-height: 15px;
+                              "
+                            >
+                              Supplya Support.
+                            </p>
                           </td>
                         </tr>
                       </table>

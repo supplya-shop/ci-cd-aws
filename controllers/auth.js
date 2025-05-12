@@ -923,7 +923,7 @@ const signUp = async (req, res) => {
     return res.status(StatusCodes.OK).json({
       status: true,
       message: `OTP sent successfully. Please check your ${
-        phoneNumber ? "WhatsApp" : "email"
+        phoneNumber ? "SMS" : "email"
       }.`,
     });
   } catch (error) {
@@ -1015,20 +1015,26 @@ const signUpComplete = async (req, res) => {
       message: "Congratulations! You have successfully registered on Supplya.",
       data: {
         _id: newUser._id,
+        _id: newUser._id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
+        role: newUser.role,
         storeName: newUser.storeName,
         storeUrl: newUser.storeUrl,
-        dob: newUser.dob,
-        role: newUser.role,
+        referralCode: newUser.referralCode,
+        referredBy: newUser.referredBy,
+        walletId: newUser.walletId,
+        referralCodeUsageCount: newUser.referralCodeUsageCount,
+        referredUsers: newUser.referredUsers,
         gender: newUser.gender,
         country: newUser.country,
         city: newUser.city,
         state: newUser.state,
         address: newUser.address,
         createdAt: newUser.createdAt,
+        lastLogin: newUser.lastLogin,
       },
       token,
     });
