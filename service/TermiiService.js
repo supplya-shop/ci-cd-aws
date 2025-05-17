@@ -18,7 +18,7 @@ const sendOtpViaTermii = async (phoneNumber, otp) => {
       from: "Supplya",
       sms: otp,
       type: "plain",
-      channel: "whatsapp_otp",
+      channel: "generic",
       api_key: termiiConfig.apiKey,
       time_in_minutes: "30 minutes",
     };
