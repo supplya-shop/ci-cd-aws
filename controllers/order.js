@@ -48,7 +48,6 @@ const createOrder = async (req, res) => {
       orderNote,
       paymentRefId,
       paymentMethod,
-      referralCode,
     } = req.body;
     const formattedPhone = formatPhoneNumber(phone);
 
@@ -57,23 +56,10 @@ const createOrder = async (req, res) => {
 
     const [user, orderId] = await Promise.all([
       User.findById(userId)
-        .select("firstName lastName email phoneNumber referredBy")
+        .select("firstName lastName email phoneNumber")
         .session(session),
       generateOrderId(),
     ]);
-
-    let validReferralCode = referralCode;
-    if (!referralCode && user.referredBy) {
-      // Fetch referralCode from the referrer
-      const referrer = await User.findById(user.referredBy)
-        .select("referralCode")
-        .session(session);
-
-      validReferralCode = referrer?.referralCode || null;
-    }
-
-    console.log("referralCode", referralCode);
-    console.log("validReferralCode", validReferralCode);
 
     const {
       totalPrice,
@@ -81,10 +67,9 @@ const createOrder = async (req, res) => {
       orderItems: populatedItems,
     } = await populateOrderItems(orderItems, session);
 
-    // Calculate discounts (referral and promo)
+    // Calculate promo discount only
     const { totalDiscount, updatedTotal } = await calculateDiscounts(
       totalPrice,
-      validReferralCode,
       promoCode,
       userId,
       session
@@ -114,7 +99,6 @@ const createOrder = async (req, res) => {
           totalPrice: updatedTotal,
           discount: totalDiscount,
           promoCode,
-          appliedReferralCode: validReferralCode || null,
           paymentRefId,
           paymentMethod,
         },
@@ -158,6 +142,7 @@ const createOrder = async (req, res) => {
     if (session) session.endSession();
   }
 };
+
 
 const getOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -888,39 +873,17 @@ const applyPromoCodeInOrder = async (promoCode, totalPrice, session) => {
   return { discount, updatedTotal: totalPrice - discount };
 };
 
-const calculateDiscounts = async (
-  totalPrice,
-  referralCode,
-  promoCode,
-  userId,
-  session
-) => {
-  let referralDiscount = 0;
-  let promoDiscount = 0;
-
-  // Apply referral discount
-  if (referralCode) {
-    // Ensure referral discount is only for the first purchase
-    const hasExistingOrders = await Order.exists({ user: userId });
-    if (!hasExistingOrders) {
-      // Calculate referral discount (10% capped at ₦2,000)
-      referralDiscount = Math.min(totalPrice * 0.1, 2000);
-    }
-  }
-
+const calculateDiscounts = async (totalPrice, promoCode, session) => {
   // Apply promo code discount
-  const { discount: promoCodeDiscount } = await applyPromoCodeInOrder(
+  const { discount: promoDiscount } = await applyPromoCodeInOrder(
     promoCode,
-    totalPrice - referralDiscount, // Apply referral discount first
+    totalPrice,
     session
   );
-  promoDiscount = promoCodeDiscount;
 
-  // Combine discounts and calculate updated total
-  const totalDiscount = referralDiscount + promoDiscount;
-  const updatedTotal = totalPrice - totalDiscount;
+  const updatedTotal = totalPrice - promoDiscount;
 
-  return { totalDiscount, updatedTotal };
+  return { totalDiscount: promoDiscount, updatedTotal };
 };
 
 const populateOrderItems = async (orderItems, session) => {
@@ -966,6 +929,7 @@ const populateOrderItems = async (orderItems, session) => {
   return { totalPrice, productUpdates, orderItems };
 };
 
+
 const notifyUsers = async (order, user, email, phone) => {
   const customerNotifications = [];
   const vendorNotifications = [];
@@ -1008,255 +972,6 @@ const notifyUsers = async (order, user, email, phone) => {
 
   await Promise.all([...customerNotifications, ...vendorNotifications]);
 };
-
-// const createOrder = async (req, res) => {
-//   let session;
-
-//   try {
-//     const userId = req.user.userid;
-//     const email = req.user.email;
-//     const {
-//       orderItems,
-//       city,
-//       zip,
-//       country,
-//       phone,
-//       address,
-//       orderNote,
-//       paymentRefId,
-//       paymentMethod,
-//       PromoCode, // Extract PromoCode from the request
-//     } = req.body;
-
-//     let formattedPhone = phone;
-
-//     if (phone) {
-//       if (/^0\d{10}$/.test(phone)) {
-//         formattedPhone = "234" + phone.slice(1);
-//       } else if (!phonePattern.test(phone)) {
-//         return res.status(StatusCodes.BAD_REQUEST).json({
-//           status: false,
-//           message: "Phone number must start with 234 followed by 10 digits.",
-//         });
-//       }
-//     }
-
-//     session = await mongoose.startSession();
-//     session.startTransaction();
-
-//     const [user, orderId] = await Promise.all([
-//       User.findById(userId).select("firstName lastName email").session(session),
-//       generateOrderId(),
-//     ]);
-
-//     let totalPrice = 0;
-//     const productUpdates = [];
-//     const insufficientStockProducts = [];
-//     const moqProducts = [];
-
-//     for (const item of orderItems) {
-//       const product = await Product.findById(item.product)
-//         .populate("createdBy")
-//         .session(session);
-
-//       if (!product) {
-//         await session.abortTransaction();
-//         return res.status(StatusCodes.NOT_FOUND).json({
-//           status: false,
-//           message: `Product not found: ${item.product}`,
-//         });
-//       }
-//       if (item.quantity < product.moq) {
-//         moqProducts.push(product.name);
-//       }
-//       const price = product.discounted_price || product.unit_price;
-
-//       totalPrice += item.quantity * price;
-
-//       if (product.quantity < item.quantity) {
-//         insufficientStockProducts.push(product.name);
-//       }
-
-//       item.vendorDetails = product.createdBy._id;
-
-//       const newQuantity = product.quantity - item.quantity;
-
-//       productUpdates.push({
-//         updateOne: {
-//           filter: { _id: item.product },
-//           update: {
-//             $inc: { quantity: -item.quantity },
-//             $set: {
-//               status: newQuantity <= product.moq ? "outOfStock" : "inStock",
-//             },
-//           },
-//         },
-//       });
-//     }
-
-//     if (insufficientStockProducts.length > 0) {
-//       await session.abortTransaction();
-//       return res.status(StatusCodes.BAD_REQUEST).json({
-//         status: false,
-//         message: `Insufficient stock for products: ${insufficientStockProducts.join(
-//           ", "
-//         )}`,
-//       });
-//     }
-
-//     if (moqProducts.length > 0) {
-//       await session.abortTransaction();
-//       return res.status(StatusCodes.BAD_REQUEST).json({
-//         status: false,
-//         message: `Your order quantity does not meet the minimum order quantity (MOQ) for products: ${moqProducts.join(
-//           ", "
-//         )}`,
-//       });
-//     }
-
-//     // Promo Code Handling
-//     let discount = 0;
-//     if (PromoCode) {
-//       const promo = await PromoCode.findOne({
-//         code: PromoCode,
-//         isActive: true,
-//       });
-
-//       if (!promo) {
-//         return res.status(StatusCodes.BAD_REQUEST).json({
-//           status: false,
-//           message: "Invalid or expired promo code.",
-//         });
-//       }
-//       if (promo.expirationDate < new Date()) {
-//         return res.status(StatusCodes.BAD_REQUEST).json({
-//           status: false,
-//           message: "This promo code has expired.",
-//         });
-//       }
-//       if (totalPrice < promo.minimumOrderAmount) {
-//         return res.status(StatusCodes.BAD_REQUEST).json({
-//           status: false,
-//           message: `Minimum order amount for this promo code is ₦${promo.minimumOrderAmount}.`,
-//         });
-//       }
-
-//       // Calculate and cap discount
-//       discount = Math.min(
-//         (totalPrice * promo.discountPercentage) / 100,
-//         promo.maxDiscountAmount
-//       );
-
-//       // Update the total price
-//       totalPrice -= discount;
-
-//       // Update used count
-//       promo.usedCount += 1;
-//       await promo.save({ session });
-//     }
-
-//     // Bulk update product stock
-//     await Product.bulkWrite(productUpdates, { session });
-
-//     for (const item of orderItems) {
-//       const product = await Product.findById(item.product)
-//         .populate({
-//           path: "createdBy", // Populate createdBy to get vendor details
-//           select: "firstName lastName email storeName storeUrl phoneNumber _id",
-//         })
-//         .session(session);
-
-//       if (product && product.createdBy) {
-//         item.vendorDetails = {
-//           vendorId: product.createdBy._id,
-//           firstName: product.createdBy.firstName,
-//           lastName: product.createdBy.lastName,
-//           storeName: product.createdBy.storeName,
-//           storeUrl: product.createdBy.storeUrl,
-//           phoneNumber: product.createdBy.phoneNumber,
-//           email: product.createdBy.email,
-//         };
-//       } else {
-//         console.warn(
-//           `Product or vendor not found for item with ID ${item.product}`
-//         );
-//       }
-//     }
-
-//     // Create the order with the populated orderItems
-//     const createdOrders = await Order.create(
-//       [
-//         {
-//           orderId: orderId,
-//           user: {
-//             _id: userId,
-//             firstName: user.firstName,
-//             lastName: user.lastName,
-//             email: user.email,
-//           },
-//           orderItems, // Use modified orderItems with populated vendorDetails
-//           city,
-//           zip,
-//           country,
-//           phone: formattedPhone || user.phoneNumber,
-//           email,
-//           address,
-//           orderNote,
-//           totalPrice,
-//           discount, // Add discount to the order data
-//           PromoCode, // Reference PromoCode on the order
-//           paymentRefId,
-//           paymentMethod,
-//         },
-//       ],
-//       { session }
-//     );
-
-//     // Commit the transaction and end the session
-//     await session.commitTransaction();
-//     session.endSession();
-
-//     const order = await Order.findById(createdOrders[0]._id)
-//       .populate({
-//         path: "orderItems.product",
-//         model: "Product",
-//       })
-//       .populate({
-//         path: "orderItems.product.createdBy",
-//         model: "User",
-//         select:
-//           "firstName lastName email storeName storeUrl phoneNumber country state city role",
-//       })
-//       .populate({
-//         path: "user",
-//         model: "User",
-//         select:
-//           "firstName lastName email phoneNumber address city state country",
-//       });
-
-//     if (formattedPhone) {
-//       await notifyUsers(order, user, email, formattedPhone);
-//     }
-
-//     return res.status(StatusCodes.CREATED).json({
-//       status: true,
-//       message: "Order created successfully",
-//       data: order,
-//     });
-//   } catch (error) {
-//     if (session && session.inTransaction()) await session.abortTransaction();
-
-//     console.error("Error creating order: ", error);
-//     return res
-//       .status(error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR)
-//       .json({
-//         status: false,
-//         message: "Failed to create order. " + error.message,
-//       });
-//   } finally {
-//     if (session) session.endSession();
-//   }
-// };
 
 module.exports = {
   createOrder,
