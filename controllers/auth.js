@@ -1051,15 +1051,15 @@ const signUpComplete = async (req, res) => {
 const resendOTP = async (req, res) => {
   try {
     const { email, phoneNumber } = req.body;
+    const identifier = phoneNumber || email;
 
-    if (!email) {
+    if (!identifier) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: false,
-        message: "Please provide your email.",
+        message: "Please provide either an email or phone number.",
       });
     }
 
-    const identifier = phoneNumber || email;
     let userData = userRegistrationCache.get(identifier);
 
     if (!userData) {
@@ -1105,7 +1105,7 @@ const resendOTP = async (req, res) => {
     return res.status(StatusCodes.OK).json({
       status: true,
       message: `New OTP sent successfully. Please check your ${
-        phoneNumber ? "WhatsApp" : "email"
+        phoneNumber ? "SMS" : "email"
       }.`,
     });
   } catch (error) {
