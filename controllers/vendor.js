@@ -65,7 +65,10 @@ const createVendor = async (req, res) => {
       storeName,
       storeUrl,
       phoneNumber,
-      address: { street, city, state, country },
+      street,
+      city,
+      state,
+      country,
       role: "vendor",
     });
 
