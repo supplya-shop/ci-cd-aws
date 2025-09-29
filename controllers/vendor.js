@@ -671,7 +671,7 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-const deleteVendor = async () => {
+const deleteVendor = async (res) => {
   try {
     const vendor = await User.findByIdAndDelete(req.params.id);
     if (!vendor || vendor.role !== "vendor") {
